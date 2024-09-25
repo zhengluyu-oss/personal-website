@@ -202,7 +202,7 @@ async function modelOk() {
         label="标签名称"
         name="tagName"
       >
-        <a-input v-model:value="formState.tagName" placeholder="请输人标签名称" style="width: 250px" />
+        <a-input v-model:value="formState.tagName" placeholder="请输入标签名称" style="width: 250px" />
       </a-form-item>
       <a-form-item
         label="创建时间"
@@ -243,7 +243,7 @@ async function modelOk() {
           label="标签名称"
           name="tagName"
         >
-          <a-input v-model:value="formData.tagName" placeholder="请输人标签名称" show-count :maxlength="20" />
+          <a-input v-model:value="formData.tagName" placeholder="请输入标签名称" show-count :maxlength="20" />
         </a-form-item>
       </a-modal>
       <a-table
