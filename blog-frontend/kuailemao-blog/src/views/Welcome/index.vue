@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { ossUrl } from '@/config/site'
 
+const welcomeBg = ossUrl('blog/background/压缩水狗.png')
 </script>
 
 <template>
@@ -8,7 +10,7 @@
     <!-- 左边区域 -->
     <div class="left-card">
       <el-image style="width: 100%;height: 100%" fit="cover"
-                src="https://image.kuailemao.xyz/blog/background/压缩水狗.png"/>
+                :src="welcomeBg"/>
     </div>
     <div class="welcome-title">
       <div>欢迎来到我的个人博客</div>
