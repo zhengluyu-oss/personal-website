@@ -350,7 +350,7 @@ function getEmailCode(){
         <transition name="el-fade-in-linear">
           <div v-if="userStore.userInfo" class="mt-5 p-3 bg_card box_show rounded">
             <div class="text-gray-400 font-bold">
-              欢迎加入Ruyu个人博客！
+              欢迎加入郑陆宇的个人博客！
             </div>
             <div>注册时间：{{ userStore.userInfo?.createTime }}</div>
             <div>登录时间：{{ userStore.userInfo?.loginTime }}</div>

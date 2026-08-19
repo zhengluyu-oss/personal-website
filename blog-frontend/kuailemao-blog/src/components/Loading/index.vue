@@ -1,17 +1,19 @@
+<script setup lang="ts">
+import { ossUrl } from '@/config/site'
+import useLoadingStore from "@/store/modules/loading.ts";
+
+const loadingStore = useLoadingStore()
+const loadingGif = ossUrl('blog/loading/loading-gif.gif')
+</script>
+
 <template>
   <div class="loading loading-active" v-show="loadingStore.isLoading">
     <div class="load-box">
-      <img class="loading-img" src="https://image.kuailemao.xyz/blog/loading/loading-gif.gif" alt="Loading">
+      <img class="loading-img" :src="loadingGif" alt="Loading">
       <span>比卡丘正在带着数据走向你~~</span>
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import useLoadingStore from "@/store/modules/loading.ts";
-const loadingStore = useLoadingStore()
-
-</script>
 
 <style scoped lang="scss">
 

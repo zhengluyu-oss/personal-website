@@ -2,9 +2,10 @@
 import vueDanmaku from 'vue3-danmaku'
 import {addTreeHole, getTreeHoleList} from "@/apis/treeHole";
 import {ElMessage} from "element-plus";
+import { ossUrl } from '@/config/site'
 
+const treeHoleBg = ossUrl('blog/TreeHole/TreeHole-back_compressed.webp')
 const treeHoleList = ref([])
-// 是否显示提交按钮
 const isShowSubmit = ref(false)
 const content = ref('')
 
@@ -40,7 +41,7 @@ function getTreeHole() {
 }
 </script>
 <template>
-  <div class="container">
+  <div class="container" :style="{ backgroundImage: `url(${treeHoleBg})` }">
     <div class="content_container">
       <div>树洞</div>
       <div>
@@ -70,7 +71,6 @@ function getTreeHole() {
 
 <style scoped lang="scss">
 .container {
-  background-image: url('https://image.kuailemao.xyz/blog/TreeHole/TreeHole-back_compressed.webp');
   background-size: cover;
   background-position: center;
   min-width: 100vw;

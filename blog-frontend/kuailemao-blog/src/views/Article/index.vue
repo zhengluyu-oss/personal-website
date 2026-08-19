@@ -16,8 +16,9 @@ import {useColorMode, useTitle} from "@vueuse/core";
 import MobileDirectoryCard from "./MobileDirectoryCard/index.vue";
 import {throttle} from "@/utils/optimize.ts";
 import {ARTICLE_VISIT_PREFIX} from "@/const/Visits";
+import { ossUrl } from '@/config/site'
 
-// .env
+const payQrUrl = ossUrl('blog/pay/支付宝支付二维码_.png')
 const env = import.meta.env;
 
 const websiteStore = useWebsiteStore()
@@ -352,7 +353,7 @@ function ReadingModeFunc() {
                   <div>
                     支付宝
                     <el-image
-                        src="https://image.kuailemao.xyz/blog/pay/%E6%94%AF%E4%BB%98%E5%AE%9D%E6%94%AF%E4%BB%98%E4%BA%8C%E7%BB%B4%E7%A0%81_.png"/>
+                        :src="payQrUrl"/>
                   </div>
                 </div>
               </template>
@@ -523,7 +524,7 @@ function ReadingModeFunc() {
               <div>
                 支付宝
                 <el-image
-                    src="https://image.kuailemao.xyz/blog/pay/%E6%94%AF%E4%BB%98%E5%AE%9D%E6%94%AF%E4%BB%98%E4%BA%8C%E7%BB%B4%E7%A0%81_.png"/>
+                    :src="payQrUrl"/>
               </div>
             </div>
           </template>
