@@ -37,19 +37,14 @@ const websiteStore = useWebsiteStore()
         <div class="w-full h-[40vh] flex flex-col justify-center items-center">
           <div class="text-gray-600 dark:text-gray-300 ">------------------------我的个人导航------------------------</div>
           <div class="flex justify-center items-center h-full">
-            <a href="https://github.com/kuailemao" target="_blank">
+            <a href="https://github.com/zhengluyu-oss" target="_blank">
               <div class="bg-white dark:bg-slate-800 w-[120px] h-[120px] flex justify-center items-center rounded-2xl drop-shadow-lg">
                 <SvgIcon name="github_icon" width="100px" height="100px"/>
               </div>
             </a>
-            <a href="https://gitee.com/kuailemao" target="_blank"  class="mx-10 max-lg:mx-4">
+            <a href="https://github.com/zhengluyu-oss/personal-website" target="_blank" class="mx-10 max-lg:mx-4">
               <div class="bg-white dark:bg-slate-800 w-[120px] h-[120px] flex justify-center items-center rounded-2xl drop-shadow-lg">
-                <SvgIcon name="gitee_icon" width="100px" height="100px"/>
-              </div>
-            </a>
-            <a href="https://space.bilibili.com/299105957" target="_blank">
-              <div class="bg-white dark:bg-slate-800 w-[120px] h-[120px] flex justify-center items-center rounded-2xl drop-shadow-lg">
-                <SvgIcon name="bilibili_icon" width="100px" height="100px"/>
+                <SvgIcon name="github_icon" width="100px" height="100px"/>
               </div>
             </a>
           </div>

@@ -1,1 +1,3 @@
-export const loadingImg = "https://image.kuailemao.xyz/blog/loading/img_loading.gif"
+import { ossUrl } from '@/config/site'
+
+export const loadingImg = ossUrl('blog/loading/img_loading.gif')
