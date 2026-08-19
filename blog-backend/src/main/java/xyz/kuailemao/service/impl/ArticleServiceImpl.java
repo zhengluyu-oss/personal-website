@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -278,15 +277,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return ResponseResult.failure();
     }
 
-    @Value("${minio.bucketName}")
-    private String bucketName;
-
     @Override
     public ResponseResult<Void> deleteArticleCover(String articleCoverUrl) {
         try {
-            // 提取图片名称
-            String articleCoverName = articleCoverUrl.substring(articleCoverUrl.indexOf(bucketName) + bucketName.length());
-            fileUploadUtils.deleteFiles(List.of(articleCoverName));
+            fileUploadUtils.deleteFiles(List.of(fileUploadUtils.toObjectKey(articleCoverUrl)));
             return ResponseResult.success();
         } catch (Exception e) {
             log.error("删除文章封面失败", e);
