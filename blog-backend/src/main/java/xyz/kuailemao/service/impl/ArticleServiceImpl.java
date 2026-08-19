@@ -84,6 +84,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         Page<Article> page = new Page<>(pageNum, pageSize);
         this.page(page, new LambdaQueryWrapper<Article>().eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE).orderByDesc(Article::getCreateTime));
         List<Article> list = page.getRecords();
+        // 无文章时跳过 IN 批量查询，避免生成非法 SQL：id IN ()
+        if (list.isEmpty()) {
+            return new PageVO<>(Collections.emptyList(), page.getTotal());
+        }
         // 文章分类
         // 1. 优化：使用 Map 存储分类和标签信息，避免 N+1 问题
         Map<Long, String> categoryMap = categoryMapper.selectBatchIds(list.stream().map(Article::getCategoryId).toList())
