@@ -118,7 +118,7 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoMapper, Photo> implements
     @Override
     public ResponseResult<Void> uploadPhoto(MultipartFile file, String name, Long parentId) {
         try {
-            // TODO 注意：如minio地址配置的是nginx代理域名，则需要配置nginx的文件上传大小
+            // 注意：经 nginx 反代上传时需配置 client_max_body_size
             // 当前相册是否存在相同名称照片
             if (
                     photoMapper.selectCount(
