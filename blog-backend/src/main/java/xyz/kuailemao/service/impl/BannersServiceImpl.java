@@ -82,7 +82,7 @@ public class BannersServiceImpl extends ServiceImpl<BannersMapper, Banners> impl
     public ResponseResult<String> removeBannerById(Long id) {
         Banners banner = bannersMapper.selectById(id);
         if (this.removeById(id)) {
-            // minio是否存在
+            // 对象存储中是否存在
             if (fileUploadUtils.isFileExist(UploadEnum.UI_BANNERS.getDir(), fileUploadUtils.getFileName(banner.getPath()))) {
                 fileUploadUtils.deleteFile(UploadEnum.UI_BANNERS.getDir(), fileUploadUtils.getFileName(banner.getPath()));
             }

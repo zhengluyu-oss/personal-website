@@ -1,5 +1,5 @@
 server:
-  port: 8088
+  port: 8001
 spring:
   profiles:
     active: "@profiles.active@"
@@ -166,9 +166,12 @@ spring:
 #  connection_request_timeout: 1000
 #  socket_timeout: 65000
 #  validate_after_inactivity: 2000
-## 连接 minio
-#minio:
-#  endpoint:
-#  accessKey:
-#  secretKey:
-#  bucketName:
+## 阿里云 OSS（真实值写在 gitignored 的 application-dev.yml，不要提交密钥）
+## Bucket 需公共读（或等价读策略），否则前台无法直接打开图片
+#oss:
+#  endpoint: oss-cn-hangzhou.aliyuncs.com
+#  access-key:
+#  secret-key:
+#  bucket-name:
+#  # 可选。填写后返回 URL 使用该域名，例如 https://image.example.com
+#  domain:
