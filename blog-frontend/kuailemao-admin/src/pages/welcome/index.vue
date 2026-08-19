@@ -17,9 +17,8 @@
       作者并不是专业的前端人员，该项目几乎集成了作者所学。
     </h3>
     <h3>
-      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;开源地址：<a href="https://gitee.com/kuailemao/ruyu-blog" target="_blank">https://gitee.com/kuailemao/ruyu-blog</a> |
-      <a href="https://github.com/kuailemao/Ruyu-Blog" target="_blank">https://github.com/kuailemao/Ruyu-Blog</a> ，
-      该项目qq交流群：635887836，欢迎加入进行技术交流，技术学习。
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;本项目为郑陆宇（zhengluyu）个人博客，基于开源 Ruyu-Blog 二次开发。
+      仓库地址：<a href="https://github.com/zhengluyu-oss/personal-website" target="_blank">https://github.com/zhengluyu-oss/personal-website</a>
     </h3>
     <h3>
       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;另外，后台页面使用了一个叫 Antdv Pro 的后台通用框架，在这里感谢 Antdv Pro 作者能提供如此美观的后台通用后台系统，附上链接 https://docs.antdv-pro.com/。
