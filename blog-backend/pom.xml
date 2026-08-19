@@ -147,11 +147,11 @@
             <artifactId>JustAuth</artifactId>
             <version>1.16.6</version>
         </dependency>
-        <!-- minio -->
+        <!-- 阿里云 OSS -->
         <dependency>
-            <groupId>io.minio</groupId>
-            <artifactId>minio</artifactId>
-            <version>8.5.7</version>
+            <groupId>com.aliyun.oss</groupId>
+            <artifactId>aliyun-sdk-oss</artifactId>
+            <version>3.18.1</version>
         </dependency>
         <!-- 引入 Quartz 依赖-->
         <dependency>
