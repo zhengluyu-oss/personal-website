@@ -1,15 +1,17 @@
 <script setup lang="ts">
+import { ossUrl } from '@/config/site'
+
 defineProps({
   title: String,
   subtitle: String
 })
 
-
+const bannerBg = ossUrl('blog/background/学习的史蒂夫.jpg')
 </script>
 
 <template>
   <div>
-    <div class="header">
+    <div class="header" :style="{ backgroundImage: `url(${bannerBg})` }">
       <h2 class="title">{{ title }}</h2>
       <h3 class="subtitle"><span>{{ subtitle }}</span></h3>
     </div>
@@ -26,7 +28,6 @@ defineProps({
   justify-content: center;
   flex-direction: column;
   align-items: center;
-  background-image: url("https://image.kuailemao.xyz/blog/background/%E5%AD%A6%E4%B9%A0%E7%9A%84%E5%8F%B2%E8%92%82%E5%A4%AB.jpg");
   background-size: cover;
   background-position: center;
 
