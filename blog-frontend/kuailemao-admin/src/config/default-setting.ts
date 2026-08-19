@@ -1,9 +1,9 @@
 import type { LayoutSetting } from '~@/stores/app'
 
 export default {
-  'title': 'Ruyu-blog',
+  'title': '郑陆宇 · 管理后台',
   'theme': 'light',
-  'logo': 'https://image.kuailemao.xyz/blog/logo/blog后台logo.svg',
+  'logo': '/blog-icon.svg',
   'collapsed': false,
   'drawerVisible': true,
   'colorPrimary': '#1677FF',
