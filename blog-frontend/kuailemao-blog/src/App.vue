@@ -4,7 +4,8 @@
   </div>
   <!-- 全局loading -->
   <loading></loading>
-  <Music />
+  <!-- 无音乐后端时不挂载，避免启动时请求 /wapi -->
+  <Music v-if="enableMusic" />
   <DevToolsBlocker :enableDevToolsBlocker="true" />
   <ContextMenu />
 </template>
@@ -16,6 +17,7 @@ import DevToolsBlocker from "@/components/DevToolsBlocker/index.vue";
 import ContextMenu from "@/components/ContextMenu/index.vue";
 
 const useWebsite = useWebsiteStore()
+const enableMusic = Boolean(import.meta.env.VITE_MUSIC_SERVE)
 
 onMounted(() => {
   useWebsite.getInfo()
