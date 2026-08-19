@@ -82,21 +82,28 @@ export default defineConfig(({ mode }: ConfigEnv) => {
                 }
             }
         },
-        server: {
-            port: 99,
-            host: '0.0.0.0',
-            proxy: {
+        server: (() => {
+            const env = loadEnv(mode, process.cwd())
+            const proxy: Record<string, { target: string; changeOrigin: boolean; rewrite: (path: string) => string }> = {
                 '/api': {
-                    target: `${loadEnv(mode, process.cwd()).VITE_SERVE}`,
+                    target: env.VITE_SERVE,
                     changeOrigin: true,
                     rewrite: (path) => path.replace(/^\/api/, '')
-                },
-                '/wapi': {
-                    target: `${loadEnv(mode, process.cwd()).VITE_MUSIC_SERVE}`,
+                }
+            }
+            // 无音乐后端时不注册 /wapi，避免空 target 导致开发服 500
+            if (env.VITE_MUSIC_SERVE) {
+                proxy['/wapi'] = {
+                    target: env.VITE_MUSIC_SERVE,
                     changeOrigin: true,
                     rewrite: (path) => path.replace(/^\/wapi/, '')
                 }
             }
-        }
+            return {
+                port: 99,
+                host: '0.0.0.0',
+                proxy
+            }
+        })()
     }
 })
