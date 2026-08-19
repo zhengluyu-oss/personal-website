@@ -135,7 +135,7 @@ function parsingCommentsFunc(value: string) {
       const match = matches[i];
       if (heo[match]) {
         // 有，替换 heo[match]
-        protectedValue = protectedValue.replace(match, `<span><img src="${heo[match]}" width="24" height="24" alt="Ruyu-blog-[1231256151315612]" /></span>`);
+        protectedValue = protectedValue.replace(match, `<span><img src="${heo[match]}" width="24" height="24" alt="zhengluyu-blog-emoji" /></span>`);
       }
     }
   }
