@@ -2,6 +2,7 @@ package xyz.kuailemao.domain.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.Length;
 import xyz.kuailemao.domain.BaseData;
 
 import java.util.List;
@@ -27,6 +28,12 @@ public class ArticleDTO implements BaseData {
     //文章标题
     @NotNull(message = "文章标题不能为空")
     private String articleTitle;
+    @Length(max = 70, message = "SEO标题不能超过70字")
+    private String seoTitle;
+    @Length(max = 200, message = "SEO描述不能超过200字")
+    private String seoDescription;
+    @Length(max = 200, message = "SEO关键词不能超过200字")
+    private String seoKeywords;
     //文章内容
     @NotNull(message = "文章内容不能为空")
     private String articleContent;

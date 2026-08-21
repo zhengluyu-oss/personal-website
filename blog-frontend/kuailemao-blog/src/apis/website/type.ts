@@ -6,6 +6,16 @@ export default interface WebsiteInfo {
     giteeLink: string;
     githubLink: string;
     websiteName: string;
+    heroKicker?: string;
+    heroTitle?: string;
+    heroSubtitle?: string;
+    heroDescription?: string;
+    heroPrimaryText?: string;
+    heroPrimaryUrl?: string;
+    heroSecondaryText?: string;
+    heroSecondaryUrl?: string;
+    heroAsideLabel?: string;
+    heroAsideText?: string;
     headerNotification: string;
     sidebarAnnouncement: string;
     recordInfo: string;
