@@ -13,7 +13,6 @@ import "@/styles/tailwind.css";
  *  element-plus 必须要在 tailwind 后导入，不然会出现样式冲突导致按钮背景色透明等问题
  *  具体请访问问题：https://github.com/tailwindlabs/tailwindcss/discussions/5969
  */
-import 'element-plus/dist/index.css'
 // 黑暗模式
 import 'element-plus/theme-chalk/dark/css-vars.css'
 // pinia
@@ -35,4 +34,5 @@ app.use(router)
 // 设置pinia
 app.use(pinia)
 
-app.mount('#app')
+// 先让浏览器提交轻量首屏，再由完整应用无缝接管，弱网下也不会长时间白屏。
+requestAnimationFrame(() => requestAnimationFrame(() => app.mount('#app')))
