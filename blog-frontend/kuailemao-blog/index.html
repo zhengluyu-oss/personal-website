@@ -5,10 +5,19 @@
     <link rel="icon" type="image/svg+xml" href="/blog-icon.svg"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>陆屿的个人博客，欢迎来到我的小世界</title>
-    <link rel="stylesheet" href="//at.alicdn.com/t/c/font_4468698_ja5z7qsallk.css">
+    <style>
+        html,body,#app{width:100%;height:100%;margin:0}body{background:#14213e;color:#fff}
+        .boot-hero{position:fixed;inset:0;display:grid;place-items:center;overflow:hidden;background:radial-gradient(circle at 68% 24%,rgba(239,125,119,.32),transparent 34%),linear-gradient(145deg,#14213e 0%,#382d54 48%,#a6535f 100%);font-family:Georgia,"Songti SC","STSong",serif;text-align:center}
+        .boot-hero:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,13,31,.58),transparent 52%,rgba(7,12,26,.82))}
+        .boot-hero__content{position:relative;z-index:1;padding:1.5rem}.boot-hero small{font:700 .65rem/1.5 system-ui,sans-serif;letter-spacing:.35em;opacity:.72}.boot-hero h1{max-width:12em;margin:.55em auto .25em;font-size:clamp(3rem,8vw,8rem);font-weight:400;line-height:.92;letter-spacing:-.055em;text-shadow:0 12px 40px rgba(7,12,26,.45)}.boot-hero p{margin:0;font:600 .72rem/1.5 system-ui,sans-serif;letter-spacing:.28em;opacity:.72}
+        @media(max-width:640px){.boot-hero h1{font-size:clamp(3.25rem,17vw,5.5rem)}}
+    </style>
+    <link rel="preconnect" href="https://at.alicdn.com" crossorigin>
+    <link rel="preload" href="https://at.alicdn.com/t/c/font_4468698_ja5z7qsallk.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_4468698_ja5z7qsallk.css"></noscript>
 </head>
 <body>
-<div id="app"></div>
+<div id="app"><main class="boot-hero" aria-label="陆屿的个人博客"><div class="boot-hero__content"><small>PERSONAL JOURNAL · SINCE 2024</small><h1>欢迎来到陆屿的小世界</h1><p>THINK · BUILD · SHARE</p></div></main></div>
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

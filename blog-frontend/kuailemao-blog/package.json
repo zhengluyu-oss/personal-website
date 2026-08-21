@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/compress-dist.mjs && node scripts/check-performance-budget.mjs",
+    "build:app": "vite build",
+    "test": "node --experimental-strip-types --test src/utils/request-tracker.test.ts",
+    "check:performance": "node scripts/check-performance-budget.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -45,6 +48,6 @@
     "vite": "^4.4.5",
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-svg-icons": "^2.0.1",
-    "vue-tsc": "^1.8.5"
+    "vue-tsc": "^2.2.0"
   }
 }
