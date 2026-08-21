@@ -132,15 +132,25 @@ async function beforeUpload(file: UploadProps['fileList'][number]) {
   }
 
   // 压缩图片
-  const compressedFile = await compressImage(file)
+  const compressedFile = await compressImage(file as unknown as File)
   const isLt03M = compressedFile.size / 1024 / 1024 < 0.3
   if (!isLt03M) {
     message.error('图片压缩后大于 0.3MB')
     return false
   }
 
-  fileList.value = [compressedFile]
-  getBase64(file, (base64Url: string) => {
+  const coverFile = compressedFile instanceof File
+    ? compressedFile
+    : new File([compressedFile], (file as File).name || 'cover.jpg', { type: compressedFile.type || 'image/jpeg' })
+
+  // 使用 Ant Design UploadFile 结构，避免列表一直显示转圈
+  fileList.value = [{
+    uid: `${Date.now()}`,
+    name: coverFile.name,
+    status: 'done',
+    originFileObj: coverFile as any,
+  }]
+  getBase64(coverFile, (base64Url: string) => {
     previewBase64.value = base64Url
   })
 
@@ -168,14 +178,19 @@ function onFinish() {
     })
   }
   else {
+    const coverOrigin = fileList.value[0]?.originFileObj
+    if (!coverOrigin) {
+      message.warn('请重新选择文章封面')
+      return
+    }
     const articleCover = new FormData()
-    articleCover.append('articleCover', fileList.value[0],fileList.value[0].name)
+    articleCover.append('articleCover', coverOrigin, coverOrigin.name)
     uploadCover(articleCover).then((res) => {
-      if (res.code === 200) {
-        const articleCover = res.data
+      if (res && res.code === 200) {
+        const uploadedCoverUrl = res.data
         formData.value.articleCover = res.data
-        publishArticle(formData.value).then((res) => {
-          if (res.code === 200) {
+        publishArticle(formData.value).then((pubRes) => {
+          if (pubRes && pubRes.code === 200) {
             message.success('发布成功')
             formData.value.categoryId = undefined
             formData.value.tagId = undefined
@@ -190,15 +205,17 @@ function onFinish() {
           }
           else {
             message.error(`发布失败`)
-            deleteCover(articleCover)
+            deleteCover(uploadedCoverUrl)
           }
         }).catch(() => {
-          deleteCover(articleCover)
+          deleteCover(uploadedCoverUrl)
         })
       }
       else {
         message.error(`上传文章封面失败`)
       }
+    }).catch(() => {
+      message.error('上传文章封面失败')
     })
   }
 }
@@ -207,14 +224,15 @@ async function onUploadArticleImg(files: any, callback: any) {
   const res = await Promise.all(
     files.map(async (file) => {
       const compressedFile = await compressImage(file)
-      return new Promise((rev, rej) => {
-        const form = new FormData()
-        form.append('articleImage', compressedFile, compressedFile.name)
-        uploadArticleImage(form).then((res) => {
-          if (res.code === 200)
-            rev(res.data)
-        }).catch(error => rej(error))
-      })
+      const imgFile = compressedFile instanceof File
+        ? compressedFile
+        : new File([compressedFile], file.name || 'image.jpg', { type: compressedFile.type || 'image/jpeg' })
+      const form = new FormData()
+      form.append('articleImage', imgFile, imgFile.name)
+      const uploadRes = await uploadArticleImage(form)
+      if (!uploadRes || uploadRes.code !== 200)
+        throw new Error(uploadRes?.msg || '上传文章图片失败')
+      return uploadRes.data
     }),
   )
   callback(res)
