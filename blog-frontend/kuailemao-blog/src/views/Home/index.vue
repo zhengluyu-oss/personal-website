@@ -1,21 +1,47 @@
 <script setup lang="ts">
-import Main from "@/views/Home/Main/index.vue";
 import Images from "@/views/Home/Images/index.vue";
 import Brand from "@/views/Home/Brand/index.vue";
-import Particles from "@/components/Particles/index.vue";
-import MouseTrail from "@/components/MouseTrail/index.vue";
+import {defineAsyncComponent, onBeforeUnmount, onMounted, ref} from 'vue'
 import ScrollParallax from "@/components/ScrollParallax/index.vue";
+
+const Main = defineAsyncComponent(() => import('@/views/Home/Main/index.vue'))
+const Particles = defineAsyncComponent(() => import('@/components/Particles/index.vue'))
+const MouseTrail = defineAsyncComponent(() => import('@/components/MouseTrail/index.vue'))
+const flourishesReady = ref(false)
+const mainReady = ref(false)
+const mainTrigger = ref<HTMLElement | null>(null)
+let mainObserver: IntersectionObserver | undefined
+const revealFlourishes = () => { flourishesReady.value = true }
+
+onMounted(() => {
+  window.addEventListener('pointermove', revealFlourishes, {once: true, passive: true})
+  if (!mainTrigger.value || !('IntersectionObserver' in window)) {
+    mainReady.value = true
+    return
+  }
+  mainObserver = new IntersectionObserver(([entry]) => {
+    if (!entry.isIntersecting) return
+    mainReady.value = true
+    mainObserver?.disconnect()
+  }, {rootMargin: '160px 0px'})
+  mainObserver.observe(mainTrigger.value)
+})
+
+onBeforeUnmount(() => {
+  mainObserver?.disconnect()
+  window.removeEventListener('pointermove', revealFlourishes)
+})
 
 </script>
 <template>
   <div class="home_container">
-    <MouseTrail class="desktop-flourish"/>
+    <MouseTrail v-if="flourishesReady" class="desktop-flourish"/>
     <Images/>
-    <Particles class="desktop-flourish"/>
+    <Particles v-if="flourishesReady" class="desktop-flourish"/>
     <Brand/>
-    <div class="bg">
+    <div ref="mainTrigger" class="bg">
       <ScrollParallax :speed="0.1" direction="up">
-        <Main/>
+        <Main v-if="mainReady"/>
       </ScrollParallax>
     </div>
   </div>
@@ -24,6 +50,7 @@ import ScrollParallax from "@/components/ScrollParallax/index.vue";
 <style lang="scss" scoped>
 .bg {
   position: relative;
+  z-index: 2;
   transition: background-color 1s ease !important;
   background:
     radial-gradient(circle at 12% 14%, var(--brand-accent-soft), transparent 25rem),

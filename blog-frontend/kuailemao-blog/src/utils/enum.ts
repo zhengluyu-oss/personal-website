@@ -19,8 +19,6 @@ export const LYRICTYPE = {
  */
 export const REQUEST_LOADING_PATH = [
     "/wapi/toplist/detail",
-    "/websiteInfo/front",
     "/wapi/playlist/",
-    "/banners/list",
 ]
 
