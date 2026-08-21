@@ -1,7 +1,7 @@
 export interface SeoMeta { title: string; description: string; keywords: string }
 
 const fixedSeo: Record<string, SeoMeta> = {
-  home: { title: '郑陆宇的个人博客 | 技术笔记、项目复盘与成长记录', description: '郑陆宇的个人博客，分享前后端开发、项目实践、技术笔记、工作经历与持续成长。', keywords: '郑陆宇,个人博客,Java,Spring Boot,Vue,前端开发,后端开发,项目复盘' },
+  home: { title: '陆屿的个人博客，欢迎来到我的小世界', description: '郑陆宇的个人博客，分享前后端开发、项目实践、技术笔记、工作经历与持续成长。', keywords: '郑陆宇,个人博客,Java,Spring Boot,Vue,前端开发,后端开发,项目复盘' },
   experience: { title: '工作经历 | 郑陆宇', description: '了解郑陆宇的工作经历、项目职责、技术实践与职业成长。', keywords: '郑陆宇,工作经历,项目经验,软件开发' },
   timeline: { title: '文章归档 | 郑陆宇的个人博客', description: '按时间浏览郑陆宇个人博客发布的技术文章与成长记录。', keywords: '文章归档,技术博客,时间轴,郑陆宇' },
   category: { title: '文章分类 | 郑陆宇的个人博客', description: '按分类浏览技术笔记、项目实践与开发经验。', keywords: '文章分类,技术笔记,开发经验' },
