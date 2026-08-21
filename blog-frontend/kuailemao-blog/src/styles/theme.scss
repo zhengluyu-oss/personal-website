@@ -1,5 +1,25 @@
 // 亮色模式下的主题色
 :root {
+  color-scheme: light;
+  --brand-canvas: #f3f5f8;
+  --brand-canvas-soft: #e9edf3;
+  --brand-surface: rgba(252, 252, 253, .88);
+  --brand-surface-solid: #fcfcfd;
+  --brand-surface-raised: #ffffff;
+  --brand-ink: #18202b;
+  --brand-ink-soft: #536071;
+  --brand-ink-faint: #7d8998;
+  --brand-line: rgba(24, 32, 43, .11);
+  --brand-accent: #d35f45;
+  --brand-accent-strong: #ad432e;
+  --brand-accent-soft: rgba(211, 95, 69, .11);
+  --brand-focus: rgba(211, 95, 69, .36);
+  --brand-radius-sm: .65rem;
+  --brand-radius-md: 1rem;
+  --brand-radius-lg: 1.45rem;
+  --brand-shadow-sm: 0 12px 34px rgba(35, 43, 54, .08);
+  --brand-shadow-lg: 0 26px 80px rgba(26, 35, 48, .13);
+  --brand-content: 88rem;
   --mao-background-color: aliceblue;
   // 留言板说明背景
   --mao-bg-message: #f5f5f5;
@@ -58,6 +78,22 @@
 
 // 暗色模式下的主题色
 html.dark {
+  color-scheme: dark;
+  --brand-canvas: #10151d;
+  --brand-canvas-soft: #171e28;
+  --brand-surface: rgba(23, 30, 40, .9);
+  --brand-surface-solid: #171e28;
+  --brand-surface-raised: #1d2632;
+  --brand-ink: #eef1f5;
+  --brand-ink-soft: #aeb8c5;
+  --brand-ink-faint: #7f8b9b;
+  --brand-line: rgba(238, 241, 245, .11);
+  --brand-accent: #ee8168;
+  --brand-accent-strong: #ff9a83;
+  --brand-accent-soft: rgba(238, 129, 104, .12);
+  --brand-focus: rgba(238, 129, 104, .38);
+  --brand-shadow-sm: 0 14px 38px rgba(0, 0, 0, .22);
+  --brand-shadow-lg: 0 30px 90px rgba(0, 0, 0, .32);
   --mao-background-color: #424242;
   --mao-bg-message: #212121;
   --mao-bg-category: linear-gradient(135deg,#000c40,#607d8b);
@@ -91,4 +127,48 @@ body {
   /* 将 body 元素或者任何其他你想要应用该字体的元素设置为 '阿里妈妈方圆体 VF Regular' */
   font-family: "阿里妈妈方圆体 VF Regular", sans-serif;
   /* 当自定义字体尚未加载时提供一个备选字体（在这个例子中是无衬线字体） */
+}
+
+html { scroll-behavior: smooth; background: var(--brand-canvas); }
+body {
+  min-width: 320px;
+  overflow-x: clip;
+  background: var(--brand-canvas);
+  color: var(--brand-ink);
+  line-height: 1.65;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--brand-accent); color: #fff8f4; }
+:where(a, button, [role="button"], input, textarea, select):focus-visible {
+  outline: 3px solid var(--brand-focus) !important;
+  outline-offset: 3px;
+}
+
+#app { min-height: 100dvh; background: var(--brand-canvas); }
+.el-card, .card {
+  border-color: var(--brand-line) !important;
+  border-radius: var(--brand-radius-md) !important;
+  background: var(--brand-surface-solid) !important;
+  box-shadow: var(--brand-shadow-sm) !important;
+}
+.el-button { border-radius: var(--brand-radius-sm) !important; font-weight: 650; }
+.el-button--primary { --el-button-bg-color: var(--brand-accent); --el-button-border-color: var(--brand-accent); }
+.el-tag { --el-tag-bg-color: var(--brand-accent-soft); --el-tag-border-color: transparent; --el-tag-text-color: var(--brand-accent-strong); border-radius: .45rem; }
+.el-pagination { --el-pagination-hover-color: var(--brand-accent); }
+
+@media (max-width: 767px) {
+  body { font-size: 15px; }
+  .el-message { min-width: 0 !important; max-width: calc(100vw - 2rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
 }

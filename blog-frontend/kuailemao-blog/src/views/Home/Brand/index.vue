@@ -23,9 +23,6 @@ const secondaryVisible = computed(() => Boolean(hero.value.secondaryText.trim() 
 const asideVisible = computed(() => Boolean(hero.value.asideLabel.trim() || hero.value.asideText.trim()))
 const isExternal = (url: string) => /^https?:\/\//i.test(url)
 
-function scrollDown() {
-  window.scrollTo({ behavior: 'smooth', top: document.documentElement.clientHeight })
-}
 </script>
 
 <template>
@@ -60,7 +57,6 @@ function scrollDown() {
       </main>
 
       <aside v-if="asideVisible" class="hero-aside">
-        <span class="hero-aside__index">01</span>
         <div>
           <p v-if="hero.asideLabel" class="hero-aside__label">{{ hero.asideLabel }}</p>
           <p v-if="hero.asideText" class="hero-aside__text">{{ hero.asideText }}</p>
@@ -68,9 +64,6 @@ function scrollDown() {
       </aside>
     </div>
 
-    <button class="scroll-cue" type="button" aria-label="向下浏览首页内容" @click="scrollDown">
-      <span>SCROLL</span><i />
-    </button>
   </section>
 </template>
 

@@ -21,12 +21,12 @@ onMounted(async () => {
 })
 
 function formatDate(value?: string) {
-  if (!value) return '—'
+  if (!value) return '-'
   const [year, month] = value.toString().slice(0, 10).split('-')
   return month ? `${year}.${month}` : year
 }
 function formatPeriod(exp: WorkExperienceItem) {
-  return `${formatDate(exp.startDate)} — ${exp.isCurrent === 1 ? 'NOW' : formatDate(exp.endDate)}`
+  return `${formatDate(exp.startDate)} - ${exp.isCurrent === 1 ? '现在' : formatDate(exp.endDate)}`
 }
 const highlightLines = computed(() => item.value?.highlights?.split(/\r?\n/).map(line => line.trim()).filter(Boolean) || [])
 const hasContent = computed(() => !!item.value?.content?.trim())
@@ -35,38 +35,38 @@ const hasContent = computed(() => !!item.value?.content?.trim())
 <template>
   <main class="case-page">
     <nav class="case-nav">
-      <button type="button" @click="router.push('/experience')"><span>←</span> ALL EXPERIENCE</button>
-      <span>CAREER CASE STUDY</span>
+      <button type="button" @click="router.push('/experience')"><span>←</span> 返回工作经历</button>
+      <span>职业档案</span>
     </nav>
     <div v-if="loading" class="state"><i />正在整理职业档案…</div>
     <div v-else-if="notFound || !item" class="state state--empty">
-      <small>404 / EXPERIENCE</small><h1>这段经历暂时无法查看</h1><p>它可能已停用，或链接已经失效。</p>
+      <small>内容不可用</small><h1>这段经历暂时无法查看</h1><p>它可能已停用，或链接已经失效。</p>
     </div>
     <template v-else>
       <header class="case-hero">
-        <p>{{ item.isCurrent === 1 ? 'CURRENT CHAPTER' : 'ARCHIVED CHAPTER' }} · {{ formatPeriod(item) }}</p>
+        <p>{{ item.isCurrent === 1 ? '目前在职' : '过往经历' }} / {{ formatPeriod(item) }}</p>
         <h1>{{ item.company }}</h1>
-        <div class="hero-foot"><strong>{{ item.roleTitle }}</strong><span>WORK / IMPACT / GROWTH</span></div>
+        <div class="hero-foot"><strong>{{ item.roleTitle }}</strong></div>
       </header>
       <div class="case-layout">
         <aside class="dossier">
           <div class="dossier-sticky">
-            <p class="eyebrow">THE DOSSIER</p>
+            <p class="eyebrow">基本信息</p>
             <dl>
-              <div><dt>ROLE</dt><dd>{{ item.roleTitle }}</dd></div>
-              <div><dt>PERIOD</dt><dd>{{ formatPeriod(item) }}</dd></div>
-              <div><dt>STATUS</dt><dd :class="{ current: item.isCurrent === 1 }">{{ item.isCurrent === 1 ? '在职' : '已完成' }}</dd></div>
+              <div><dt>职位</dt><dd>{{ item.roleTitle }}</dd></div>
+              <div><dt>时间</dt><dd>{{ formatPeriod(item) }}</dd></div>
+              <div><dt>状态</dt><dd :class="{ current: item.isCurrent === 1 }">{{ item.isCurrent === 1 ? '在职' : '已完成' }}</dd></div>
             </dl>
             <section v-if="highlightLines.length" class="impact">
-              <p class="eyebrow">SELECTED IMPACT</p>
+              <p class="eyebrow">关键成果</p>
               <ol><li v-for="(line, index) in highlightLines" :key="index"><span>{{ String(index + 1).padStart(2, '0') }}</span>{{ line }}</li></ol>
             </section>
           </div>
         </aside>
         <article class="story">
-          <div class="story-head"><span>THE FULL STORY</span><i /></div>
+          <div class="story-head"><span>经历详情</span><i /></div>
           <MdPreview v-if="hasContent" :model-value="item.content || ''" :theme="mode" />
-          <div v-else class="story-empty"><small>STORY IN PROGRESS</small><h2>完整故事仍在整理</h2><p>你可以先从左侧的关键成果了解这段职业经历。</p></div>
+          <div v-else class="story-empty"><small>内容整理中</small><h2>完整故事仍在整理</h2><p>你可以先从左侧的关键成果了解这段职业经历。</p></div>
         </article>
       </div>
       <footer class="case-footer"><button type="button" @click="router.push('/experience')"><span>返回</span><b>继续浏览职业经历</b><i>↗</i></button></footer>

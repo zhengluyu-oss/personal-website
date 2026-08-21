@@ -10,75 +10,58 @@ const bannerBg = ossUrl('blog/background/学习的史蒂夫.jpg')
 </script>
 
 <template>
-  <div>
-    <div class="header" :style="{ backgroundImage: `url(${bannerBg})` }">
-      <h2 class="title">{{ title }}</h2>
-      <h3 class="subtitle"><span>{{ subtitle }}</span></h3>
+  <header class="page-hero" :style="{ backgroundImage: `url(${bannerBg})` }">
+    <div class="page-hero__shade" aria-hidden="true"/>
+    <div class="page-hero__content">
+      <p v-if="subtitle" class="subtitle">{{ subtitle }}</p>
+      <h1 class="title">{{ title }}</h1>
     </div>
-  </div>
+  </header>
 </template>
 
 <style scoped lang="scss">
-.header {
-  height: 50vh;
+.page-hero {
+  position: relative;
+  min-height: clamp(19rem, 42dvh, 31rem);
   width: 100%;
-  text-align: center;
-  margin-bottom: 5rem;
+  margin-bottom: clamp(2rem, 5vw, 4.5rem);
   display: flex;
   justify-content: center;
   flex-direction: column;
   align-items: center;
   background-size: cover;
-  background-position: center;
+  background-position: center 42%;
+  overflow: hidden;
+
+  &__shade { position:absolute; inset:0; background: linear-gradient(90deg, rgba(11,17,27,.82), rgba(11,17,27,.34) 56%, rgba(11,17,27,.2)), linear-gradient(0deg, rgba(11,17,27,.5), transparent 62%); }
+  &__content { position:relative; width:min(100% - 3rem, var(--brand-content)); margin:auto; padding-top:3rem; color:#f7f4ef; }
 
   .title {
     color: white;
-    font-size: 4.6rem;
-    font-weight: normal;
-    text-shadow: 0 1px 0 hsl(174, 5%, 80%), 0 2px 0 hsl(174, 5%, 75%),
-    0 3px 0 hsl(174, 5%, 70%), 0 4px 0 hsl(174, 5%, 66%),
-    0 5px 0 hsl(174, 5%, 64%), 0 6px 0 hsl(174, 5%, 62%),
-    0 7px 0 hsl(174, 5%, 61%), 0 8px 0 hsl(174, 5%, 60%),
-    0 0 5px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.2),
-    0 3px 5px rgba(0, 0, 0, 0.2), 0 5px 10px rgba(0, 0, 0, 0.2),
-    0 10px 10px rgba(0, 0, 0, 0.2), 0 20px 20px rgba(0, 0, 0, 0.3);
-  }
-
-  $shadow: #533d4a;
-  $red: #e55643;
-  $green: #6ba988;
-  $yellow: #f1c83c;
-  $shadow: #533d4a;
-
-  .subtitle {
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 1.6rem;
-      letter-spacing: 5px;
-      margin: 1rem 0 0 0;
-      font-weight: normal;
-
-    span {
-      transform: skew(-10deg);
-      display: block;
-      float: left;
-      text-shadow: $shadow 1px 1px, $shadow 2px 2px, $shadow 3px 3px,
-      $shadow 4px 4px, $shadow 5px 5px, $shadow 6px 6px;
-      min-width: 10px;
-      min-height: 10px;
-      position: relative;
-    }
+    max-width: 10em;
+    margin: 0;
+    font-size: clamp(2.8rem, 7vw, 6.4rem);
+    font-weight: 650;
+    line-height: .98;
+    letter-spacing: -.06em;
+    text-wrap: balance;
+    text-shadow: 0 12px 38px rgba(0,0,0,.28);
   }
 
   .subtitle {
-    &:nth-child(1) {
-      color: $red;
-    }
-    &:nth-child(2) {
-      color: $green;
-    }
-    &:nth-child(3) {
-      color: $yellow;
-    }
+    margin: 0 0 1rem;
+    color: #ffad99;
+    font-family: "Share Tech Mono", monospace;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
   }
+}
+
+@media (max-width: 767px) {
+  .page-hero { min-height: 17rem; align-items:flex-end; background-position: 58% center; }
+  .page-hero__content { width:calc(100% - 2rem); padding:0 0 2.4rem; }
+  .page-hero .title { font-size:clamp(2.5rem, 15vw, 4.2rem); }
 }
 </style>

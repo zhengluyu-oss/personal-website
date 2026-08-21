@@ -3,22 +3,22 @@ import { experienceList, type WorkExperienceItem } from '@/apis/experience'
 const router=useRouter(),loading=ref(true),list=ref<WorkExperienceItem[]>([])
 onMounted(async()=>{try{const r:any=await experienceList();if(r.code===200)list.value=r.data||[]}finally{loading.value=false}})
 const date=(v?:string)=>v?v.toString().slice(0,7).replace('-','.') : ''
-const period=(x:WorkExperienceItem)=>x.isCurrent===1?`${date(x.startDate)} — 现在`:`${date(x.startDate)} — ${date(x.endDate)}`
+const period=(x:WorkExperienceItem)=>x.isCurrent===1?`${date(x.startDate)} - 现在`:`${date(x.startDate)} - ${date(x.endDate)}`
 const lines=(v?:string)=>v?v.split(/\r?\n/).map(x=>x.trim()).filter(Boolean):[]
 </script>
 <template>
 <main class="page">
   <header class="intro">
-    <div><p class="overline">SELECTED EXPERIENCE · {{ String(list.length).padStart(2,'0') }}</p><h1>职业不是时间线，<br><em>是持续解决问题。</em></h1></div>
-    <div class="manifesto"><span>2019—NOW</span><p>从真实业务出发，把复杂问题拆开，把想法做成稳定、清晰、可以长期演进的产品。</p></div>
+    <div><p class="overline">工作经历</p><h1>职业不只是时间线，<br><em>更是解决问题的轨迹。</em></h1></div>
+    <div class="manifesto"><p>从真实业务出发，把复杂问题拆开，把想法做成稳定、清晰、可以长期演进的产品。</p></div>
   </header>
-  <div class="rule"><span>CAREER INDEX</span><i/><span>SCROLL TO READ</span></div>
+  <div class="rule"><span>共 {{ list.length }} 段经历</span><i/></div>
   <div v-if="loading" class="state">正在加载经历档案…</div>
   <div v-else-if="!list.length" class="state">暂时还没有公开的工作经历。</div>
   <section v-else class="index">
     <article v-for="(item,i) in list" :key="item.id" tabindex="0" class="row" @click="router.push(`/experience/${item.id}`)" @keydown.enter="router.push(`/experience/${item.id}`)">
       <span class="num">{{ String(i+1).padStart(2,'0') }}</span>
-      <div class="when"><span v-if="item.isCurrent===1" class="live">● CURRENT</span><b>{{ period(item) }}</b></div>
+      <div class="when"><span v-if="item.isCurrent===1" class="live">目前在职</span><b>{{ period(item) }}</b></div>
       <div class="identity"><p>{{ item.roleTitle }}</p><h2>{{ item.company }}</h2></div>
       <ul><li v-for="(x,n) in lines(item.highlights).slice(0,3)" :key="n">{{ x }}</li></ul>
       <span class="arrow">↗</span><span class="watermark">{{ String(i+1).padStart(2,'0') }}</span>

@@ -46,43 +46,9 @@ function changeToggle({detail}) {
 // 是否显示音乐模块
 const env = import.meta.env
 
-const isMenuVisible = ref(true);
-const isTransparent = ref(true);
-let lastScrollTop = 0;
-let scrollTimeout: number | undefined;
-
-const handleScroll = () => {
-  const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
-  // 控制菜单显示和隐藏
-  isMenuVisible.value = currentScrollTop <= lastScrollTop;
-
-  // 立即更新背景透明状态
-  isTransparent.value = currentScrollTop === 0;
-
-  lastScrollTop = currentScrollTop <= 0 ? 0 : currentScrollTop; // For Mobile or negative scrolling
-};
-
-const debounceBackground = () => {
-  if (scrollTimeout) {
-    clearTimeout(scrollTimeout);
-  }
-  scrollTimeout = window.setTimeout(() => {
-    const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    isTransparent.value = currentScrollTop === 0;
-  }, 100); // 100ms 防抖时间
-};
-
 onMounted(() => {
   loadCategories()
-  window.addEventListener('scroll', handleScroll);
-  window.addEventListener('scroll', debounceBackground);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll);
-  window.removeEventListener('scroll', debounceBackground);
-});
+})
 </script>
 
 <template>
@@ -104,7 +70,7 @@ onUnmounted(() => {
       <Search @isShowSearch="dialogVisible = false"/>
     </el-dialog>
   </div>
-  <nav :class="{ 'hidden': !isMenuVisible, 'transparent': isTransparent }">
+  <nav>
     <div id="menu-left">
       <div id="menus">
         <span id="blog-info">
@@ -295,20 +261,14 @@ nav {
   position: fixed;
   top: 0;
   display: flex;
-  height: 50px;
+  height: 64px;
   width: 100%;
   z-index: 999;
-  background-color: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(6px);
-  transition: top 0.3s ease-in-out, background-color 0.3s ease-in-out;
-
-  &.hidden {
-    top: -50px; // 隐藏菜单
-  }
-
-  &.transparent {
-    background-color: transparent; // 顶部时透明
-  }
+  border-bottom: 1px solid rgba(255,255,255,.09);
+  background: rgba(14, 19, 28, .82);
+  color: #f3f5f8;
+  backdrop-filter: blur(18px) saturate(125%);
+  -webkit-backdrop-filter: blur(18px) saturate(125%);
 
   #menu-left {
     flex: 1 1 auto;
@@ -332,7 +292,8 @@ nav {
         overflow: hidden;
         text-overflow: ellipsis;
         font-size: clamp(0.95rem, 1.05vw + 0.55rem, 1.15rem);
-        line-height: 50px;
+        line-height: 64px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 
         a {
           display: inline-block;
@@ -341,6 +302,8 @@ nav {
           overflow: hidden;
           text-overflow: ellipsis;
           vertical-align: middle;
+          color: inherit;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
         }
 
         @media screen and (max-width: 1100px) {
@@ -360,6 +323,9 @@ nav {
         gap: clamp(0.5rem, 2.2vw, 2.75rem);
         padding: 0 clamp(0.5rem, 1.5vw, 1.5rem);
 
+        .menus_item > span { transition: color .2s ease, transform .2s ease; }
+        .menus_item:hover > span { color: #ffad99; transform: translateY(-1px); }
+
         .menus_item {
           position: relative;
           height: 100%;
@@ -370,6 +336,7 @@ nav {
           justify-content: center;
           align-items: center;
           white-space: nowrap;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 
           span .arrow {
             margin-left: 5px;

@@ -9,9 +9,9 @@ import ScrollParallax from "@/components/ScrollParallax/index.vue";
 </script>
 <template>
   <div class="home_container">
-    <MouseTrail/>
+    <MouseTrail class="desktop-flourish"/>
     <Images/>
-    <Particles/>
+    <Particles class="desktop-flourish"/>
     <Brand/>
     <div class="bg">
       <ScrollParallax :speed="0.1" direction="up">
@@ -26,21 +26,20 @@ import ScrollParallax from "@/components/ScrollParallax/index.vue";
   position: relative;
   transition: background-color 1s ease !important;
   background:
-    radial-gradient(circle at 12% 14%, rgba(91, 124, 250, .08), transparent 24rem),
-    radial-gradient(circle at 88% 48%, rgba(139, 92, 246, .06), transparent 28rem),
-    var(--mao-background-color);
+    radial-gradient(circle at 12% 14%, var(--brand-accent-soft), transparent 25rem),
+    var(--brand-canvas);
 
   &::before {
     content: '';
     position: absolute;
     inset: 0;
     pointer-events: none;
-    opacity: .14;
-    background-image: radial-gradient(currentColor .45px, transparent .45px);
-    background-size: 18px 18px;
-    color: var(--el-text-color-placeholder);
-    mask-image: linear-gradient(to bottom, #000, transparent 75%);
+    display: none;
   }
+}
+
+@media (max-width: 767px), (prefers-reduced-motion: reduce) {
+  .desktop-flourish { display: none !important; }
 }
 
 .home_container{
