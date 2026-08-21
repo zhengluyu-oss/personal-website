@@ -110,4 +110,12 @@ const emit = defineEmits(['ReadingMode'])
   transition: all .5s;
 }
 
+@media screen and (max-width: 768px) {
+  .hide {
+    visibility: hidden;
+    pointer-events: none;
+    transform: none;
+  }
+}
+
 </style>

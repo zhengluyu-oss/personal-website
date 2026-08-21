@@ -1,22 +1,63 @@
 <script setup lang="ts">
 import { backGetBanners } from '@/apis/website'
 
-const bannerImage = ref('')
+const canvasRef = ref<HTMLCanvasElement>()
+const bannerReady = ref(false)
+let loadedImage: HTMLImageElement | undefined
+
+function drawBanner() {
+  const canvas = canvasRef.value
+  if (!canvas || !loadedImage)
+    return
+  const width = window.innerWidth
+  const height = Math.max(window.innerHeight, 640)
+  const ratio = Math.max(width / loadedImage.naturalWidth, height / loadedImage.naturalHeight)
+  const drawWidth = loadedImage.naturalWidth * ratio
+  const drawHeight = loadedImage.naturalHeight * ratio
+  const offsetX = (width - drawWidth) / 2
+  const offsetY = (height - drawHeight) / 2
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2)
+  canvas.width = width * pixelRatio
+  canvas.height = height * pixelRatio
+  canvas.style.width = `${width}px`
+  canvas.style.height = `${height}px`
+  const context = canvas.getContext('2d')
+  context?.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+  context?.drawImage(loadedImage, offsetX, offsetY, drawWidth, drawHeight)
+}
+
+function preloadBanner(url: string) {
+  const image = new Image()
+  image.fetchPriority = 'high'
+  image.decoding = 'async'
+  image.onload = () => {
+    loadedImage = image
+    bannerReady.value = true
+    nextTick(drawBanner)
+  }
+  image.onerror = () => { bannerReady.value = false }
+  image.src = url
+}
 
 onMounted(async () => {
   try {
     const res: any = await backGetBanners()
-    bannerImage.value = (res.data || []).find((image: unknown) => typeof image === 'string' && image.trim()) || ''
+    const url = (res.data || []).find((image: unknown) => typeof image === 'string' && image.trim()) || ''
+    if (url)
+      preloadBanner(url)
   }
   catch {
     bannerImage.value = ''
   }
 })
+
+onMounted(() => window.addEventListener('resize', drawBanner, { passive: true }))
+onBeforeUnmount(() => window.removeEventListener('resize', drawBanner))
 </script>
 
 <template>
-  <div class="hero-image" :class="{ 'has-image': bannerImage }">
-    <div v-if="bannerImage" class="hero-image__photo" :style="{ backgroundImage: `url(${bannerImage})` }" />
+  <div class="hero-image" :class="{ 'has-image': bannerReady }" aria-hidden="true">
+    <canvas ref="canvasRef" class="hero-image__photo" />
     <div class="hero-image__cinema" aria-hidden="true" />
     <div class="hero-image__focus" aria-hidden="true" />
     <div class="hero-image__grain" aria-hidden="true" />
@@ -33,8 +74,10 @@ onMounted(async () => {
 .hero-image {
   position: fixed;
   inset: 0;
-  z-index: -9;
+  z-index: 0;
+  pointer-events: none;
   height: 100svh;
+  min-height: 40rem;
   overflow: hidden;
   background:
     radial-gradient(circle at 68% 24%, rgba(239, 125, 119, .32), transparent 34%),
@@ -43,9 +86,9 @@ onMounted(async () => {
   &__photo {
     position: absolute;
     inset: -1px;
-    background-position: center 52%;
-    background-repeat: no-repeat;
-    background-size: cover;
+    width: 100%;
+    height: 100%;
+    display: block;
   }
 
   &__cinema {
@@ -114,7 +157,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 640px) {
-  .hero-image__photo { background-position: 62% center; }
   .hero-image__cinema {
     background:
       linear-gradient(180deg, rgba(8,13,31,.62), rgba(8,13,31,.08) 30%, rgba(8,13,31,.16) 60%, rgba(7,12,26,.84) 100%),
