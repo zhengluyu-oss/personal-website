@@ -13,10 +13,13 @@ const useWebsiteStore = defineStore('website', () => {
 
     // 获取网站信息
     const getInfo = async () => {
-        getWebsiteInfo().then(res => {
+        try {
+            const res = await getWebsiteInfo()
             res.data.lastUpdateTime = returnTime(res.data.lastUpdateTime) as string
             webInfo.value = res.data
-        })
+        } catch {
+            // 保留页面中的默认品牌文案，接口异常不能阻塞首屏。
+        }
     }
 
     // 获取网站文章标题搜索数据
