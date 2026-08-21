@@ -12,11 +12,12 @@ import DirectoryCard from "./DirectoryCard/index.vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import router from "@/router";
 import useWebsiteStore from "@/store/modules/website.ts";
-import {useColorMode, useTitle} from "@vueuse/core";
+import {useColorMode} from "@vueuse/core";
 import MobileDirectoryCard from "./MobileDirectoryCard/index.vue";
 import {throttle} from "@/utils/optimize.ts";
 import {ARTICLE_VISIT_PREFIX} from "@/const/Visits";
 import { ossUrl } from '@/config/site'
+import { setSeoMeta } from '@/utils/seo'
 
 const payQrUrl = ossUrl('blog/pay/支付宝支付二维码_.png')
 const env = import.meta.env;
@@ -30,6 +31,9 @@ const isShowMoveCatalog = ref(false)
 const articleDetail = ref({
   articleCover: '',
   articleTitle: '',
+  seoTitle: '',
+  seoDescription: '',
+  seoKeywords: '',
   articleContent: undefined,
   categoryName: '',
   categoryId: '',
@@ -73,8 +77,13 @@ async function getArticleDetailById() {
       router.push({path: '/'})
       return
     }
-    // 设置title
-    useTitle(res.data.articleTitle)
+    const plainText = String(res.data.articleContent || '').replace(/```[\s\S]*?```/g, ' ').replace(/[#>*_`\[\]()!-]/g, ' ').replace(/\s+/g, ' ').trim()
+    const tagKeywords = (res.data.tags || []).map((tag: any) => tag.tagName).filter(Boolean).join(',')
+    setSeoMeta({
+      title: res.data.seoTitle?.trim() || `${res.data.articleTitle} | 郑陆宇的个人博客`,
+      description: res.data.seoDescription?.trim() || plainText.slice(0, 160),
+      keywords: res.data.seoKeywords?.trim() || tagKeywords || '技术博客,开发实践',
+    })
     if (route.params.id) {
       if (!sessionStorage.getItem(ARTICLE_VISIT_PREFIX + route.params.id)) {
         // 避免重复刷新

@@ -28,6 +28,16 @@ function resetStationmasterInfo() {
 
 function resetWebInfo() {
   info.value.websiteName = undefined
+  info.value.heroKicker = undefined
+  info.value.heroTitle = undefined
+  info.value.heroSubtitle = undefined
+  info.value.heroDescription = undefined
+  info.value.heroPrimaryText = undefined
+  info.value.heroPrimaryUrl = undefined
+  info.value.heroSecondaryText = undefined
+  info.value.heroSecondaryUrl = undefined
+  info.value.heroAsideLabel = undefined
+  info.value.heroAsideText = undefined
   info.value.headerNotification = undefined
   info.value.sidebarAnnouncement = undefined
   info.value.startTime = undefined

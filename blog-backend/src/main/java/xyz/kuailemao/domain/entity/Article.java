@@ -35,6 +35,9 @@ public class Article implements BaseData {
     private String articleCover;
     //文章标题
     private String articleTitle;
+    private String seoTitle;
+    private String seoDescription;
+    private String seoKeywords;
     //文章内容
     private String articleContent;
     //类型 (1原创 2转载 3翻译)

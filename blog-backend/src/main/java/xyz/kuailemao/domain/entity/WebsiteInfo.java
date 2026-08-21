@@ -39,6 +39,26 @@ public class WebsiteInfo implements BaseData {
     private String githubLink;
     //网站名称
     private String websiteName;
+    //首页眉题
+    private String heroKicker;
+    //首页主标题
+    private String heroTitle;
+    //首页副标题
+    private String heroSubtitle;
+    //首页简介
+    private String heroDescription;
+    //首页主按钮文字
+    private String heroPrimaryText;
+    //首页主按钮链接
+    private String heroPrimaryUrl;
+    //首页次按钮文字
+    private String heroSecondaryText;
+    //首页次按钮链接
+    private String heroSecondaryUrl;
+    //首页侧栏标签
+    private String heroAsideLabel;
+    //首页侧栏内容
+    private String heroAsideText;
     //头部通知
     private String headerNotification;
     //侧面公告
