@@ -25,6 +25,17 @@ public class WebsiteInfoVO {
     private String githubLink;
     //网站名称
     private String websiteName;
+    //首页首屏文案
+    private String heroKicker;
+    private String heroTitle;
+    private String heroSubtitle;
+    private String heroDescription;
+    private String heroPrimaryText;
+    private String heroPrimaryUrl;
+    private String heroSecondaryText;
+    private String heroSecondaryUrl;
+    private String heroAsideLabel;
+    private String heroAsideText;
     //头部通知
     private String headerNotification;
     //侧面公告
