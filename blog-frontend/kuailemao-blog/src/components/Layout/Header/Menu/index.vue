@@ -116,13 +116,21 @@ onUnmounted(() => {
               <span>首页</span>
             </span>
           </div>
-          <div class="menus_item">
+          <div class="menus_item" @click="router.push('/experience')">
             <span>
               <el-icon>
                 <Files/>
               </el-icon>
-              <span>归档</span>
-              <el-icon class="arrow">
+              <span>工作经历</span>
+            </span>
+          </div>
+          <div class="menus_item">
+            <span>
+              <el-icon>
+                <IceCreamRound/>
+              </el-icon>
+              <span>其他</span>
+               <el-icon class="arrow">
                 <ArrowDownBold/>
               </el-icon>
             </span>
@@ -151,19 +159,6 @@ onUnmounted(() => {
                   <span>时间轴</span>
                 </span>
               </li>
-            </ul>
-          </div>
-          <div class="menus_item">
-            <span>
-              <el-icon>
-                <IceCreamRound/>
-              </el-icon>
-              <span>其他</span>
-               <el-icon class="arrow">
-                <ArrowDownBold/>
-              </el-icon>
-            </span>
-            <ul class="menus_item_child">
               <li @click="router.push('/tree-hole')">
                 <span>
                   <el-icon>
@@ -306,34 +301,65 @@ nav {
   }
 
   #menu-left {
-    flex: 2;
+    flex: 1 1 auto;
+    min-width: 0;
 
     #menus {
       display: flex;
-      justify-content: left;
+      justify-content: flex-start;
       align-items: center;
       height: 100%;
       width: 100%;
       font-weight: bold;
+      gap: 0.25rem;
 
       #blog-info {
-        width: 120px;
-        margin: 0 10px;
+        flex: 0 0 auto;
+        width: auto;
+        max-width: min(260px, 26vw);
+        margin: 0 12px 0 16px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: clamp(0.95rem, 1.05vw + 0.55rem, 1.15rem);
+        line-height: 50px;
+
+        a {
+          display: inline-block;
+          max-width: 100%;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          vertical-align: middle;
+        }
+
+        @media screen and (max-width: 1100px) {
+          max-width: min(200px, 22vw);
+          font-size: 0.95rem;
+        }
       }
 
       .menus_items {
-        width: 100%;
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 0;
         height: 100%;
         display: flex;
-        justify-content: left;
+        justify-content: space-evenly;
+        align-items: center;
+        gap: clamp(0.5rem, 2.2vw, 2.75rem);
+        padding: 0 clamp(0.5rem, 1.5vw, 1.5rem);
 
         .menus_item {
           position: relative;
           height: 100%;
-          width: 100px;
+          width: auto;
+          flex: 0 1 auto;
+          padding: 0 0.65rem;
           display: flex;
-          justify-content: space-evenly;
+          justify-content: center;
           align-items: center;
+          white-space: nowrap;
 
           span .arrow {
             margin-left: 5px;
@@ -386,16 +412,21 @@ nav {
           display: none;
           position: absolute;
           top: 50px;
+          left: 50%;
+          z-index: 20;
+          min-width: 7.5rem;
           background: var(--el-bg-color);
           // 阴影
           box-shadow: 0 2px 12px 0 var(--shadow-color);
           border-radius: 5px;
+          transform: translateX(-50%);
 
           li {
             display: flex;
             justify-content: left;
             padding: 10px;
             border-radius: 5px;
+            white-space: nowrap;
 
             &:hover {
               cursor: pointer;
@@ -403,15 +434,15 @@ nav {
             }
           }
 
-          // 子菜单出现动画
+          // 子菜单出现动画（保留水平居中）
           @keyframes slide-down {
             0% {
               opacity: 0;
-              transform: translateY(-10px);
+              transform: translate(-50%, -10px);
             }
             100% {
               opacity: 1;
-              transform: translateY(0);
+              transform: translate(-50%, 0);
             }
           }
 
@@ -422,11 +453,12 @@ nav {
   }
 
   #menu-right {
-    flex: 1;
-    width: 100%;
+    flex: 0 0 auto;
+    width: auto;
     display: flex;
-    justify-content: right;
+    justify-content: flex-end;
     align-items: center;
+    padding-right: 8px;
 
     .search {
       display: flex;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ossUrl } from '@/config/site'
+import { ossUrl, WELCOME_SUBTITLE, WELCOME_TITLE } from '@/config/site'
 
 const welcomeBg = ossUrl('blog/background/压缩水狗.png')
 </script>
@@ -13,8 +13,8 @@ const welcomeBg = ossUrl('blog/background/压缩水狗.png')
                 :src="welcomeBg"/>
     </div>
     <div class="welcome-title">
-      <div>欢迎来到我的个人博客</div>
-      <div style="margin-top: 10px">在这里你可以学习如何使用Java，如何搭建网站，如何拥有自己的个人网站</div>
+      <div>{{ WELCOME_TITLE }}</div>
+      <div style="margin-top: 10px">{{ WELCOME_SUBTITLE }}</div>
     </div>
     <!-- 右边区域 -->
     <div class="right-card">

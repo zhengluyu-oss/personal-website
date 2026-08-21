@@ -58,34 +58,45 @@ if(formData.webmasterAvatar && formData.webmasterProfileBackground){
 
 async function beforeUploadAvatar(file: UploadProps['fileList'][number]) {
   loading.value = true
-  const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp'
-  if (!isJpgOrPng){
-    message.error('文件格式必须是jpg或png或webp')
-    return
-  }
-
-  const compressedFile = await compressImage(file)
-  const isLt03M = compressedFile.size / 1024 / 1024 < 0.3
-  if (!isLt03M) {
-    message.error('图片压缩后大小必须小于 0.3MB')
-    return
-  }
-
-  await fileToBase64(file).then(base64Url => {
-    imageAvatarUrl.value = base64Url
-    loading.value = false
-  })
-
-  const webmasterAvatar = new FormData()
-  webmasterAvatar.append('avatar', compressedFile,compressedFile.name)
-
-  uploadAvatar(webmasterAvatar).then((res) => {
-    if (res.code === 200) {
-      message.success('头像上传成功')
-    } else {
-      message.error(`头像上传失败：${res.msg}`)
+  try {
+    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp'
+    if (!isJpgOrPng) {
+      message.error('文件格式必须是jpg或png或webp')
+      return false
     }
-  })
+
+    const compressedFile = await compressImage(file as unknown as File)
+    const isLt03M = compressedFile.size / 1024 / 1024 < 0.3
+    if (!isLt03M) {
+      message.error('图片压缩后大小必须小于 0.3MB')
+      return false
+    }
+
+    const avatarFile = compressedFile instanceof File
+      ? compressedFile
+      : new File([compressedFile], (file as File).name || 'avatar.jpg', { type: compressedFile.type || 'image/jpeg' })
+
+    imageAvatarUrl.value = await fileToBase64(file) as string
+
+    const webmasterAvatar = new FormData()
+    webmasterAvatar.append('avatar', avatarFile, avatarFile.name)
+
+    const res = await uploadAvatar(webmasterAvatar)
+    if (res && res.code === 200) {
+      message.success('头像上传成功')
+      if (res.data)
+        formData.webmasterAvatar = res.data
+    }
+    else {
+      message.error(`头像上传失败：${res?.msg || '未知错误'}`)
+    }
+  }
+  catch (e: any) {
+    message.error(`头像上传失败：${e?.message || e || '未知错误'}`)
+  }
+  finally {
+    loading.value = false
+  }
 
   return false
 }

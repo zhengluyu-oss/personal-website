@@ -25,7 +25,7 @@
     <div>
       <TagListCard/>
     </div>
-    <ChargingList/>
+    <ChargingList v-if="SHOW_CHARGING"/>
     <div>
       <Card title="每日鸡汤" prefix-icon="edit" suffix-icon="rotate" :isRotate="true" :isScale="true" @invoke="soupSub">
         <div class="soup-container">
@@ -58,6 +58,7 @@ import {ref, onMounted} from 'vue'
 import {getSoup} from "@/apis/thirdParty";
 import useWebsiteStore from "@/store/modules/website.ts";
 import {ElMessageBox} from "element-plus";
+import { SHOW_CHARGING } from '@/config/site'
 
 const useWebsite = useWebsiteStore()
 

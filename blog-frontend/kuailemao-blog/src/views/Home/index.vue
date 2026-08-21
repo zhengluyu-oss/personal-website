@@ -23,9 +23,24 @@ import ScrollParallax from "@/components/ScrollParallax/index.vue";
 
 <style lang="scss" scoped>
 .bg {
-  // 过渡时间
-  transition: all 1s ease !important;
-  background-color: var(--mao-background-color);
+  position: relative;
+  transition: background-color 1s ease !important;
+  background:
+    radial-gradient(circle at 12% 14%, rgba(91, 124, 250, .08), transparent 24rem),
+    radial-gradient(circle at 88% 48%, rgba(139, 92, 246, .06), transparent 28rem),
+    var(--mao-background-color);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: .14;
+    background-image: radial-gradient(currentColor .45px, transparent .45px);
+    background-size: 18px 18px;
+    color: var(--el-text-color-placeholder);
+    mask-image: linear-gradient(to bottom, #000, transparent 75%);
+  }
 }
 
 .home_container{
