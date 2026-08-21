@@ -90,7 +90,6 @@ declare module 'vue' {
     TextGlitch: typeof import('./../components/TextGlitch/index.vue')['default']
     TimeVolume: typeof import('./../components/Music/controls/components/time-volume.vue')['default']
     ToTop: typeof import('./../components/ToTop/index.vue')['default']
-    Wave: typeof import('./../components/Wave/index.vue')['default']
   }
   export interface ComponentCustomProperties {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']
