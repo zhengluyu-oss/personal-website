@@ -11,6 +11,7 @@ import {
   Postcard, PriceTag, UserFilled
 } from "@element-plus/icons-vue";
 import router from "@/router";
+import {useBlogCategories} from "@/composables/useBlogCategories";
 
 const emit = defineEmits("update:closeDrawer")
 
@@ -20,6 +21,8 @@ function isClose(){
 
 // 是否显示音乐模块
 const env = import.meta.env
+const {categories, loadCategories} = useBlogCategories()
+onMounted(loadCategories)
 </script>
 <template>
 <div>
@@ -40,6 +43,20 @@ const env = import.meta.env
       </el-icon>
       工作经历
     </el-menu-item>
+    <el-sub-menu index="blog-categories">
+      <template #title>
+        <el-icon><DocumentCopy/></el-icon>
+        个人博客
+      </template>
+      <el-menu-item index="/category" @click="isClose">
+        <el-icon><DocumentCopy/></el-icon>
+        全部栏目
+      </el-menu-item>
+      <el-menu-item v-for="category in categories" :key="category.id" :index="`/category/${category.id}`" @click="isClose">
+        <span class="mobile-category-name">{{ category.categoryName }}</span>
+        <small v-if="category.articleCount !== undefined">{{ category.articleCount }}</small>
+      </el-menu-item>
+    </el-sub-menu>
     <el-sub-menu index="3">
       <template #title>
         <el-icon>
@@ -47,12 +64,6 @@ const env = import.meta.env
         </el-icon>
         其他
       </template>
-      <el-menu-item index="/category" @click="isClose">
-        <el-icon>
-          <DocumentCopy/>
-        </el-icon>
-        分类
-      </el-menu-item>
       <el-menu-item index="/tags" @click="isClose">
         <el-icon>
           <PriceTag/>
@@ -109,5 +120,5 @@ const env = import.meta.env
 </template>
 
 <style scoped lang="scss">
-
+.mobile-category-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.el-menu-item small{margin-left:auto;color:var(--el-text-color-placeholder)}
 </style>
