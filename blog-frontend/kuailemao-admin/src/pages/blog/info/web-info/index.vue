@@ -15,6 +15,16 @@ const emit = defineEmits(['reset:web:info'])
 
 interface WebsiteInfoType {
   websiteName: string
+  heroKicker: string
+  heroTitle: string
+  heroSubtitle: string
+  heroDescription: string
+  heroPrimaryText: string
+  heroPrimaryUrl: string
+  heroSecondaryText: string
+  heroSecondaryUrl: string
+  heroAsideLabel: string
+  heroAsideText: string
   headerNotification: string
   sidebarAnnouncement: string
   recordInfo: string
@@ -73,7 +83,7 @@ function updateWebsiteInfo() {
   <div class="info">
     <a-form>
       <a-form-item label="网站名称">
-        <a-input v-model:value="formData.websiteName" />
+        <a-input v-model:value="formData.websiteName" :maxlength="30" show-count />
       </a-form-item>
       <a-form-item label="头部通知">
         <a-input v-model:value="formData.headerNotification" />
@@ -81,6 +91,44 @@ function updateWebsiteInfo() {
       <a-form-item label="侧面公告">
         <a-textarea v-model:value="formData.sidebarAnnouncement" show-count :maxlength="1000" />
       </a-form-item>
+      <a-divider>首页首屏文案</a-divider>
+      <p class="section-tip">
+        首页中央内容与左上角网站名称相互独立；可选项留空后，前台会自动隐藏对应区域。
+      </p>
+      <a-form-item label="眉题">
+        <a-input v-model:value="formData.heroKicker" :maxlength="40" show-count placeholder="例如：PERSONAL JOURNAL · SINCE 2024" />
+      </a-form-item>
+      <a-form-item label="主标题">
+        <a-input v-model:value="formData.heroTitle" :maxlength="60" show-count placeholder="例如：你好，我是郑陆宇" />
+      </a-form-item>
+      <a-form-item label="副标题">
+        <a-input v-model:value="formData.heroSubtitle" :maxlength="100" show-count placeholder="一句话说明你的身份与方向" />
+      </a-form-item>
+      <a-form-item label="简介">
+        <a-textarea v-model:value="formData.heroDescription" :maxlength="240" show-count :rows="3" placeholder="用两三句话告诉访客这里有什么" />
+      </a-form-item>
+      <div class="field-grid">
+        <a-form-item label="主按钮文字">
+          <a-input v-model:value="formData.heroPrimaryText" :maxlength="20" show-count placeholder="浏览文章" />
+        </a-form-item>
+        <a-form-item label="主按钮链接">
+          <a-input v-model:value="formData.heroPrimaryUrl" :maxlength="255" placeholder="/pigeonhole" />
+        </a-form-item>
+        <a-form-item label="次按钮文字">
+          <a-input v-model:value="formData.heroSecondaryText" :maxlength="20" show-count placeholder="了解我" />
+        </a-form-item>
+        <a-form-item label="次按钮链接">
+          <a-input v-model:value="formData.heroSecondaryUrl" :maxlength="255" placeholder="/about" />
+        </a-form-item>
+      </div>
+      <div class="field-grid">
+        <a-form-item label="侧栏标签">
+          <a-input v-model:value="formData.heroAsideLabel" :maxlength="30" show-count placeholder="CURRENTLY" />
+        </a-form-item>
+        <a-form-item label="侧栏说明">
+          <a-input v-model:value="formData.heroAsideText" :maxlength="120" show-count placeholder="当前专注的方向或一句个人说明" />
+        </a-form-item>
+      </div>
       <a-divider style="margin-top: -1rem">
         网站资讯
       </a-divider>
@@ -124,7 +172,24 @@ function updateWebsiteInfo() {
 
 <style scoped lang="scss">
 .info{
-  width: 50%;
+  width: min(760px, 92%);
+}
+
+.section-tip {
+  margin: -8px 0 20px;
+  color: rgba(127, 127, 127, .9);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 20px;
+}
+
+@media (max-width: 760px) {
+  .field-grid { grid-template-columns: 1fr; }
 }
 
 :deep(.ant-upload-list-picture-card){

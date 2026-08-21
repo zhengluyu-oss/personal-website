@@ -36,6 +36,9 @@ public class ArticleDetailVO {
     //文章标题
     @Schema(description = "文章标题")
     private String articleTitle;
+    private String seoTitle;
+    private String seoDescription;
+    private String seoKeywords;
     //文章内容
     @Schema(description = "文章内容")
     private String articleContent;
