@@ -15,6 +15,23 @@ export const constantRouter = [
                     title: SITE_TITLE,
                 }
             },
+            // 工作经历
+            {
+                path: '/experience',
+                component: () => import('@/views/Experience/index.vue'),
+                name: 'experience',
+                meta: {
+                    title: '工作经历',
+                }
+            },
+            {
+                path: '/experience/:id',
+                component: () => import('@/views/Experience/Detail.vue'),
+                name: 'experienceDetail',
+                meta: {
+                    title: '工作经历详情',
+                }
+            },
             // 时间轴
             {
                 path: '/timeline',

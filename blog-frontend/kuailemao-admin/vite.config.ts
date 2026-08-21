@@ -12,6 +12,8 @@ const baseSrc = fileURLToPath(new URL('./src', import.meta.url))
 export default ({ mode }: ConfigEnv): UserConfig => {
   const env = loadEnv(mode, process.cwd())
   return {
+    // 生产部署在 Nginx /admin/ 子路径时需与 VITE_APP_BASE 一致
+    base: env.VITE_APP_BASE || '/',
     plugins: createVitePlugins(env),
     resolve: {
       alias: [

@@ -34,19 +34,19 @@ const env = import.meta.env
       </el-icon>
       首页
     </el-menu-item>
-    <el-sub-menu index="2">
+    <el-menu-item index="/experience" @click="isClose">
+      <el-icon>
+        <Files/>
+      </el-icon>
+      工作经历
+    </el-menu-item>
+    <el-sub-menu index="3">
       <template #title>
         <el-icon>
-          <Files/>
+          <IceCreamRound/>
         </el-icon>
-        归档
+        其他
       </template>
-      <el-menu-item index="/timeline" @click="isClose">
-        <el-icon>
-          <Clock/>
-        </el-icon>
-        时间轴
-      </el-menu-item>
       <el-menu-item index="/category" @click="isClose">
         <el-icon>
           <DocumentCopy/>
@@ -59,14 +59,12 @@ const env = import.meta.env
         </el-icon>
         标签
       </el-menu-item>
-    </el-sub-menu>
-    <el-sub-menu index="3">
-      <template #title>
+      <el-menu-item index="/timeline" @click="isClose">
         <el-icon>
-          <IceCreamRound/>
+          <Clock/>
         </el-icon>
-        其他
-      </template>
+        时间轴
+      </el-menu-item>
       <el-menu-item index="/tree-hole" @click="isClose">
         <el-icon>
           <Fries/>
@@ -78,6 +76,12 @@ const env = import.meta.env
           <Postcard/>
         </el-icon>
         留言板
+      </el-menu-item>
+      <el-menu-item index="/about" @click="isClose">
+        <el-icon>
+          <UserFilled/>
+        </el-icon>
+        关于
       </el-menu-item>
     </el-sub-menu>
     <el-menu-item index="/link" @click="isClose">
@@ -94,12 +98,6 @@ const env = import.meta.env
         音乐
       </el-menu-item>
     </template>
-    <el-menu-item index="/about" @click="isClose">
-      <el-icon>
-        <UserFilled/>
-      </el-icon>
-      关于
-    </el-menu-item>
     <el-menu-item index="/photo" @click="isClose">
       <el-icon>
         <PictureFilled/>

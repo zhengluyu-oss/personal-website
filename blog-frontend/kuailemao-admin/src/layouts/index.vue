@@ -72,16 +72,13 @@ const layoutProps = computed(() =>
 
     <template #renderFooterLinks />
 
-    <a-watermark
-      h-full flex flex-col flex-1
-      :content="!layoutSetting.watermark ? '' : layoutSetting.title ?? 'Antdv Pro'"
-    >
+    <div h-full flex flex-col flex-1>
       <RouterView>
         <template #default="{ Component }">
           <component :is="Component" />
         </template>
       </RouterView>
-    </a-watermark>
+    </div>
   </BasicLayout>
   <SettingDrawer
     v-if="flag"
