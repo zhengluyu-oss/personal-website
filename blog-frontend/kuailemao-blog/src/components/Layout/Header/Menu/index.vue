@@ -19,12 +19,14 @@ import router from "@/router";
 import useWebsiteStore from "@/store/modules/website.ts";
 import SvgIcon from "@/components/SvgIcon/index.vue";
 import {ref} from "vue";
+import {useBlogCategories} from "@/composables/useBlogCategories";
 
 const userStore = useUserStore()
 const useWebsite = useWebsiteStore()
 // 日夜切换
 const mode = useColorMode()
 const dialogVisible = ref(false)
+const {categories, loadCategories} = useBlogCategories()
 
 const logoutSub = () => {
   logout().then((res: any) => {
@@ -72,6 +74,7 @@ const debounceBackground = () => {
 };
 
 onMounted(() => {
+  loadCategories()
   window.addEventListener('scroll', handleScroll);
   window.addEventListener('scroll', debounceBackground);
 });
@@ -124,6 +127,21 @@ onUnmounted(() => {
               <span>工作经历</span>
             </span>
           </div>
+          <div class="menus_item blog-menu" @click="router.push('/category')">
+            <span>
+              <el-icon><DocumentCopy/></el-icon>
+              <span>个人博客</span>
+              <el-icon class="arrow"><ArrowDownBold/></el-icon>
+            </span>
+            <ul class="menus_item_child blog-menu-child">
+              <li class="all-categories" @click.stop="router.push('/category')">
+                <span><el-icon><DocumentCopy/></el-icon><span>全部栏目</span></span>
+              </li>
+              <li v-for="category in categories" :key="category.id" @click.stop="router.push(`/category/${category.id}`)">
+                <span class="category-link"><span>{{ category.categoryName }}</span><small v-if="category.articleCount !== undefined">{{ category.articleCount }}</small></span>
+              </li>
+            </ul>
+          </div>
           <div class="menus_item">
             <span>
               <el-icon>
@@ -135,14 +153,6 @@ onUnmounted(() => {
               </el-icon>
             </span>
             <ul class="menus_item_child">
-              <li @click="router.push('/category')">
-                <span>
-                  <el-icon>
-                    <DocumentCopy/>
-                  </el-icon>
-                  <span>分类</span>
-                </span>
-              </li>
               <li @click="router.push('/tags')">
                 <span>
                   <el-icon>
@@ -447,6 +457,20 @@ nav {
           }
 
           animation: slide-down 0.3s ease-out;
+        }
+
+        .blog-menu-child {
+          width: 12rem;
+          max-height: min(26rem, calc(100vh - 70px));
+          overflow-y: auto;
+          padding: .4rem;
+
+          li { padding: .65rem .75rem; }
+          .all-categories { border-bottom: 1px solid var(--el-border-color-lighter); margin-bottom: .25rem; }
+          .category-link { width: 100%; justify-content: space-between; gap: 1rem; }
+          .category-link > span { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; }
+          small { color: var(--el-text-color-placeholder); font-size: .65rem; font-weight: 500; }
+          li:hover small { color: inherit; }
         }
       }
     }
