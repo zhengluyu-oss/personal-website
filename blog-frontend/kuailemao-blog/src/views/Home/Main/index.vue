@@ -4,33 +4,31 @@
     <template #content>
       <section class="editorial-intro">
         <div class="intro-copy">
-          <span class="eyebrow">WELCOME TO MY DIGITAL GARDEN</span>
-          <h2>记录思考，也记录<br><em>持续生长的轨迹。</em></h2>
-          <p>关于技术、创造与生活的长期笔记。愿每一次阅读，都能带来一点新的启发。</p>
+          <span class="eyebrow">陆屿的个人博客</span>
+          <h2>把复杂问题想清楚，<br><em>再把它做出来。</em></h2>
+          <p>这里记录技术实践、产品思考和职业成长，也展示我持续解决真实问题的方式。</p>
         </div>
         <div class="intro-mark" aria-hidden="true">
-          <span>RUYU</span>
-          <small>EST. 2024</small>
+          <span>陆屿</span>
+          <small>开发者</small>
         </div>
       </section>
       <div class="announcement">
         <span class="announcement-icon"><SvgIcon name="notice" color="currentColor"/></span>
         <div>
-          <small>NOTICE / 今日札记</small>
+          <small>今日札记</small>
           <span>{{ useWebsite?.webInfo?.headerNotification }}</span>
         </div>
       </div>
       <RecommendArticle/>
       <div class="section-heading essay_title">
         <div>
-          <span class="section-index">02</span>
           <div class="section-copy">
-            <small>THE LATEST NOTES</small>
             <h2>近期文章</h2>
           </div>
         </div>
         <span class="section-line" aria-hidden="true"/>
-        <span class="section-note">Ideas · Code · Life</span>
+        <router-link class="section-note" to="/category">浏览全部文章</router-link>
       </div>
       <div>
         <CardEssay/>
@@ -40,7 +38,7 @@
       </div>
       <div>
         <el-divider border-style="dashed" content-position="center">
-          <div style="font-weight: bold">~~到达底部啦~~</div>
+          <div class="end-note">感谢你读到这里</div>
         </el-divider>
       </div>
     </template>
@@ -95,7 +93,7 @@ const useWebsite = useWebsiteStore()
   .eyebrow {
     display: inline-block;
     margin-bottom: 1rem;
-    color: #5b7cfa;
+    color: var(--brand-accent-strong);
     font-size: .68rem;
     font-weight: 700;
     letter-spacing: .2em;
@@ -110,7 +108,7 @@ const useWebsite = useWebsiteStore()
     line-height: 1.08;
     letter-spacing: -.04em;
 
-    em { color: #5b7cfa; font-weight: 500; }
+    em { color: var(--brand-accent-strong); font-weight: 500; }
   }
 
   p {
@@ -131,9 +129,9 @@ const useWebsite = useWebsiteStore()
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(91, 124, 250, .3);
+  border: 1px solid var(--brand-line);
   border-radius: 50%;
-  color: #5b7cfa;
+  color: var(--brand-accent-strong);
   transform: rotate(8deg);
 
   span { font-family: Georgia, serif; font-size: 1.15rem; letter-spacing: .12em; }
@@ -147,9 +145,9 @@ const useWebsite = useWebsiteStore()
   min-height: 4rem;
   margin: 1rem 0 2.3rem;
   padding: .75rem 1rem;
-  border-left: 3px solid #5b7cfa;
+  border-left: 3px solid var(--brand-accent);
   border-radius: .25rem 1rem 1rem .25rem;
-  background: color-mix(in srgb, #5b7cfa 7%, var(--el-bg-color));
+  background: var(--brand-accent-soft);
   color: var(--el-text-color-regular);
 
   .announcement-icon {
@@ -159,12 +157,12 @@ const useWebsite = useWebsiteStore()
     place-items: center;
     flex: 0 0 auto;
     border-radius: .75rem;
-    background: #5b7cfa;
+    background: var(--brand-accent);
     color: #fff;
   }
 
   div { display: flex; min-width: 0; flex-direction: column; gap: .16rem; }
-  small { color: #5b7cfa; font-size: .62rem; font-weight: 700; letter-spacing: .16em; }
+  small { color: var(--brand-accent-strong); font-size: .7rem; font-weight: 700; letter-spacing: .08em; }
   span:last-child { overflow: hidden; font-size: .9rem; text-overflow: ellipsis; white-space: nowrap; }
 }
 
@@ -181,13 +179,12 @@ const useWebsite = useWebsiteStore()
   margin: 3rem 0 1.2rem;
 
   > div { display: flex; align-items: center; gap: .8rem; }
-  .section-index { color: #5b7cfa; font-family: Georgia, serif; font-size: 1.5rem; font-style: italic; }
   .section-copy { display: flex; flex-direction: column; }
-  small { color: var(--el-text-color-placeholder); font-size: .58rem; font-weight: 700; letter-spacing: .17em; }
   h2 { margin: .08rem 0 0; color: var(--el-text-color-primary); font-family: Georgia, serif; font-size: 1.55rem; font-weight: 500; }
   .section-line { height: 1px; flex: 1; background: var(--el-border-color-lighter); }
-  .section-note { color: var(--el-text-color-placeholder); font-family: Georgia, serif; font-size: .72rem; font-style: italic; }
+  .section-note { color: var(--brand-accent-strong); font-size: .78rem; text-decoration:none; }
 }
+.end-note { color: var(--brand-ink-faint); font-size:.8rem; font-weight:600; }
 
 @media (max-width: 640px) {
   .editorial-intro { grid-template-columns: 1fr; padding: 2rem 1.25rem; border-radius: 1.2rem; }

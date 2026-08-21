@@ -94,13 +94,14 @@ function changeToggle({detail}) {
     <Menu/>
   </div>
   <!-- 移动端 -->
-  <div class="move_nav" style="margin-left: 1.5rem">
-    <div>
-      <div @click="drawer = true">
+  <div class="move_nav">
+    <div class="move_nav__left">
+      <button class="mobile-action" type="button" aria-label="打开导航" @click="drawer = true">
         <SvgIcon name="directory_icon" width="30" height="30" color="#409EFF" class="icon"/>
-      </div>
+      </button>
+      <router-link class="mobile-brand" to="/">陆屿</router-link>
       <!-- 移动端日夜切换 -->
-      <div style="margin-left: 5rem">
+      <div class="mobile-theme">
         <toggle-button @change="changeToggle" size="1"></toggle-button>
       </div>
     </div>
@@ -202,20 +203,31 @@ function changeToggle({detail}) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 45px;
+  height: calc(58px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) .75rem 0;
   box-sizing: border-box;
   position: fixed;
   top: 0;
   z-index: 999;
   width: 100vw;
+  background: rgba(14, 19, 28, .88);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   @media screen and (min-width: 910px) {
     display: none;
   }
 
   .right_nav {
     display: flex;
+    align-items: center;
   }
 }
+
+.move_nav__left { display:flex; align-items:center; gap:.65rem; }
+.mobile-action { display:grid; width:2.6rem; height:2.6rem; place-items:center; padding:0; border:0; border-radius:.7rem; background:rgba(255,255,255,.06); }
+.mobile-brand { color:#f5f3ef; font-size:1rem; font-weight:750; text-decoration:none; }
+.mobile-theme { display:flex; margin-left:.15rem; }
 
 .search {
   display: flex;
