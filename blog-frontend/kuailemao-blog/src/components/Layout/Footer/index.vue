@@ -18,11 +18,10 @@ const useWebsite = useWebsiteStore()
 </template>
 <style lang="scss" scoped>
 .Footer {
-  box-shadow: 0 0 10px 10px rgba(0, 0, 0, 0.1);
+  border-top: 1px solid var(--brand-line);
   width: 100%;
-  height: 100px;
-  // 渐变底部
-  background: var(--mao-bg-footer);
+  min-height: 110px;
+  background: var(--brand-canvas-soft);
 }
 
 .footer_container {
@@ -39,7 +38,10 @@ const useWebsite = useWebsiteStore()
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  color: #fff;
+  gap: .3rem;
+  color: var(--brand-ink-soft);
+  font-size: .86rem;
+  a { color: var(--brand-accent-strong); }
 }
 
 </style>

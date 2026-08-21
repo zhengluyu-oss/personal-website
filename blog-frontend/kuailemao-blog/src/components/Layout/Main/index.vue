@@ -63,34 +63,37 @@ defineProps({
   }
   // 过渡效果
   transition: margin 0.5s;
-  margin: 0 0;
+  gap: 1rem;
+  margin: 0 auto;
   //border: red 1px solid;
   display: flex;
   justify-content: center;
   padding-bottom: 2rem;
-  width: 100%;
+  width: min(calc(100% - 2rem), var(--brand-content));
 }
 
 .content_container {
   height: 100%;
-  width: 60%;
+  width: min(68%, 70rem);
   max-width: 70rem;
   transition: padding 0.5s;
   //border: red 1px solid;
   @media screen and (max-width: 910px) {
     width: 100%;
-    padding: 0.2rem;
+    padding: 1rem;
   }
-  padding: 1rem;
-  background-color: var(--el-bg-color);
-  border-radius: .5em;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  padding: clamp(1rem, 2vw, 1.5rem);
+  background: var(--brand-surface);
+  border: 1px solid var(--brand-line);
+  border-radius: var(--brand-radius-lg);
+  box-shadow: var(--brand-shadow-sm);
+  backdrop-filter: blur(16px);
 }
 
 .information_container {
   width: 23%;
   min-height: 100%;
-  max-width: 25rem;
+  max-width: 22rem;
   transition: width 0.5s;
   @media screen and (max-width: 910px) {
     display: none;
@@ -112,16 +115,18 @@ defineProps({
 }
 
 .is_banner_container {
-  margin: 0 10%;
+  gap: 1rem;
+  margin: 0 auto;
+  width: min(calc(100% - 2rem), var(--brand-content));
   height: 100%;
   display: flex;
   padding-bottom: 2rem;
   transition: margin 0.5s;
   @media screen and (max-width: 1200px) {
-    margin: 0 5%;
+    width: calc(100% - 2rem);
   }
   @media screen and (max-width: 650px) {
-    margin: 0 2%;
+    width: calc(100% - 1rem);
   }
 }
 </style>

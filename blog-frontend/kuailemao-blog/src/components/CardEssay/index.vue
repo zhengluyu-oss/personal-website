@@ -44,7 +44,7 @@ function loadContent() {
   <!-- 封装文章列表卡片 -->
   <div v-view-request="{ callback: loadContent }">
     <template v-for="(article,index) in articleList" :key="article.id" v-if="articleList.length > 0">
-      <div v-slide-in @click="$router.push('/article/'+article.id)" class=" h-92 md:h-60 mt-4 flex flex-col md:flex-row card overflow-hidden shadow-md mb-5 mx-2 dark:bg-[#1D1D1D]">
+      <article v-slide-in tabindex="0" @click="$router.push('/article/'+article.id)" @keydown.enter="$router.push('/article/'+article.id)" class="h-92 md:h-60 mt-4 flex flex-col md:flex-row card overflow-hidden mb-5 mx-2">
         <div class="w-full md:h-full md:w-1/2 h-40" v-if="index % 2 == 1 || width < 768">
           <div class="relative w-full h-full">
             <div class="relative img w-full h-full">
@@ -55,7 +55,7 @@ function loadContent() {
             </div>
           </div>
         </div>
-        <div class="md:w-1/2 w-full m-1 px-2 flex flex-col pl-5 pt-2 leading-7">
+        <div class="article-copy md:w-1/2 w-full m-1 px-2 flex flex-col pl-5 pt-2 leading-7">
           <div class="hover:text-[#409EFF] transition-colors text-2xl font-bold w-fit">{{ article.articleTitle }}</div>
           <div class="flex text-xs mt-2 space-x-2">
             <div class="flex">
@@ -88,7 +88,7 @@ function loadContent() {
             <p class="mr-4 mb-1">发布于：{{ article.createTime }}</p>
             <p>更新于：{{ article.updateTime }}</p>
           </div>
-        </div  >
+        </div>
         <div class="w-full md:h-full md:w-1/2 h-40" v-if="index % 2 == 0 && width > 768">
           <div class="relative w-full h-full">
             <div class="relative img w-full h-full">
@@ -99,7 +99,7 @@ function loadContent() {
             </div>
           </div>
         </div>
-      </div>
+      </article>
     </template>
   </div>
   <template v-if="articleList.length == 0">
@@ -110,7 +110,18 @@ function loadContent() {
 <style scoped lang="scss">
 
 .card {
-  border-radius: $border-radius;
+  border: 1px solid var(--brand-line);
+  border-radius: var(--brand-radius-md);
+  background: var(--brand-surface-solid);
+  cursor: pointer;
+  box-shadow: none !important;
+  transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s, border-color .35s;
+
+  &:hover, &:focus-visible {
+    border-color: color-mix(in srgb, var(--brand-accent) 55%, var(--brand-line));
+    box-shadow: var(--brand-shadow-lg) !important;
+    transform: translateY(-5px);
+  }
 
   &:hover img {
     transform: scale(1.1);
@@ -135,6 +146,19 @@ function loadContent() {
   top: 0;
   color: white;
   padding: 10px;
-  backdrop-filter: blur(5px);
+  width: auto !important;
+  border-radius: 0 0 .65rem 0 !important;
+  background: rgba(15,20,28,.74);
+  backdrop-filter: blur(10px);
+}
+
+.article-copy { padding: 1.25rem 1.35rem !important; color:var(--brand-ink); }
+.article-copy > div:first-child { font-size:clamp(1.25rem,2vw,1.65rem) !important; line-height:1.25; letter-spacing:-.025em; }
+.article-copy p { color:var(--brand-ink-soft) !important; line-height:1.65 !important; }
+
+@media(max-width:767px){
+  .card { height:auto !important; margin-inline:0 !important; }
+  .card:hover { transform:none; }
+  .article-copy { padding:1.1rem !important; }
 }
 </style>
