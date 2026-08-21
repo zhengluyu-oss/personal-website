@@ -15,6 +15,9 @@ export interface ArticleType {
   categoryId: string
   tagId: string[]
   articleTitle: string
+  seoTitle?: string
+  seoDescription?: string
+  seoKeywords?: string
   articleCover: string
   articleContent: string
   articleType: number

@@ -2,6 +2,7 @@
 import {createRouter, createWebHistory} from 'vue-router'
 import {constantRouter} from '@/router/routers.ts'
 import {GET_TOKEN} from "@/utils/auth.ts";
+import {applyFixedSeo} from '@/utils/seo'
 
 let router = createRouter({
     // 路由模式 History
@@ -18,7 +19,7 @@ router.beforeEach((to, from, next) => {
             window.scrollTo(0, 0)
         })
     }
-    window.document.title = to.meta.title as string
+    applyFixedSeo(to.name, to.meta.title as string)
     // 用户登录了，跳转到登录页，直接跳转到首页
     if (to.name?.startsWith(('welcome-')) && isLogin) {
         next('/')

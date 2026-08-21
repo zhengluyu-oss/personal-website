@@ -33,6 +33,9 @@ const formData = ref({
   tagId: undefined,
   articleCover: undefined,
   articleTitle: undefined,
+  seoTitle: undefined,
+  seoDescription: undefined,
+  seoKeywords: undefined,
   articleContent: undefined,
   articleType: 1,
   isTop: 0,
@@ -291,6 +294,15 @@ function close() {
     <template #form-items>
       <a-form-item label="标题" style="margin-right: 1rem">
         <a-input v-model:value="formData.articleTitle" placeholder="输入文章标题" style="width: 15em" />
+      </a-form-item>
+      <a-form-item label="SEO标题" style="margin-right: 1rem">
+        <a-input v-model:value="formData.seoTitle" :maxlength="70" show-count placeholder="留空则使用文章标题" style="width: 20em" />
+      </a-form-item>
+      <a-form-item label="SEO关键词" style="margin-right: 1rem">
+        <a-input v-model:value="formData.seoKeywords" :maxlength="200" show-count placeholder="逗号分隔；留空则使用文章标签" style="width: 24em" />
+      </a-form-item>
+      <a-form-item label="SEO描述" style="margin-right: 1rem">
+        <a-textarea v-model:value="formData.seoDescription" :maxlength="200" show-count :rows="2" placeholder="留空则从文章正文自动提取" style="width: 28em" />
       </a-form-item>
       <a-form-item label="分类" style="margin-right: 1rem">
         <a-space>
