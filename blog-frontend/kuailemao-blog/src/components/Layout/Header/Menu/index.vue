@@ -1,15 +1,10 @@
 <script setup lang="ts">
 
 import {
-  Clock,
   DocumentCopy,
   Files,
-  Fries,
-  Headset,
   HomeFilled,
-  Postcard,
-  PriceTag,
-  Link, Setting, Promotion, ArrowDownBold, IceCreamRound, Close, PictureFilled
+  Link, Setting, Promotion, ArrowDownBold, Close, PictureFilled, UserFilled
 } from "@element-plus/icons-vue";
 import {logout} from "@/apis/user"
 import {REMOVE_TOKEN} from "@/utils/auth.ts";
@@ -42,9 +37,6 @@ const logoutSub = () => {
 function changeToggle({detail}) {
   mode.value = detail
 }
-
-// 是否显示音乐模块
-const env = import.meta.env
 
 onMounted(() => {
   loadCategories()
@@ -108,81 +100,20 @@ onMounted(() => {
               </li>
             </ul>
           </div>
-          <div class="menus_item">
-            <span>
-              <el-icon>
-                <IceCreamRound/>
-              </el-icon>
-              <span>其他</span>
-               <el-icon class="arrow">
-                <ArrowDownBold/>
-              </el-icon>
-            </span>
-            <ul class="menus_item_child">
-              <li @click="router.push('/tags')">
-                <span>
-                  <el-icon>
-                    <PriceTag/>
-                  </el-icon>
-                  <span>标签</span>
-                </span>
-              </li>
-              <li @click="router.push('/timeline')">
-                <span>
-                  <el-icon>
-                    <Clock/>
-                  </el-icon>
-                  <span>时间轴</span>
-                </span>
-              </li>
-              <li @click="router.push('/tree-hole')">
-                <span>
-                  <el-icon>
-                    <Fries/>
-                  </el-icon>
-                  <span>树洞</span>
-                </span>
-              </li>
-              <li @click="router.push('/message')">
-                <span>
-                  <el-icon>
-                    <Postcard/>
-                  </el-icon>
-                  <span>留言板</span>
-                </span>
-              </li>
-              <li @click="router.push('/about')">
-                <span>
-                  <el-icon>
-                    <Link/>
-                  </el-icon>
-                  <span>关于</span>
-                </span>
-              </li>
-            </ul>
-          </div>
-          <div class="menus_item" @click="router.push('/link')">
-            <span>
-              <el-icon>
-                <Link/>
-              </el-icon>
-              <span>友链</span>
-            </span>
-          </div>
-          <div class="menus_item" @click="router.push('/music')" v-if="env.VITE_MUSIC_FRONTEND_URL">
-            <span>
-              <el-icon>
-                <Headset/>
-              </el-icon>
-             <span>音乐</span>
-            </span>
-          </div>
           <div class="menus_item" @click="router.push('/photo')">
             <span>
               <el-icon>
                 <PictureFilled/>
               </el-icon>
               <span>相册</span>
+            </span>
+          </div>
+          <div class="menus_item" @click="router.push('/about')">
+            <span>
+              <el-icon>
+                <UserFilled/>
+              </el-icon>
+              <span>关于我</span>
             </span>
           </div>
         </div>
