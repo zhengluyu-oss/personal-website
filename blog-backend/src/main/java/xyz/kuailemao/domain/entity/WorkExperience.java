@@ -24,6 +24,16 @@ public class WorkExperience implements BaseData {
     private Date endDate;
     private Integer isCurrent;
     private String highlights;
+    /** 案例定位，一句话说明业务价值 */
+    private String projectSummary;
+    /** 案例封面图 */
+    private String coverImage;
+    /** 技术栈，每行一项 */
+    private String techStack;
+    /** 核心职责，每行一项 */
+    private String responsibilities;
+    /** 量化成果，每行按“数值|说明”填写 */
+    private String metrics;
     /** Markdown 详情正文（可含图片） */
     private String content;
     private Integer orderNum;
