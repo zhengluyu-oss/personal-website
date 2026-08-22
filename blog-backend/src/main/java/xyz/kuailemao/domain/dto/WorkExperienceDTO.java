@@ -27,6 +27,13 @@ public class WorkExperienceDTO implements BaseData {
     private Date endDate;
     private Integer isCurrent;
     private String highlights;
+    @Length(max = 500, message = "案例定位过长")
+    private String projectSummary;
+    @Length(max = 500, message = "封面地址过长")
+    private String coverImage;
+    private String techStack;
+    private String responsibilities;
+    private String metrics;
     private String content;
     private Integer orderNum;
     private Integer status;

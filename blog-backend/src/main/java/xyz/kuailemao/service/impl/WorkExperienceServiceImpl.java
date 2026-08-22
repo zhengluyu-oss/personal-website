@@ -21,7 +21,10 @@ public class WorkExperienceServiceImpl extends ServiceImpl<WorkExperienceMapper,
         return this.list(new LambdaQueryWrapper<WorkExperience>()
                         .select(WorkExperience::getId, WorkExperience::getCompany, WorkExperience::getRoleTitle,
                                 WorkExperience::getStartDate, WorkExperience::getEndDate, WorkExperience::getIsCurrent,
-                                WorkExperience::getHighlights, WorkExperience::getOrderNum, WorkExperience::getStatus,
+                                WorkExperience::getHighlights, WorkExperience::getProjectSummary,
+                                WorkExperience::getCoverImage, WorkExperience::getTechStack,
+                                WorkExperience::getResponsibilities, WorkExperience::getMetrics,
+                                WorkExperience::getOrderNum, WorkExperience::getStatus,
                                 WorkExperience::getCreateTime, WorkExperience::getUpdateTime)
                         .eq(WorkExperience::getIsDeleted, 0)
                         .eq(WorkExperience::getStatus, 1)
