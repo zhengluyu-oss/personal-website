@@ -25,6 +25,11 @@ interface DataType {
   endDate?: string
   isCurrent: number
   highlights?: string
+  projectSummary?: string
+  coverImage?: string
+  techStack?: string
+  responsibilities?: string
+  metrics?: string
   content?: string
   orderNum: number
   status: number
@@ -61,6 +66,11 @@ const formData = ref<any>({
   endDate: undefined as Dayjs | undefined,
   isCurrent: 0,
   highlights: undefined,
+  projectSummary: undefined,
+  coverImage: undefined,
+  techStack: undefined,
+  responsibilities: undefined,
+  metrics: undefined,
   content: '',
   orderNum: 1,
   status: 1,
@@ -127,6 +137,11 @@ async function openModal(id?: string | number) {
       endDate: undefined,
       isCurrent: 0,
       highlights: undefined,
+      projectSummary: undefined,
+      coverImage: undefined,
+      techStack: undefined,
+      responsibilities: undefined,
+      metrics: undefined,
       content: '',
       orderNum: 1,
       status: 1,
@@ -272,6 +287,23 @@ function formatPeriod(record: DataType) {
         </a-form-item>
         <a-form-item v-if="formData.isCurrent !== 1" label="结束日期">
           <a-date-picker v-model:value="formData.endDate" style="width: 100%" />
+        </a-form-item>
+        <a-divider orientation="left">案例展示信息</a-divider>
+        <a-form-item label="案例定位">
+          <a-textarea v-model:value="formData.projectSummary" :rows="2" :maxlength="500" show-count placeholder="一句话说清这段经历解决了什么问题、创造了什么价值" />
+        </a-form-item>
+        <a-form-item label="案例封面图">
+          <a-input v-model:value="formData.coverImage" :maxlength="500" placeholder="填写已上传图片的完整地址，建议比例 16:10" />
+          <img v-if="formData.coverImage" :src="formData.coverImage" alt="案例封面预览" style="width: 220px; max-height: 140px; object-fit: cover; margin-top: 12px; border-radius: 6px">
+        </a-form-item>
+        <a-form-item label="技术栈（每行一项）">
+          <a-textarea v-model:value="formData.techStack" :rows="3" placeholder="Vue 3&#10;Spring Boot&#10;MySQL" />
+        </a-form-item>
+        <a-form-item label="核心职责（每行一项）">
+          <a-textarea v-model:value="formData.responsibilities" :rows="4" placeholder="负责核心架构设计&#10;推进接口性能治理" />
+        </a-form-item>
+        <a-form-item label="量化成果（每行：数值|说明）">
+          <a-textarea v-model:value="formData.metrics" :rows="4" placeholder="40%|接口平均响应时间降低&#10;99.9%|核心服务可用性" />
         </a-form-item>
         <a-form-item label="列表摘要（每行一条，展示在时间线）">
           <a-textarea v-model:value="formData.highlights" :rows="4" placeholder="例：&#10;负责后端接口开发&#10;参与系统性能优化" />
