@@ -72,16 +72,15 @@ onBeforeUnmount(() => window.removeEventListener('resize', drawBanner))
 
 <style scoped lang="scss">
 .hero-image {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  height: 100svh;
+  height: 100dvh;
   min-height: 40rem;
   overflow: hidden;
   background:
-    radial-gradient(circle at 68% 24%, rgba(239, 125, 119, .32), transparent 34%),
-    linear-gradient(145deg, #14213e 0%, #382d54 48%, #a6535f 100%);
+    linear-gradient(145deg, #101722 0%, #1b2635 52%, #6d3f3a 100%);
 
   &__photo {
     position: absolute;
