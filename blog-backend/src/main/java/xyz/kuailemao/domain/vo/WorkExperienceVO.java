@@ -16,6 +16,11 @@ public class WorkExperienceVO {
     private Date endDate;
     private Integer isCurrent;
     private String highlights;
+    private String projectSummary;
+    private String coverImage;
+    private String techStack;
+    private String responsibilities;
+    private String metrics;
     private String content;
     private Integer orderNum;
     private Integer status;

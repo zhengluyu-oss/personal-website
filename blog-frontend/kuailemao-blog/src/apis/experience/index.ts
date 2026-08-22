@@ -8,6 +8,11 @@ export interface WorkExperienceItem {
   endDate?: string
   isCurrent: number
   highlights?: string
+  projectSummary?: string
+  coverImage?: string
+  techStack?: string
+  responsibilities?: string
+  metrics?: string
   content?: string
   orderNum: number
 }
