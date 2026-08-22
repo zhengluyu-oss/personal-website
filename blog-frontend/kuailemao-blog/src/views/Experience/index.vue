@@ -1,92 +1,70 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { experienceList, type WorkExperienceItem } from '@/apis/experience'
 
 const router = useRouter()
+const list = ref<WorkExperienceItem[]>([])
 const loading = ref(true)
 const failed = ref(false)
-const list = ref<WorkExperienceItem[]>([])
+const lines = (value?: string) => value?.split(/\r?\n/).map(item => item.trim()).filter(Boolean) || []
+const tokens = (value?: string) => lines(value).flatMap(item => item.split(/[,，/|]/)).map(item => item.trim()).filter(Boolean)
+const month = (value?: string) => value ? value.slice(0,7).replace('-','.') : ''
+const year = (value?: string) => value?.slice(0,4) || ''
+const period = (item: WorkExperienceItem) => `${month(item.startDate)} 至 ${item.isCurrent === 1 ? '今' : month(item.endDate)}`
+const duration = (item: WorkExperienceItem) => {
+  const start = new Date(item.startDate); const end = item.isCurrent === 1 ? new Date() : new Date(item.endDate || item.startDate)
+  const total = Math.max(1,(end.getFullYear()-start.getFullYear())*12+end.getMonth()-start.getMonth()+1)
+  return `${Math.floor(total/12) ? `${Math.floor(total/12)} 年 ` : ''}${total%12 ? `${total%12} 个月` : ''}`.trim()
+}
+const current = computed(() => list.value.find(item => item.isCurrent === 1))
+const allTech = computed(() => [...new Set(list.value.flatMap(item => tokens(item.techStack)))])
 
 onMounted(async () => {
-  try {
-    const response: any = await experienceList()
-    response.code === 200 ? list.value = [...(response.data || [])].sort((a: WorkExperienceItem, b: WorkExperienceItem) => {
-      if (a.isCurrent !== b.isCurrent) return b.isCurrent - a.isCurrent
-      return new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-    }) : failed.value = true
-  }
-  catch { failed.value = true }
-  finally { loading.value = false }
+  try { const response:any = await experienceList(); if(response.code !== 200) throw new Error(); list.value=[...(response.data || [])].sort((a,b)=>b.isCurrent-a.isCurrent || new Date(b.startDate).getTime()-new Date(a.startDate).getTime()) }
+  catch { failed.value=true }
+  finally { loading.value=false }
 })
-
-const lines = (value?: string) => value?.split(/\r?\n/).map(line => line.trim()).filter(Boolean) || []
-const month = (value?: string) => value ? value.slice(0, 7).replace('-', '.') : ''
-const period = (item: WorkExperienceItem) => `${month(item.startDate)} - ${item.isCurrent === 1 ? '至今' : month(item.endDate)}`
-const duration = (item: WorkExperienceItem) => {
-  const start = new Date(item.startDate)
-  const end = item.isCurrent === 1 ? new Date() : new Date(item.endDate || item.startDate)
-  const total = Math.max(1, (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth() + 1)
-  const years = Math.floor(total / 12)
-  const months = total % 12
-  return [years ? `${years} 年` : '', months ? `${months} 个月` : ''].filter(Boolean).join(' ')
-}
-const summary = (item: WorkExperienceItem) => item.projectSummary || lines(item.highlights)[0] || '负责业务系统的设计、开发与持续优化。'
-const outcomes = (item: WorkExperienceItem) => lines(item.metrics).map(line => {
-  const [value, ...label] = line.split('|')
-  return { value, label: label.join('|') }
-}).filter(item => item.value)
-const latest = computed(() => list.value[0])
 </script>
 
 <template>
-  <main class="resume-page">
-    <header class="resume-hero">
-      <div class="hero-main">
-        <p class="eyebrow">工作经历</p>
-        <h1>从业务问题出发，<br>交付可靠的软件。</h1>
-        <p class="hero-summary">我的职业经历、核心职责和可验证成果。</p>
-      </div>
-      <aside v-if="latest" class="current-role" aria-label="最近一段工作经历">
-        <span>{{ latest.isCurrent === 1 ? '当前任职' : '最近经历' }}</span>
-        <h2>{{ latest.roleTitle }}</h2>
-        <p>{{ latest.company }}</p>
-        <time>{{ period(latest) }}</time>
-      </aside>
-    </header>
+  <main class="career-page">
+    <section class="career-hero page-shell">
+      <div class="hero-copy"><p>EXPERIENCE</p><h1>从业务问题出发，<br>交付可靠的软件。</h1><span>我的职业经历、核心职责和可验证成果。</span></div>
+      <dl class="career-snapshot">
+        <div v-if="current"><dt>当前岗位</dt><dd>{{ current.roleTitle }}</dd><small>{{ current.company }}</small></div>
+        <div><dt>经历记录</dt><dd>{{ list.length }} 段真实业务经历</dd></div>
+        <div v-if="allTech.length"><dt>技术范围</dt><dd>{{ allTech.slice(0,4).join(' / ') }}</dd></div>
+      </dl>
+    </section>
 
-    <section class="experience" aria-labelledby="experience-heading">
-      <div class="section-heading">
-        <h2 id="experience-heading">职业经历</h2>
-        <p v-if="list.length">共 {{ list.length }} 段，按时间由近到远</p>
-      </div>
-
-      <div v-if="loading" class="loading-state" aria-live="polite">
-        <div v-for="i in 2" :key="i" class="skeleton"><span /><div><b /><i /><i /></div></div>
-      </div>
-      <div v-else-if="failed" class="empty-state"><h2>暂时无法读取工作经历</h2><p>请稍后刷新页面。</p></div>
-      <div v-else-if="!list.length" class="empty-state"><h2>工作经历正在整理</h2><p>完成后会在这里公开。</p></div>
-
-      <div v-else class="experience-list">
-        <article v-for="item in list" :key="item.id" class="experience-row" :class="{ 'experience-row--current': item.isCurrent === 1 }" tabindex="0" role="link" :aria-label="`查看 ${item.company} 工作经历`" @click="router.push(`/experience/${item.id}`)" @keydown.enter="router.push(`/experience/${item.id}`)" @keydown.space.prevent="router.push(`/experience/${item.id}`)">
-          <div class="date-column"><time>{{ period(item) }}</time><small>任职 {{ duration(item) }}</small><span v-if="item.isCurrent === 1">目前在职</span></div>
-          <div class="role-column"><p>{{ item.company }}</p><h3>{{ item.roleTitle }}</h3></div>
-          <div class="evidence-column">
-            <p class="summary">{{ summary(item) }}</p>
-            <ul v-if="outcomes(item).length" class="metrics"><li v-for="metric in outcomes(item).slice(0, 3)" :key="metric.value + metric.label"><strong>{{ metric.value }}</strong><span>{{ metric.label }}</span></li></ul>
-            <ul v-else-if="lines(item.highlights).length" class="highlights"><li v-for="line in lines(item.highlights).slice(0, 3)" :key="line">{{ line }}</li></ul>
-            <div v-if="lines(item.techStack).length" class="stack"><span v-for="tech in lines(item.techStack).slice(0, 6)" :key="tech">{{ tech }}</span></div>
+    <section class="career-list page-shell" aria-labelledby="career-title">
+      <header><h2 id="career-title">职业轨迹</h2><p>按时间由近到远，点击进入完整案例。</p></header>
+      <div v-if="loading" class="loading" aria-label="工作经历加载中"><div v-for="n in 2" :key="n"><span/><b/><i/></div></div>
+      <div v-else-if="failed" class="state"><h2>工作经历暂时无法读取</h2><p>请稍后刷新页面重试。</p></div>
+      <div v-else-if="!list.length" class="state"><h2>工作经历正在整理</h2><p>完成后会在这里公开。</p></div>
+      <div v-else class="timeline">
+        <article v-for="item in list" :key="item.id" class="career-case" :class="{'career-case--current':item.isCurrent===1}" tabindex="0" role="link" :aria-label="`查看 ${item.company} 工作经历`" @click="router.push(`/experience/${item.id}`)" @keydown.enter="router.push(`/experience/${item.id}`)">
+          <aside class="case-time"><strong>{{ year(item.startDate) }}</strong><time>{{ period(item) }}</time><span>{{ duration(item) }}</span></aside>
+          <div class="case-main">
+            <p class="company">{{ item.company }}</p><h3>{{ item.roleTitle }}</h3>
+            <p class="case-summary">{{ item.projectSummary || lines(item.highlights)[0] || '负责业务系统的设计、开发与持续优化。' }}</p>
+            <section v-if="lines(item.highlights).length" class="selected"><h4>Selected Work</h4><ol><li v-for="work in lines(item.highlights).slice(0,4)" :key="work">{{ work }}</li></ol></section>
+            <section v-if="lines(item.metrics).length" class="impact"><h4>Impact</h4><div><p v-for="metric in lines(item.metrics).slice(0,3)" :key="metric">{{ metric }}</p></div></section>
+            <ul v-if="tokens(item.techStack).length" class="metadata" aria-label="使用技术"><li v-for="tech in tokens(item.techStack).slice(0,12)" :key="tech">{{ tech }}</li></ul>
           </div>
-          <span class="open-detail" aria-hidden="true">查看详情</span>
+          <div class="case-action"><span v-if="item.isCurrent===1">CURRENT</span><b>查看详情 ↗</b></div>
         </article>
       </div>
     </section>
+
+    <section class="career-closing page-shell"><p>持续构建，持续复盘。</p><h2>让每一次交付，<br>都成为下一次进步的证据。</h2><nav><router-link to="/category">阅读技术文章</router-link><router-link to="/about">了解更多</router-link></nav></section>
   </main>
 </template>
 
 <style scoped lang="scss">
-.resume-page{--accent:#2f62d6;--line:color-mix(in srgb,var(--el-text-color-primary) 14%,transparent);--subtle:color-mix(in srgb,var(--el-text-color-primary) 4%,transparent);min-height:100dvh;padding:clamp(6.5rem,9vw,8rem) clamp(1.1rem,5vw,5rem) 6rem;background:var(--mao-background-color);color:var(--el-text-color-primary)}.resume-hero,.experience{width:min(100%,76rem);margin-inline:auto}.resume-hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(17rem,.5fr);gap:clamp(3rem,8vw,8rem);align-items:end;padding:clamp(2rem,5vw,4.5rem) 0 clamp(4rem,8vw,7rem)}.eyebrow{margin:0 0 1.5rem;color:var(--accent);font-size:.75rem;font-weight:750;letter-spacing:.08em}.hero-main h1{max-width:16ch;margin:0;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;font-size:clamp(3rem,6vw,5.8rem);font-weight:720;line-height:1.08;letter-spacing:-.055em;text-wrap:balance}.hero-summary{max-width:34rem;margin:1.7rem 0 0;color:var(--el-text-color-secondary);font-size:clamp(.95rem,1.3vw,1.1rem);line-height:1.75}.current-role{padding:1.5rem 0;border-top:2px solid var(--accent);border-bottom:1px solid var(--line)}.current-role span{color:var(--accent);font-size:.72rem;font-weight:750}.current-role h2{margin:1.4rem 0 .4rem;font-size:1.25rem;letter-spacing:-.02em}.current-role p,.current-role time{display:block;margin:.25rem 0;color:var(--el-text-color-secondary);font-size:.85rem;line-height:1.6}.section-heading{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:1.2rem;border-bottom:1px solid var(--line)}.section-heading h2{margin:0;font-size:1.5rem;letter-spacing:-.025em}.section-heading p{margin:0;color:var(--el-text-color-secondary);font-size:.78rem}.experience-list{margin-top:0}.experience-row{position:relative;display:grid;grid-template-columns:10rem minmax(12rem,.65fr) minmax(0,1.35fr);gap:clamp(1.5rem,4vw,4.5rem);padding:clamp(2.5rem,5vw,4.5rem) 7rem clamp(2.5rem,5vw,4.5rem) 0;border-bottom:1px solid var(--line);cursor:pointer;transition:background-color .2s ease}.experience-row:hover,.experience-row:focus-visible{background:var(--subtle);outline:none}.date-column time{display:block;color:var(--el-text-color-secondary);font-size:.78rem;line-height:1.6;white-space:nowrap}.date-column span{display:inline-block;margin-top:.75rem;color:var(--accent);font-size:.7rem;font-weight:750}.role-column p{margin:0 0 .65rem;color:var(--el-text-color-secondary);font-size:.82rem}.role-column h3{margin:0;font-size:clamp(1.25rem,2vw,1.8rem);line-height:1.3;letter-spacing:-.03em}.summary{max-width:43rem;margin:0;color:var(--el-text-color-primary);font-size:1rem;font-weight:620;line-height:1.7}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.5rem;margin:1.8rem 0 0;padding:0;list-style:none}.metrics strong,.metrics span{display:block}.metrics strong{color:var(--accent);font-size:clamp(1.25rem,2vw,1.7rem);letter-spacing:-.04em}.metrics span{margin-top:.35rem;color:var(--el-text-color-secondary);font-size:.72rem;line-height:1.5}.highlights{display:grid;gap:.6rem;margin:1.4rem 0 0;padding:0;list-style:none}.highlights li{position:relative;padding-left:1rem;color:var(--el-text-color-secondary);font-size:.84rem;line-height:1.65}.highlights li::before{position:absolute;left:0;content:'·';color:var(--accent);font-weight:800}.stack{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:1.5rem}.stack span{padding:.4rem .65rem;border:1px solid var(--line);border-radius:8px;color:var(--el-text-color-secondary);font-size:.7rem}.open-detail{position:absolute;right:0;top:50%;color:var(--accent);font-size:.74rem;font-weight:750;transform:translateY(-50%);transition:transform .2s ease}.experience-row:hover .open-detail{transform:translate(3px,-50%)}.empty-state{padding:6rem 0;text-align:center;color:var(--el-text-color-secondary)}.empty-state h2{margin:0;color:var(--el-text-color-primary)}.empty-state p{margin:.8rem 0 0}.loading-state{padding-top:1rem}.skeleton{display:grid;grid-template-columns:10rem 1fr;gap:3rem;padding:3rem 0;border-bottom:1px solid var(--line)}.skeleton>span,.skeleton b,.skeleton i{display:block;border-radius:6px;background:var(--subtle);animation:pulse 1.2s ease-in-out infinite}.skeleton>span{width:7rem;height:.8rem}.skeleton b{width:40%;height:1.4rem}.skeleton i{width:90%;height:.75rem;margin-top:1rem}.skeleton i:last-child{width:65%}@keyframes pulse{50%{opacity:.38}}
-@media(max-width:800px){.resume-page{padding:calc(5.5rem + env(safe-area-inset-top)) max(1rem,env(safe-area-inset-right)) calc(4rem + env(safe-area-inset-bottom)) max(1rem,env(safe-area-inset-left));overflow-x:hidden}.resume-hero{grid-template-columns:1fr;gap:3rem;padding:2.5rem 0 4rem}.hero-main h1{font-size:clamp(2.7rem,13vw,4.5rem)}.current-role{max-width:none}.section-heading{align-items:flex-start;flex-direction:column;gap:.5rem}.experience-row{grid-template-columns:1fr;padding:2.5rem 0;gap:1.2rem}.date-column{display:flex;align-items:center;justify-content:space-between}.date-column span{margin:0}.role-column h3{font-size:1.65rem}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:1.2rem}.open-detail{position:static;display:block;margin-top:.4rem;transform:none}.experience-row:hover .open-detail{transform:none}.skeleton{grid-template-columns:1fr;gap:1rem}}@media(max-width:420px){.hero-main h1{font-size:2.75rem}.metrics{grid-template-columns:1fr}.resume-hero{padding-top:1.5rem}}@media(prefers-reduced-motion:reduce){.experience-row,.open-detail,.skeleton>*{animation:none!important;transition:none!important}}
-.resume-page{background:radial-gradient(ellipse 62% 34% at 82% 0%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 72%),linear-gradient(180deg,color-mix(in srgb,var(--mao-background-color) 72%,#14253d) 0%,color-mix(in srgb,var(--mao-background-color) 84%,#17283f) 52%,color-mix(in srgb,var(--mao-background-color) 90%,#182a42) 100%);background-attachment:fixed}
-@media(min-width:801px){.resume-hero:not(:has(.current-role)){grid-template-columns:minmax(0,52rem)}}
-.resume-page{--resume-muted:color-mix(in srgb,var(--el-text-color-primary) 72%,transparent);background-attachment:scroll}.hero-main h1{font-size:clamp(2.8rem,5vw,4.8rem)}.resume-hero{padding-bottom:clamp(3rem,6vw,5rem)}.hero-summary,.current-role p,.current-role time,.section-heading p,.date-column time,.role-column p,.metrics span,.highlights li,.stack span{color:var(--resume-muted)}.date-column small{display:block;margin-top:.45rem;color:var(--resume-muted);font-size:.7rem}.experience-row{box-shadow:inset 3px 0 0 transparent}.experience-row:hover,.experience-row:focus-visible{box-shadow:inset 3px 0 0 var(--accent)}.experience-row--current{background:color-mix(in srgb,var(--accent) 4%,transparent)}
-@media(max-width:800px){.hero-main h1{font-size:clamp(2.6rem,12vw,4rem)}.resume-hero{padding-bottom:3rem}.date-column{flex-wrap:wrap;gap:.45rem}.date-column small{width:100%;order:3}.experience-row{box-shadow:inset 2px 0 0 transparent;padding-inline:1rem 0}.experience-row:hover,.experience-row:focus-visible{box-shadow:inset 2px 0 0 var(--accent)}}
+.career-page{--accent:#e36f55;--ink:#ecf1f7;--muted:#a9b5c4;--faint:#748296;--line:rgba(232,239,247,.12);--surface:#151d27;min-height:100dvh;padding-top:64px;background:#0f151d;color:var(--ink)}.page-shell{width:min(calc(100% - 3rem),84rem);margin:auto}.career-hero{display:grid;min-height:min(44rem,calc(100dvh - 64px));grid-template-columns:minmax(0,1.35fr) minmax(20rem,.65fr);gap:clamp(4rem,10vw,11rem);align-items:center;padding:5rem 0}.hero-copy>p{margin:0 0 1.4rem;color:var(--accent);font-family:"Share TechMono",monospace;font-size:.7rem;font-weight:700;letter-spacing:.17em}.hero-copy h1{max-width:13ch;margin:0;font-size:clamp(3.3rem,6vw,6.4rem);line-height:1;letter-spacing:-.07em}.hero-copy>span{display:block;max-width:32rem;margin-top:1.8rem;color:var(--muted);font-size:1rem;line-height:1.75}.career-snapshot{margin:0;border-top:2px solid var(--accent)}.career-snapshot div{padding:1.2rem 0;border-bottom:1px solid var(--line)}.career-snapshot dt{color:var(--faint);font-family:"Share TechMono",monospace;font-size:.65rem}.career-snapshot dd{margin:.55rem 0 0;font-size:1rem;font-weight:700;line-height:1.5}.career-snapshot small{display:block;margin-top:.3rem;color:var(--muted);font-size:.76rem}.career-list{padding:clamp(5rem,9vw,8rem) 0}.career-list>header{display:flex;align-items:end;justify-content:space-between;margin-bottom:2.5rem}.career-list>header h2{margin:0;font-size:clamp(2.3rem,4vw,4rem);letter-spacing:-.055em}.career-list>header p{margin:0;color:var(--faint);font-size:.76rem}.timeline{position:relative}.timeline::before{content:'';position:absolute;top:0;bottom:0;left:8.8rem;width:1px;background:var(--line)}.career-case{position:relative;display:grid;grid-template-columns:9rem minmax(0,1fr) 8rem;gap:clamp(2rem,6vw,6rem);padding:clamp(3rem,6vw,5.5rem) 0;border-top:1px solid var(--line);cursor:pointer}.career-case:last-child{border-bottom:1px solid var(--line)}.career-case::before{content:'';position:absolute;top:4.2rem;left:8.52rem;width:.58rem;height:.58rem;border:2px solid #0f151d;border-radius:50%;background:var(--faint);box-shadow:0 0 0 1px var(--line)}.career-case--current::before{background:var(--accent)}.career-case:hover h3,.career-case:focus-visible h3{color:var(--accent)}.career-case:focus-visible{outline:2px solid var(--accent);outline-offset:8px}.case-time{position:sticky;top:6rem;align-self:start}.case-time strong,.case-time time,.case-time span{display:block}.case-time strong{font-size:clamp(2rem,4vw,3.2rem);line-height:1;letter-spacing:-.06em}.case-time time{margin-top:1rem;color:var(--muted);font-family:"Share TechMono",monospace;font-size:.68rem}.case-time span{margin-top:.4rem;color:var(--faint);font-size:.68rem}.company{margin:0;color:var(--muted);font-size:.86rem}.case-main h3{margin:.65rem 0 0;font-size:clamp(2rem,4vw,3.8rem);line-height:1.03;letter-spacing:-.06em;transition:color .2s ease}.case-summary{max-width:48rem;margin:1.7rem 0 0;color:var(--ink);font-size:clamp(1rem,1.45vw,1.2rem);font-weight:620;line-height:1.75}.selected,.impact{display:grid;grid-template-columns:8rem 1fr;gap:1.5rem;margin-top:2.5rem;padding-top:1.2rem;border-top:1px solid var(--line)}.selected h4,.impact h4{margin:0;color:var(--faint);font-family:"Share TechMono",monospace;font-size:.65rem;font-weight:600}.selected ol{display:grid;gap:.75rem;margin:0;padding:0;list-style:none}.selected li{color:var(--muted);font-size:.84rem;line-height:1.65}.selected li::before{content:'+';margin-right:.7rem;color:var(--accent)}.impact>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.impact p{margin:0;color:var(--muted);font-size:.82rem;line-height:1.6}.metadata{display:flex;flex-wrap:wrap;gap:.45rem;margin:2rem 0 0;padding:0;list-style:none}.metadata li{padding:.38rem .55rem;border:1px solid var(--line);border-radius:3px;color:var(--muted);font-family:"Share TechMono",monospace;font-size:.65rem}.case-action{display:flex;align-self:start;flex-direction:column;align-items:flex-end;gap:1rem}.case-action span{color:var(--accent);font-family:"Share TechMono",monospace;font-size:.64rem;font-weight:700}.case-action b{color:var(--muted);font-size:.72rem}.loading>div{display:grid;grid-template-columns:9rem 1fr;gap:4rem;padding:4rem 0;border-top:1px solid var(--line)}.loading span,.loading b,.loading i{display:block;background:var(--surface);animation:pulse 1.2s ease-in-out infinite}.loading span{height:3rem}.loading b{width:55%;height:3.4rem}.loading i{grid-column:2;width:85%;height:1rem}.state{padding:5rem 0;border-top:1px solid var(--line)}.state h2{margin:0}.state p{color:var(--muted)}.career-closing{display:grid;min-height:72dvh;align-content:center;border-top:1px solid var(--line)}.career-closing>p{margin:0 0 1.4rem;color:var(--accent);font-family:"Share TechMono",monospace;font-size:.7rem}.career-closing h2{max-width:17ch;margin:0;font-size:clamp(3rem,6vw,6.2rem);line-height:1;letter-spacing:-.07em}.career-closing nav{display:flex;gap:1.8rem;margin-top:2.5rem}.career-closing a{padding-bottom:.3rem;border-bottom:1px solid var(--muted);color:var(--ink);font-size:.78rem;text-decoration:none}@keyframes pulse{50%{opacity:.45}}
+@media(max-width:850px){.page-shell{width:min(calc(100% - 2rem),44rem)}.career-hero{min-height:auto;grid-template-columns:1fr;gap:3rem;padding:5rem 0}.hero-copy h1{font-size:clamp(3rem,12vw,5rem)}.career-list>header{align-items:flex-start;flex-direction:column;gap:.8rem}.timeline::before{left:.28rem}.career-case{grid-template-columns:1.5rem 1fr;padding:3rem 0;gap:1rem}.career-case::before{top:3.35rem;left:0}.case-time{position:static;grid-column:2}.case-time strong{font-size:2.4rem}.case-main{grid-column:2}.case-action{position:absolute;top:3rem;right:0}.selected,.impact{grid-template-columns:1fr;gap:.8rem}.loading>div{grid-template-columns:1fr;gap:1rem}.loading i{grid-column:1}.career-closing{min-height:65dvh}}
+@media(max-width:480px){.career-page{padding-top:56px}.hero-copy h1{max-width:none;font-size:clamp(2rem,9vw,2.35rem);line-height:1.08;letter-spacing:-.055em}.case-main h3{font-size:2.25rem;padding-right:1rem}.case-action b{display:none}.impact>div{grid-template-columns:1fr}.career-closing h2{font-size:2.7rem}}
+@media(prefers-reduced-motion:reduce){.career-case h3,.loading>*{animation:none;transition:none}}
 </style>

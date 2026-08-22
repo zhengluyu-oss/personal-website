@@ -9,7 +9,7 @@ import { REQUEST_LOADING_PATH } from '@/utils/enum.ts'
 import { createRequestTracker, type RequestToken } from '@/utils/request-tracker.ts'
 
 type TrackedRequestConfig = InternalAxiosRequestConfig & { __requestToken?: RequestToken }
-const SILENT_FALLBACK_PATHS = ['/websiteInfo/front', '/banners/list', '/article/list', '/article/recommend']
+const SILENT_FALLBACK_PATHS = ['/websiteInfo/front', '/banners/list', '/article/list', '/article/recommend', '/experience']
 
 const http: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_APP_BASE_API ?? '/',
