@@ -28,8 +28,9 @@ public class WorkExperienceServiceImpl extends ServiceImpl<WorkExperienceMapper,
                                 WorkExperience::getCreateTime, WorkExperience::getUpdateTime)
                         .eq(WorkExperience::getIsDeleted, 0)
                         .eq(WorkExperience::getStatus, 1)
-                        .orderByAsc(WorkExperience::getOrderNum)
-                        .orderByDesc(WorkExperience::getStartDate))
+                        .orderByDesc(WorkExperience::getIsCurrent)
+                        .orderByDesc(WorkExperience::getStartDate)
+                        .orderByAsc(WorkExperience::getOrderNum))
                 .stream()
                 .map(item -> item.asViewObject(WorkExperienceVO.class))
                 .toList();
