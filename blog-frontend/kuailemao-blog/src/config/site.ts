@@ -17,6 +17,13 @@ export const ABOUT_BIO =
 export const WELCOME_TITLE = `欢迎来到${SITE_NAME}`
 export const WELCOME_SUBTITLE = '技术笔记 · 项目复盘 · 求职作品集'
 
+/** 首页 Banner 右侧小字（2-3 行） */
+export const HERO_SIDE_LINES = [
+  '后端 / 全栈方向 · 求职中',
+  '技术笔记 · 项目复盘 · 持续学习',
+  '用作品说话，欢迎通过 GitHub 交流',
+] as const
+
 /** 侧栏打赏榜：个人站默认关闭，避免模板假数据 */
 export const SHOW_CHARGING = false
 
