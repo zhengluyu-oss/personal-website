@@ -4,91 +4,39 @@ import 'md-editor-v3/lib/preview.css'
 import { useColorMode } from '@vueuse/core'
 import { getExperience, type WorkExperienceItem } from '@/apis/experience'
 
-const mode = useColorMode()
-const route = useRoute()
-const router = useRouter()
-const loading = ref(true)
-const notFound = ref(false)
-const item = ref<WorkExperienceItem | null>(null)
-
-onMounted(async () => {
-  try {
-    const res: any = await getExperience(route.params.id as string)
-    if (res.code === 200 && res.data) item.value = res.data
-    else notFound.value = true
-  } catch { notFound.value = true }
-  finally { loading.value = false }
-})
-
-function formatDate(value?: string) {
-  if (!value) return '-'
-  const [year, month] = value.toString().slice(0, 10).split('-')
-  return month ? `${year}.${month}` : year
-}
-function formatPeriod(exp: WorkExperienceItem) {
-  return `${formatDate(exp.startDate)} - ${exp.isCurrent === 1 ? '现在' : formatDate(exp.endDate)}`
-}
-const highlightLines = computed(() => item.value?.highlights?.split(/\r?\n/).map(line => line.trim()).filter(Boolean) || [])
-const hasContent = computed(() => !!item.value?.content?.trim())
+const mode=useColorMode(),route=useRoute(),router=useRouter(),loading=ref(true),notFound=ref(false),item=ref<WorkExperienceItem|null>(null)
+onMounted(async()=>{try{const response:any=await getExperience(route.params.id as string);if(response.code===200&&response.data)item.value=response.data;else notFound.value=true}catch{notFound.value=true}finally{loading.value=false}})
+function formatDate(value?:string){if(!value)return'未填写';const[year,month]=value.toString().slice(0,10).split('-');return month?`${year}.${month}`:year}
+const formatPeriod=(experience:WorkExperienceItem)=>`${formatDate(experience.startDate)} 至 ${experience.isCurrent===1?'今':formatDate(experience.endDate)}`
+const highlightLines=computed(()=>item.value?.highlights?.split(/\r?\n/).map(line=>line.trim()).filter(Boolean)||[])
+const hasContent=computed(()=>!!item.value?.content?.trim())
 </script>
 
 <template>
-  <main class="case-page">
-    <nav class="case-nav">
-      <button type="button" @click="router.push('/experience')"><span>←</span> 返回工作经历</button>
-      <span>职业档案</span>
-    </nav>
-    <div v-if="loading" class="state"><i />正在整理职业档案…</div>
-    <div v-else-if="notFound || !item" class="state state--empty">
-      <small>内容不可用</small><h1>这段经历暂时无法查看</h1><p>它可能已停用，或链接已经失效。</p>
-    </div>
+  <main class="detail-page">
+    <nav class="detail-nav" aria-label="工作经历导航"><button type="button" @click="router.push('/experience')"><span aria-hidden="true">←</span> 返回工作经历</button></nav>
+    <div v-if="loading" class="state" aria-live="polite"><span class="loader"/><p>正在加载经历详情</p></div>
+    <div v-else-if="notFound||!item" class="state state--empty"><h1>这段经历暂时无法查看</h1><p>内容可能已停用，或当前链接已经失效。</p><button type="button" @click="router.push('/experience')">返回工作经历</button></div>
     <template v-else>
-      <header class="case-hero">
-        <p>{{ item.isCurrent === 1 ? '目前在职' : '过往经历' }} / {{ formatPeriod(item) }}</p>
-        <h1>{{ item.company }}</h1>
-        <div class="hero-foot"><strong>{{ item.roleTitle }}</strong></div>
-      </header>
-      <div class="case-layout">
-        <aside class="dossier">
-          <div class="dossier-sticky">
-            <p class="eyebrow">基本信息</p>
-            <dl>
-              <div><dt>职位</dt><dd>{{ item.roleTitle }}</dd></div>
-              <div><dt>时间</dt><dd>{{ formatPeriod(item) }}</dd></div>
-              <div><dt>状态</dt><dd :class="{ current: item.isCurrent === 1 }">{{ item.isCurrent === 1 ? '在职' : '已完成' }}</dd></div>
-            </dl>
-            <section v-if="highlightLines.length" class="impact">
-              <p class="eyebrow">关键成果</p>
-              <ol><li v-for="(line, index) in highlightLines" :key="index"><span>{{ String(index + 1).padStart(2, '0') }}</span>{{ line }}</li></ol>
-            </section>
-          </div>
-        </aside>
-        <article class="story">
-          <div class="story-head"><span>经历详情</span><i /></div>
-          <MdPreview v-if="hasContent" :model-value="item.content || ''" :theme="mode" />
-          <div v-else class="story-empty"><small>内容整理中</small><h2>完整故事仍在整理</h2><p>你可以先从左侧的关键成果了解这段职业经历。</p></div>
-        </article>
+      <header class="detail-hero"><div class="hero-meta"><span :class="{current:item.isCurrent===1}">{{ item.isCurrent===1?'目前在职':'过往经历' }}</span><time>{{ formatPeriod(item) }}</time></div><h1>{{ item.company }}</h1><p>{{ item.roleTitle }}</p></header>
+      <div class="detail-layout">
+        <aside class="summary" aria-label="工作经历摘要"><div class="summary-inner"><dl><div><dt>职位</dt><dd>{{ item.roleTitle }}</dd></div><div><dt>任职时间</dt><dd>{{ formatPeriod(item) }}</dd></div><div><dt>状态</dt><dd>{{ item.isCurrent===1?'在职':'已完成' }}</dd></div></dl><button type="button" @click="router.push('/experience')">查看全部经历 <span>→</span></button></div></aside>
+        <div class="main-column">
+          <section v-if="highlightLines.length" class="outcomes" aria-labelledby="outcome-title"><h2 id="outcome-title">关键成果</h2><div class="outcome-grid"><article v-for="line in highlightLines" :key="line"><p>{{ line }}</p></article></div></section>
+          <article class="story" aria-labelledby="story-title"><h2 id="story-title">经历详情</h2><MdPreview v-if="hasContent" :model-value="item.content||''" :theme="mode"/><div v-else class="story-empty"><h3>详细内容正在整理</h3><p>你可以先通过上方的关键成果了解这段经历。</p></div></article>
+        </div>
       </div>
-      <footer class="case-footer"><button type="button" @click="router.push('/experience')"><span>返回</span><b>继续浏览职业经历</b><i>↗</i></button></footer>
     </template>
   </main>
 </template>
 
 <style scoped lang="scss">
-.case-page{min-height:100vh;padding:6.5rem clamp(1.25rem,5vw,5.5rem) 6rem;background:var(--mao-background-color);color:var(--el-text-color-primary)}
-.case-nav{display:flex;align-items:center;justify-content:space-between;padding-bottom:1rem;border-bottom:1px solid var(--el-border-color);color:var(--el-text-color-placeholder);font-size:.6rem;font-weight:800;letter-spacing:.18em}.case-nav button{display:flex;gap:.7rem;padding:0;border:0;background:none;color:inherit;cursor:pointer;font:inherit;letter-spacing:inherit}.case-nav button span{color:#635bff;transition:transform .2s}.case-nav button:hover{color:var(--el-text-color-primary)}.case-nav button:hover span{transform:translateX(-4px)}
-.case-hero{padding:clamp(4rem,9vw,8rem) 0 3rem;border-bottom:1px solid var(--el-border-color)}.case-hero>p{margin:0 0 1.5rem;color:#635bff;font-size:.63rem;font-weight:800;letter-spacing:.18em}.case-hero h1{max-width:72rem;margin:0;font-family:Georgia,'Times New Roman','Noto Serif SC',serif;font-size:clamp(3.8rem,10vw,9rem);font-weight:400;line-height:.88;letter-spacing:-.065em;text-wrap:balance}.hero-foot{display:flex;align-items:end;justify-content:space-between;gap:2rem;margin-top:3rem}.hero-foot strong{font-size:clamp(1.05rem,2vw,1.5rem);font-weight:600}.hero-foot span{color:var(--el-text-color-placeholder);font-size:.58rem;font-weight:800;letter-spacing:.18em}
-.case-layout{display:grid;grid-template-columns:minmax(15rem,25rem) minmax(0,1fr);gap:clamp(3rem,8vw,9rem);padding-top:4rem}.dossier{border-right:1px solid var(--el-border-color);padding-right:clamp(1.5rem,4vw,4rem)}.dossier-sticky{position:sticky;top:6rem}.eyebrow{margin:0 0 1.3rem;color:#635bff;font-size:.6rem;font-weight:800;letter-spacing:.2em}.dossier dl{margin:0}.dossier dl>div{display:grid;grid-template-columns:4.5rem 1fr;gap:1rem;padding:1rem 0;border-top:1px solid var(--el-border-color-lighter)}.dossier dt{color:var(--el-text-color-placeholder);font-size:.58rem;font-weight:800;letter-spacing:.12em}.dossier dd{margin:0;color:var(--el-text-color-regular);font-size:.84rem;line-height:1.6}.dossier dd.current{color:#16865d}.impact{margin-top:3rem}.impact ol{margin:0;padding:0;list-style:none}.impact li{display:grid;grid-template-columns:2rem 1fr;gap:.8rem;padding:1rem 0;border-top:1px solid var(--el-border-color-lighter);color:var(--el-text-color-regular);font-size:.82rem;line-height:1.75}.impact li span{color:var(--el-text-color-placeholder);font-size:.55rem;font-weight:800;letter-spacing:.1em}
-.story{min-width:0;max-width:54rem}.story-head{display:flex;align-items:center;gap:1rem;margin-bottom:3rem;color:#635bff;font-size:.6rem;font-weight:800;letter-spacing:.2em}.story-head i{height:1px;flex:1;background:var(--el-border-color)}.story :deep(.md-editor){background:transparent}.story :deep(.md-editor-preview-wrapper){padding:0}.story :deep(.md-editor-preview){color:var(--el-text-color-primary);font-size:1rem;line-height:2}.story :deep(h1),.story :deep(h2),.story :deep(h3){margin-top:2.3em;font-family:Georgia,'Times New Roman','Noto Serif SC',serif;font-weight:500;letter-spacing:-.025em}.story :deep(h2){padding-bottom:.55rem;border-bottom:1px solid var(--el-border-color)}.story :deep(blockquote){margin:2rem 0;padding:1.5rem 2rem;border-left:2px solid #635bff;background:color-mix(in srgb,#635bff 5%,transparent)}.story :deep(img){margin:1.5rem 0;border-radius:.25rem}.story-empty{padding:clamp(3rem,7vw,7rem) 0;border-top:1px solid var(--el-border-color);border-bottom:1px solid var(--el-border-color)}.story-empty small{color:#635bff;font-weight:800;letter-spacing:.16em}.story-empty h2{margin:.8rem 0;font-family:Georgia,'Noto Serif SC',serif;font-size:clamp(2rem,4vw,3.5rem);font-weight:400}.story-empty p{color:var(--el-text-color-secondary)}
-.case-footer{margin-top:clamp(5rem,10vw,10rem);border-top:1px solid var(--el-border-color)}.case-footer button{display:grid;width:100%;grid-template-columns:5rem 1fr auto;align-items:center;gap:2rem;padding:2.5rem 0;border:0;background:none;color:inherit;text-align:left;cursor:pointer}.case-footer span{color:var(--el-text-color-placeholder);font-size:.65rem;font-weight:800;letter-spacing:.16em}.case-footer b{font-family:Georgia,'Noto Serif SC',serif;font-size:clamp(1.7rem,4vw,3.5rem);font-weight:400}.case-footer i{font-size:2rem;font-style:normal;transition:transform .2s}.case-footer button:hover i{transform:translate(5px,-5px);color:#635bff}
-.state{display:flex;align-items:center;justify-content:center;min-height:55vh;color:var(--el-text-color-secondary)}.state i{width:.45rem;height:.45rem;margin-right:.7rem;border-radius:50%;background:#635bff;animation:pulse 1.2s infinite}.state--empty{display:block;padding-top:8rem;text-align:center}.state--empty small{color:#635bff;font-weight:800;letter-spacing:.18em}.state--empty h1{font-family:Georgia,'Noto Serif SC',serif;font-size:clamp(2.4rem,6vw,5rem);font-weight:400}.state--empty p{color:var(--el-text-color-secondary)}@keyframes pulse{50%{opacity:.25;transform:scale(.65)}}
-@media(max-width:800px){
-  .case-page{padding:calc(5.15rem + env(safe-area-inset-top)) max(1rem,env(safe-area-inset-right)) calc(3.25rem + env(safe-area-inset-bottom)) max(1rem,env(safe-area-inset-left));overflow-x:hidden}.case-nav{min-height:2.75rem;padding-bottom:.65rem}.case-nav>span{display:none}.case-nav button{align-items:center;min-height:2.75rem;font-size:.58rem;letter-spacing:.14em}
-  .case-hero{padding:3rem 0 2rem}.case-hero>p{margin-bottom:1rem;font-size:.56rem;line-height:1.7;letter-spacing:.12em}.case-hero h1{font-size:clamp(2.75rem,13vw,4.75rem);line-height:.98;letter-spacing:-.055em;overflow-wrap:anywhere}.hero-foot{display:block;margin-top:1.6rem}.hero-foot strong{display:block;font-size:1rem;line-height:1.5}.hero-foot span{display:block;margin-top:.65rem;font-size:.53rem;letter-spacing:.14em}
-  .case-layout{grid-template-columns:1fr;gap:3rem;padding-top:2rem}.dossier{border-right:0;border-bottom:1px solid var(--el-border-color);padding:0 0 2.5rem}.dossier-sticky{position:static}.eyebrow{margin-bottom:.9rem}.dossier dl{display:grid;grid-template-columns:1fr 1fr}.dossier dl>div{display:block;padding:.85rem .65rem .85rem 0}.dossier dl>div:first-child{grid-column:1/3}.dossier dt{margin-bottom:.35rem}.dossier dd{font-size:.79rem}.impact{margin-top:2rem}.impact li{grid-template-columns:1.65rem 1fr;gap:.5rem;padding:.85rem 0;font-size:.78rem;line-height:1.7}
-  .story{width:100%;max-width:100%}.story-head{margin-bottom:1.5rem}.story :deep(.md-editor-preview){overflow-wrap:anywhere;font-size:.94rem;line-height:1.9}.story :deep(h1){font-size:1.85rem}.story :deep(h2){font-size:1.5rem}.story :deep(h3){font-size:1.2rem}.story :deep(h1),.story :deep(h2),.story :deep(h3){margin-top:1.8em;line-height:1.35}.story :deep(p){margin:1em 0}.story :deep(img){max-width:100%;height:auto;margin:1rem 0}.story :deep(pre),.story :deep(.md-editor-code){max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.story :deep(table){display:block;width:max-content;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.story :deep(blockquote){margin:1.35rem 0;padding:1rem 1.1rem}.story-empty{padding:3rem 0}.story-empty h2{font-size:2rem;line-height:1.25}
-  .case-footer{margin-top:5rem}.case-footer button{grid-template-columns:1fr auto;gap:1rem;min-height:5.5rem;padding:1.5rem 0}.case-footer span{display:none}.case-footer b{font-size:1.65rem;line-height:1.25}.case-footer i{font-size:1.5rem}
-}
-@media(max-width:380px){.case-page{padding-right:.85rem;padding-left:.85rem}.case-hero h1{font-size:2.65rem}.dossier dl{grid-template-columns:1fr}.dossier dl>div:first-child{grid-column:auto}.case-footer b{font-size:1.45rem}}
-@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
+.detail-page{--accent:#4769e8;--surface:color-mix(in srgb,var(--mao-background-color) 94%,var(--accent));min-height:100dvh;padding:6rem clamp(1.25rem,6vw,6rem) 6rem;background:var(--mao-background-color);color:var(--el-text-color-primary)}.detail-nav,.detail-hero,.detail-layout{width:min(100%,78rem);margin-inline:auto}.detail-nav{height:3.5rem;border-bottom:1px solid var(--el-border-color)}.detail-nav button{display:flex;height:100%;align-items:center;gap:.7rem;padding:0;border:0;background:none;color:var(--el-text-color-secondary);font:650 .76rem/1 system-ui,sans-serif;cursor:pointer}.detail-nav button span{color:var(--accent);font-size:1rem;transition:transform .2s ease}.detail-nav button:hover{color:var(--el-text-color-primary)}.detail-nav button:hover span{transform:translateX(-3px)}
+.detail-hero{padding:clamp(3.5rem,7vw,6rem) 0 clamp(3rem,6vw,5rem)}.hero-meta{display:flex;align-items:center;gap:1rem;color:var(--el-text-color-placeholder);font-size:.74rem}.hero-meta span{color:var(--el-text-color-secondary);font-weight:700}.hero-meta span.current{color:var(--accent)}.hero-meta time{padding-left:1rem;border-left:1px solid var(--el-border-color)}.detail-hero h1{max-width:18ch;margin:1.35rem 0 .65rem;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;font-size:clamp(3rem,7vw,6.5rem);font-weight:650;line-height:1.03;letter-spacing:-.06em;overflow-wrap:anywhere;text-wrap:balance}.detail-hero>p{margin:0;color:var(--accent);font-size:clamp(1rem,1.6vw,1.3rem);font-weight:650}
+.detail-layout{display:grid;grid-template-columns:minmax(13rem,18rem) minmax(0,1fr);gap:clamp(3rem,8vw,8rem);padding-top:3rem;border-top:1px solid var(--el-border-color)}.summary-inner{position:sticky;top:6rem}.summary dl{margin:0}.summary dl>div{margin-bottom:1.6rem}.summary dt{margin-bottom:.4rem;color:var(--el-text-color-placeholder);font-size:.7rem}.summary dd{margin:0;color:var(--el-text-color-primary);font-size:.88rem;line-height:1.6}.summary button{display:flex;align-items:center;gap:.65rem;margin-top:2.5rem;padding:.8rem 1rem;border:1px solid var(--el-border-color);border-radius:14px;background:var(--surface);color:var(--el-text-color-primary);font-size:.75rem;font-weight:650;cursor:pointer;transition:border-color .2s ease,transform .2s ease}.summary button:hover{border-color:var(--accent);transform:translateY(-2px)}.summary button:active{transform:translateY(-1px)}.summary button span{color:var(--accent)}
+.main-column{min-width:0}.outcomes{padding-bottom:clamp(3.5rem,7vw,6rem)}.outcomes h2,.story>h2{margin:0 0 1.5rem;font-size:.95rem;font-weight:750;letter-spacing:.02em}.outcome-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}.outcome-grid article{min-height:8.5rem;padding:1.25rem;border:1px solid var(--el-border-color);border-radius:14px;background:var(--surface)}.outcome-grid p{margin:0;color:var(--el-text-color-regular);font-size:.86rem;line-height:1.75}
+.story{padding-top:3rem;border-top:1px solid var(--el-border-color)}.story :deep(.md-editor){background:transparent}.story :deep(.md-editor-preview-wrapper){padding:0}.story :deep(.md-editor-preview){max-width:48rem;color:var(--el-text-color-primary);font-size:1rem;line-height:1.95}.story :deep(h1),.story :deep(h2),.story :deep(h3){margin:2em 0 .75em;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;font-weight:700;line-height:1.35;letter-spacing:-.025em}.story :deep(h1){font-size:2rem}.story :deep(h2){padding-bottom:.6rem;border-bottom:1px solid var(--el-border-color);font-size:1.55rem}.story :deep(h3){font-size:1.2rem}.story :deep(a){color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}.story :deep(blockquote){margin:1.8rem 0;padding:1.2rem 1.4rem;border-left:3px solid var(--accent);border-radius:0 14px 14px 0;background:var(--surface)}.story :deep(img){display:block;max-width:100%;height:auto;margin:1.5rem 0;border-radius:14px}.story :deep(pre),.story :deep(.md-editor-code){max-width:100%;overflow-x:auto;border-radius:14px}.story :deep(table){display:block;max-width:100%;overflow-x:auto}.story-empty{padding:3rem;border:1px solid var(--el-border-color);border-radius:14px;background:var(--surface)}.story-empty h3,.story-empty p{margin:0}.story-empty p{margin-top:.65rem;color:var(--el-text-color-secondary)}
+.state{display:grid;min-height:60dvh;place-items:center;align-content:center;gap:1rem;text-align:center;color:var(--el-text-color-secondary)}.loader{width:3rem;height:.2rem;border-radius:999px;background:var(--accent);animation:load 1s ease-in-out infinite}.state p,.state h1{margin:0}.state--empty h1{font-size:clamp(2rem,5vw,4rem)}.state--empty button{margin-top:1rem;padding:.8rem 1.1rem;border:1px solid var(--accent);border-radius:14px;background:var(--accent);color:#f8faff;font-weight:700;cursor:pointer}@keyframes load{50%{opacity:.25;transform:scaleX(.55)}}
+@media(max-width:800px){.detail-page{padding:calc(5rem + env(safe-area-inset-top)) max(1rem,env(safe-area-inset-right)) calc(4rem + env(safe-area-inset-bottom)) max(1rem,env(safe-area-inset-left));overflow-x:hidden}.detail-hero{padding:3rem 0}.detail-hero h1{font-size:clamp(2.65rem,13vw,4.7rem);letter-spacing:-.055em}.detail-layout{grid-template-columns:1fr;gap:3rem;padding-top:2rem}.summary-inner{position:static}.summary dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.summary dl>div{margin:0;padding:1rem;border:1px solid var(--el-border-color);border-radius:14px;background:var(--surface)}.summary dl>div:first-child{grid-column:1/3}.summary button{margin-top:1rem}.outcome-grid{grid-template-columns:1fr}.outcome-grid article{min-height:0}.story{padding-top:2.5rem}.story :deep(.md-editor-preview){font-size:.94rem;line-height:1.85}.story :deep(blockquote){margin:1.2rem 0;padding:1rem}.story-empty{padding:2rem 1.2rem}}
+@media(max-width:420px){.hero-meta{align-items:flex-start;flex-direction:column;gap:.45rem}.hero-meta time{padding:0;border:0}.summary dl{grid-template-columns:1fr}.summary dl>div:first-child{grid-column:auto}.detail-hero h1{font-size:2.65rem}}@media(prefers-reduced-motion:reduce){.loader,.detail-nav button span,.summary button{animation:none!important;transition:none!important}}
 </style>

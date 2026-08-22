@@ -1,47 +1,70 @@
 <script setup lang="ts">
 import { experienceList, type WorkExperienceItem } from '@/apis/experience'
-const router=useRouter(),loading=ref(true),list=ref<WorkExperienceItem[]>([])
-onMounted(async()=>{try{const r:any=await experienceList();if(r.code===200)list.value=r.data||[]}finally{loading.value=false}})
-const date=(v?:string)=>v?v.toString().slice(0,7).replace('-','.') : ''
-const period=(x:WorkExperienceItem)=>x.isCurrent===1?`${date(x.startDate)} - 现在`:`${date(x.startDate)} - ${date(x.endDate)}`
-const lines=(v?:string)=>v?v.split(/\r?\n/).map(x=>x.trim()).filter(Boolean):[]
+
+const router = useRouter()
+const loading = ref(true)
+const failed = ref(false)
+const list = ref<WorkExperienceItem[]>([])
+
+onMounted(async () => {
+  try {
+    const response: any = await experienceList()
+    if (response.code === 200) list.value = response.data || []
+    else failed.value = true
+  } catch { failed.value = true }
+  finally { loading.value = false }
+})
+
+const date = (value?: string) => value ? value.toString().slice(0, 7).replace('-', '.') : ''
+const period = (item: WorkExperienceItem) => item.isCurrent === 1 ? `${date(item.startDate)} 至今` : `${date(item.startDate)} 至 ${date(item.endDate)}`
+const highlights = (value?: string) => value?.split(/\r?\n/).map(line => line.trim()).filter(Boolean) || []
+const openExperience = (id: number) => router.push(`/experience/${id}`)
 </script>
+
 <template>
-<main class="page">
-  <header class="intro">
-    <div><p class="overline">工作经历</p><h1>职业不只是时间线，<br><em>更是解决问题的轨迹。</em></h1></div>
-    <div class="manifesto"><p>从真实业务出发，把复杂问题拆开，把想法做成稳定、清晰、可以长期演进的产品。</p></div>
-  </header>
-  <div class="rule"><span>共 {{ list.length }} 段经历</span><i/></div>
-  <div v-if="loading" class="state">正在加载经历档案…</div>
-  <div v-else-if="!list.length" class="state">暂时还没有公开的工作经历。</div>
-  <section v-else class="index">
-    <article v-for="(item,i) in list" :key="item.id" tabindex="0" class="row" @click="router.push(`/experience/${item.id}`)" @keydown.enter="router.push(`/experience/${item.id}`)">
-      <span class="num">{{ String(i+1).padStart(2,'0') }}</span>
-      <div class="when"><span v-if="item.isCurrent===1" class="live">目前在职</span><b>{{ period(item) }}</b></div>
-      <div class="identity"><p>{{ item.roleTitle }}</p><h2>{{ item.company }}</h2></div>
-      <ul><li v-for="(x,n) in lines(item.highlights).slice(0,3)" :key="n">{{ x }}</li></ul>
-      <span class="arrow">↗</span><span class="watermark">{{ String(i+1).padStart(2,'0') }}</span>
-    </article>
-  </section>
-  <footer class="closing"><span>下一步</span><p>继续学习，继续构建，继续把事情做得更好。</p></footer>
-</main>
+  <main class="experience-page">
+    <header class="page-hero">
+      <p class="hero-label">工作经历</p>
+      <h1>把复杂问题，<br><strong>做成可靠产品。</strong></h1>
+      <p class="hero-copy">这里记录我参与过的业务、承担的责任，以及每一次实践留下的可复用经验。</p>
+    </header>
+
+    <section class="experience-section" aria-labelledby="experience-list-title">
+      <div class="section-heading">
+        <h2 id="experience-list-title">职业轨迹</h2>
+        <p v-if="list.length">{{ list.length }} 段经历，按时间由近到远</p>
+      </div>
+
+      <div v-if="loading" class="state" aria-live="polite">
+        <div class="state-lines"><span /><span /><span /></div><p>正在加载工作经历</p>
+      </div>
+      <div v-else-if="failed" class="state state--error"><h2>暂时无法读取工作经历</h2><p>请稍后刷新页面，其他内容仍可正常浏览。</p></div>
+      <div v-else-if="!list.length" class="state"><h2>经历档案正在整理</h2><p>整理完成后会在这里公开。</p></div>
+
+      <div v-else class="experience-list">
+        <article v-for="item in list" :key="item.id" class="experience-item" tabindex="0" role="link" :aria-label="`查看 ${item.company} 的工作经历`" @click="openExperience(item.id)" @keydown.enter="openExperience(item.id)" @keydown.space.prevent="openExperience(item.id)">
+          <div class="time-column"><span v-if="item.isCurrent === 1" class="current">目前在职</span><time>{{ period(item) }}</time></div>
+          <div class="experience-content">
+            <p class="role">{{ item.roleTitle }}</p><h3>{{ item.company }}</h3>
+            <ul v-if="highlights(item.highlights).length" class="highlights"><li v-for="line in highlights(item.highlights).slice(0, 3)" :key="line">{{ line }}</li></ul>
+          </div>
+          <span class="view-detail" aria-hidden="true">查看详情 <b>→</b></span>
+        </article>
+      </div>
+    </section>
+
+    <footer class="page-note"><p>我重视清晰的协作、可维护的实现，以及真正解决业务问题的技术。</p></footer>
+  </main>
 </template>
+
 <style scoped lang="scss">
-.page{min-height:100vh;padding:10rem max(1.2rem,6vw) 7rem;background:linear-gradient(140deg,color-mix(in srgb,var(--mao-background-color) 96%,#5267ff),var(--mao-background-color) 35%);color:var(--el-text-color-primary)}
-.intro{display:grid;max-width:82rem;margin:auto;grid-template-columns:1.55fr .65fr;align-items:end;gap:6vw}.overline{margin:0 0 1.5rem;color:#6c78ff;font-size:.65rem;font-weight:800;letter-spacing:.25em}.intro h1{margin:0;font-family:Georgia,'Songti SC',serif;font-size:clamp(3.5rem,7.3vw,7rem);font-weight:500;line-height:.96;letter-spacing:-.065em}.intro h1 em{font-weight:500;color:transparent;-webkit-text-stroke:1px #6c78ff}.manifesto{padding:0 0 .6rem 1.4rem;border-left:1px solid #6c78ff}.manifesto span{color:#6c78ff;font-size:.62rem;font-weight:800;letter-spacing:.16em}.manifesto p{margin:1rem 0 0;color:var(--el-text-color-secondary);font-size:.9rem;line-height:1.9}.rule{display:flex;max-width:82rem;align-items:center;gap:1rem;margin:6rem auto 0;color:var(--el-text-color-placeholder);font-size:.55rem;font-weight:800;letter-spacing:.2em}.rule i{height:1px;flex:1;background:var(--el-border-color)}
-.index{max-width:82rem;margin:1rem auto 0;border-top:1px solid var(--el-border-color)}.row{position:relative;display:grid;overflow:hidden;grid-template-columns:3rem 10rem minmax(15rem,.8fr) minmax(18rem,1.2fr) 2.5rem;align-items:center;gap:1.5rem;min-height:13rem;padding:2rem .4rem;border-bottom:1px solid var(--el-border-color);cursor:pointer;isolation:isolate;transition:color .3s,padding .35s}.row:before{content:'';position:absolute;inset:0;z-index:-2;background:#5968ed;transform:scaleY(0);transform-origin:bottom;transition:transform .4s cubic-bezier(.2,.8,.2,1)}.row:hover,.row:focus-visible{padding-right:1.5rem;padding-left:1.5rem;color:#fff;outline:none}.row:hover:before,.row:focus-visible:before{transform:scaleY(1)}.num{font-family:Georgia,serif;color:#6c78ff;font-style:italic}.row:hover .num{color:#fff}.when{display:flex;flex-direction:column;gap:.7rem}.when b{font-size:.66rem;letter-spacing:.08em}.live{color:#20a56b;font-size:.54rem;font-weight:800;letter-spacing:.14em}.row:hover .live{color:#b8ffd8}.identity p{margin:0 0 .5rem;color:var(--el-text-color-secondary);font-size:.7rem;letter-spacing:.08em}.row:hover .identity p{color:rgba(255,255,255,.7)}.identity h2{margin:0;font-family:Georgia,'Songti SC',serif;font-size:clamp(1.7rem,3.2vw,3rem);font-weight:500;line-height:1.05;letter-spacing:-.035em}.row ul{margin:0;padding:0;list-style:none;color:var(--el-text-color-secondary);font-size:.76rem;line-height:1.65}.row li+li{margin-top:.45rem}.row li:before{content:'—';margin-right:.5rem;color:#6c78ff}.row:hover ul{color:rgba(255,255,255,.82)}.row:hover li:before{color:#fff}.arrow{font-size:1.4rem;transition:transform .3s}.row:hover .arrow{transform:translate(4px,-4px)}.watermark{position:absolute;z-index:-1;right:5%;bottom:-.38em;color:transparent;font:italic 9rem Georgia;-webkit-text-stroke:1px rgba(255,255,255,.11);opacity:0;transform:translateY(20px);transition:.4s}.row:hover .watermark{opacity:1;transform:none}
-.state{max-width:82rem;margin:2rem auto;padding:5rem;border:1px dashed var(--el-border-color);text-align:center;color:var(--el-text-color-secondary)}.closing{display:flex;max-width:82rem;margin:6rem auto 0;align-items:baseline;gap:2rem;border-top:1px solid var(--el-border-color);padding-top:2rem}.closing span{color:#6c78ff;font-size:.62rem;font-weight:800;letter-spacing:.18em}.closing p{margin:0;font-family:Georgia,'Songti SC',serif;font-size:clamp(1.4rem,2.5vw,2.2rem)}
-@media(max-width:900px){.page{padding-top:7rem}.intro{grid-template-columns:1fr}.manifesto{max-width:32rem}.row{grid-template-columns:2rem 1fr 2rem;gap:1rem}.when{grid-column:2}.identity{grid-column:2}.row ul{grid-column:2}.arrow{grid-column:3;grid-row:1/4}.rule{margin-top:4rem}}
-@media(max-width:560px){
-  .page{padding:calc(5.25rem + env(safe-area-inset-top)) max(1rem,env(safe-area-inset-right)) calc(3rem + env(safe-area-inset-bottom)) max(1rem,env(safe-area-inset-left));background:linear-gradient(160deg,color-mix(in srgb,var(--mao-background-color) 92%,#5267ff),var(--mao-background-color) 22rem)}
-  .intro{gap:2rem}.overline{margin-bottom:1rem;font-size:.58rem;letter-spacing:.18em}.intro h1{font-size:clamp(2.55rem,12.5vw,3.65rem);line-height:1.02;letter-spacing:-.055em}.intro h1 br{display:none}.intro h1 em{display:block;margin-top:.18em;-webkit-text-stroke:.8px #6c78ff}
-  .manifesto{padding:.9rem 0 0;border-top:1px solid color-mix(in srgb,#6c78ff 45%,transparent);border-left:0}.manifesto p{margin-top:.65rem;font-size:.82rem;line-height:1.75}
-  .rule{margin-top:3rem;gap:.65rem}.rule span:last-child{display:none}.index{margin-top:.75rem}
-  .row{grid-template-columns:2.2rem minmax(0,1fr) 2rem;grid-template-rows:auto auto auto;gap:.65rem .8rem;min-height:0;padding:1.35rem .15rem;touch-action:manipulation}.num{grid-column:1;grid-row:1;font-size:.88rem}.when{grid-column:2;grid-row:1;flex-direction:row;align-items:center;flex-wrap:wrap;gap:.45rem .7rem}.when b{font-size:.61rem}.identity{grid-column:1/4;grid-row:2;padding-top:.25rem}.identity p{margin-bottom:.35rem;font-size:.65rem}.identity h2{font-size:clamp(1.65rem,8.5vw,2.3rem);line-height:1.08;overflow-wrap:anywhere}.row ul{display:-webkit-box;grid-column:1/4;grid-row:3;margin-top:.3rem;overflow:hidden;color:var(--el-text-color-secondary);font-size:.75rem;line-height:1.7;-webkit-box-orient:vertical;-webkit-line-clamp:3}.row li{display:inline}.row li+li{margin:0}.row li+li:before{content:' · ';margin:0 .25rem;color:#6c78ff}.row li:first-child:before{display:none}.arrow{grid-column:3;grid-row:1;align-self:start;justify-self:end;font-size:1.2rem}.watermark{display:none}
-  .row:hover,.row:focus-visible{padding-right:.65rem;padding-left:.65rem}.row:active{padding-right:.65rem;padding-left:.65rem;color:#fff}.row:active:before{transform:scaleY(1)}.row:active .num,.row:active li:before{color:#fff}.row:active .identity p,.row:active ul{color:rgba(255,255,255,.8)}
-  .state{margin:1rem auto;padding:3.5rem 1rem;line-height:1.7}.closing{margin-top:4rem;align-items:flex-start;flex-direction:column;gap:.65rem}.closing p{font-size:1.45rem;line-height:1.45}
-}
-@media(max-width:380px){.page{padding-right:.85rem;padding-left:.85rem}.intro h1{font-size:2.45rem}.identity h2{font-size:1.65rem}.row{grid-template-columns:1.8rem minmax(0,1fr) 1.6rem;column-gap:.55rem}}
-@media(prefers-reduced-motion:reduce){.row,.row:before,.arrow,.watermark{transition:none!important}}
+.experience-page{--accent:#4769e8;--surface:color-mix(in srgb,var(--mao-background-color) 94%,var(--accent));--soft:color-mix(in srgb,var(--accent) 9%,var(--mao-background-color));min-height:100dvh;padding:clamp(7.5rem,11vw,10rem) clamp(1.25rem,6vw,6rem) 6rem;background:var(--mao-background-color);color:var(--el-text-color-primary)}
+.page-hero,.experience-section,.page-note{width:min(100%,78rem);margin-inline:auto}.page-hero{padding-bottom:clamp(4rem,8vw,7rem)}.hero-label{margin:0 0 1.3rem;color:var(--accent);font-size:.72rem;font-weight:750;letter-spacing:.16em}.page-hero h1{margin:0;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;font-size:clamp(3.1rem,6vw,5.6rem);font-weight:350;line-height:1.06;letter-spacing:-.055em;text-wrap:balance}.page-hero h1 strong{color:var(--accent);font-weight:650}.hero-copy{max-width:40rem;margin:2rem 0 0;color:var(--el-text-color-secondary);font-size:clamp(.95rem,1.25vw,1.08rem);line-height:1.9}
+.section-heading{display:flex;align-items:end;justify-content:space-between;gap:2rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--el-border-color)}.section-heading h2{margin:0;font-size:1rem;font-weight:700;letter-spacing:.04em}.section-heading p{margin:0;color:var(--el-text-color-placeholder);font-size:.76rem}.experience-list{display:grid;gap:.9rem}
+.experience-item{position:relative;display:grid;grid-template-columns:11.5rem minmax(0,1fr) auto;gap:clamp(1.5rem,4vw,4.5rem);align-items:start;padding:clamp(1.5rem,3vw,2.5rem);overflow:hidden;border:1px solid var(--el-border-color);border-radius:14px;background:var(--surface);cursor:pointer;transition:border-color .25s ease,background-color .25s ease,transform .25s ease,box-shadow .25s ease}.experience-item:hover,.experience-item:focus-visible{border-color:color-mix(in srgb,var(--accent) 52%,var(--el-border-color));background:var(--soft);box-shadow:0 20px 48px color-mix(in srgb,var(--accent) 10%,transparent);outline:none;transform:translateY(-3px)}.experience-item:active{transform:translateY(-1px)}
+.time-column{display:flex;flex-direction:column;gap:.75rem;padding-top:.25rem}.time-column time{color:var(--el-text-color-secondary);font-size:.78rem;font-weight:650;letter-spacing:.03em}.current{width:max-content;padding:.3rem .55rem;border-radius:999px;background:color-mix(in srgb,var(--accent) 13%,transparent);color:var(--accent);font-size:.66rem;font-weight:750}.experience-content{min-width:0}.role{margin:0 0 .55rem;color:var(--accent);font-size:.78rem;font-weight:700}.experience-content h3{margin:0;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;font-size:clamp(1.65rem,3vw,2.6rem);font-weight:650;line-height:1.18;letter-spacing:-.04em;overflow-wrap:anywhere}.highlights{display:grid;max-width:48rem;gap:.55rem;margin:1.35rem 0 0;padding:0;list-style:none;color:var(--el-text-color-secondary);font-size:.84rem;line-height:1.65}.highlights li{position:relative;padding-left:1rem}.highlights li:before{content:"";position:absolute;top:.72em;left:0;width:.34rem;height:1px;background:var(--accent)}
+.view-detail{display:flex;align-items:center;gap:.6rem;margin-top:.2rem;color:var(--el-text-color-placeholder);font-size:.72rem;white-space:nowrap}.view-detail b{color:var(--accent);font-size:1.1rem;transition:transform .25s ease}.experience-item:hover .view-detail b,.experience-item:focus-visible .view-detail b{transform:translateX(4px)}
+.state{display:grid;min-height:18rem;place-items:center;align-content:center;gap:1rem;border:1px solid var(--el-border-color);border-radius:14px;background:var(--surface);text-align:center;color:var(--el-text-color-secondary)}.state h2,.state p{margin:0}.state h2{color:var(--el-text-color-primary);font-size:1.25rem}.state-lines{display:flex;gap:.4rem}.state-lines span{width:2.2rem;height:.2rem;border-radius:999px;background:var(--accent);animation:loading 1.1s ease-in-out infinite}.state-lines span:nth-child(2){animation-delay:.12s}.state-lines span:nth-child(3){animation-delay:.24s}.state--error{border-color:color-mix(in srgb,#c85151 34%,var(--el-border-color))}.page-note{margin-top:clamp(4rem,8vw,7rem);padding-top:1.5rem;border-top:1px solid var(--el-border-color)}.page-note p{max-width:45rem;margin:0;color:var(--el-text-color-secondary);font-size:clamp(1.05rem,2vw,1.45rem);line-height:1.65}@keyframes loading{50%{opacity:.25;transform:scaleX(.65)}}
+@media(max-width:780px){.experience-page{padding:calc(6rem + env(safe-area-inset-top)) max(1rem,env(safe-area-inset-right)) calc(4rem + env(safe-area-inset-bottom)) max(1rem,env(safe-area-inset-left))}.page-hero{padding-bottom:4.5rem}.page-hero h1{font-size:clamp(2.45rem,10.8vw,4rem);letter-spacing:-.05em}.hero-copy{margin-top:1.4rem;font-size:.9rem}.section-heading{display:block}.section-heading p{margin-top:.45rem}.experience-item{grid-template-columns:1fr auto;gap:1rem;padding:1.4rem}.time-column{grid-column:1}.experience-content{grid-column:1/3}.view-detail{grid-column:2;grid-row:1;align-self:center}.highlights{margin-top:1rem;font-size:.8rem}.page-note{margin-top:4rem}}
+@media(max-width:420px){.page-hero h1 br{display:none}.experience-item{padding:1.2rem}.view-detail{font-size:0}.view-detail b{font-size:1.2rem}.experience-content h3{font-size:1.6rem}.highlights li:nth-child(n+3){display:none}}@media(prefers-reduced-motion:reduce){.experience-item,.view-detail b,.state-lines span{animation:none!important;transition:none!important}}
 </style>
