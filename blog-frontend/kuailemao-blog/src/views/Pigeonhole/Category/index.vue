@@ -106,12 +106,14 @@ watch(() => route.params.slug, bootstrap)
             </div>
           </header>
 
-          <nav v-if="categories.length" class="topic-nav" aria-label="文章分类">
-            <router-link to="/blog" :class="{ 'is-active': !activeSlug }">全部文章</router-link>
-            <router-link v-for="entry in categoryEntries" :key="entry.categoryId" :to="entry.path" :class="{ 'is-active': entry.slug === activeSlug }">
-              {{ entry.category.categoryName }}<sup>{{ entry.category.articleCount || 0 }}</sup>
-            </router-link>
-          </nav>
+          <div v-if="categories.length" class="topic-nav-shell">
+            <nav class="topic-nav" aria-label="文章分类">
+              <router-link to="/blog" :class="{ 'is-active': !activeSlug }">全部文章</router-link>
+              <router-link v-for="entry in categoryEntries" :key="entry.categoryId" :to="entry.path" :class="{ 'is-active': entry.slug === activeSlug }">
+                {{ entry.category.categoryName }}<sup>{{ entry.category.articleCount || 0 }}</sup>
+              </router-link>
+            </nav>
+          </div>
 
           <section v-if="loading" class="blog-skeleton" aria-label="文章正在加载"><div /><div /><div /></section>
           <section v-else-if="loadError" class="blog-state">
@@ -160,10 +162,12 @@ watch(() => route.params.slug, bootstrap)
 .blog-hero__stats span, .blog-hero__stats small { display: block; }
 .blog-hero__stats span { margin-top: .85rem; font-weight: 700; }
 .blog-hero__stats small { margin-top: .4rem; color: #9eb2cb; font-size: .78rem; }
-.topic-nav { display: flex; gap: .55rem; overflow-x: auto; padding: 1.35rem max(1.25rem, calc((100vw - 72rem) / 2)); border-bottom: 1px solid var(--brand-line); scrollbar-width: none; }
-.topic-nav a { flex: 0 0 auto; padding: .55rem .85rem; border-radius: var(--brand-radius-sm); color: var(--brand-ink-soft); font-size: .82rem; font-weight: 650; text-decoration: none; transition: background .2s ease, color .2s ease; }
-.topic-nav a:hover, .topic-nav a.is-active { background: var(--brand-accent-soft); color: var(--brand-accent-strong); }
-.topic-nav sup { margin-left: .25rem; color: var(--brand-ink-faint); font-family: "Share TechMono", monospace; }
+.topic-nav-shell { width: min(calc(100vw - 2rem), 112rem); margin-inline: 50%; border-bottom: 1px solid var(--brand-line); transform: translateX(-50%); }
+.topic-nav { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .7rem .9rem; width: min(calc(100% - 3rem), 92rem); margin-inline: auto; padding: clamp(1.4rem, 2.4vw, 2rem) 0; }
+.topic-nav a { display: inline-flex; flex: 0 0 auto; align-items: center; min-height: 2.75rem; padding: .68rem 1rem; border: 1px solid transparent; border-radius: var(--brand-radius-sm); color: var(--brand-ink-soft); font-size: clamp(.92rem, .95vw, 1rem); font-weight: 680; line-height: 1.2; text-decoration: none; white-space: nowrap; transition: background .2s ease, border-color .2s ease, color .2s ease, transform .2s ease; }
+.topic-nav a:hover { border-color: var(--brand-line); background: var(--brand-surface); color: var(--brand-ink); transform: translateY(-1px); }
+.topic-nav a.is-active { border-color: rgba(38,94,154,.12); background: var(--brand-accent-soft); color: var(--brand-accent-strong); }
+.topic-nav sup { margin-left: .32rem; color: var(--brand-ink-faint); font-family: "Share TechMono", monospace; font-size: .68em; font-weight: 700; line-height: 1; transform: translateY(-.28em); }
 .journal-content, .blog-state, .blog-skeleton { width: min(calc(100% - 2rem), 72rem); margin-inline: auto; }
 .journal-content { padding: clamp(2rem, 5vw, 4.5rem) 0 5rem; }
 .featured-story { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(18rem, .85fr); min-height: 25rem; overflow: hidden; border-radius: var(--brand-radius-lg); background: var(--brand-surface); box-shadow: 0 22px 70px rgba(24,55,91,.12); cursor: pointer; }
@@ -203,6 +207,6 @@ watch(() => route.params.slug, bootstrap)
 .blog-skeleton div { height: 20rem; border-radius: var(--brand-radius-lg); background: linear-gradient(100deg, var(--brand-canvas-soft) 30%, var(--brand-surface) 50%, var(--brand-canvas-soft) 70%); background-size: 300% 100%; animation: shimmer 1.3s infinite; }
 @keyframes shimmer { to { background-position-x: -200%; } }
 @media (max-width: 900px) { .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .featured-story { grid-template-columns: 1fr; } .featured-story__cover { aspect-ratio: 16 / 8; min-height: 0; } }
-@media (max-width: 640px) { .blog-hero { grid-template-columns: 1fr; gap: 2rem; width: calc(100vw - .75rem); padding: 2.75rem 1.35rem; border-radius: 0 0 var(--brand-radius-lg) var(--brand-radius-lg); } .blog-hero h1 { display: block; max-width: 10ch; font-size: clamp(2.45rem, 12vw, 3.5rem); line-height: 1.06; } .blog-hero h1 span { display: block; } .blog-hero__intro { margin-top: 1.1rem; font-size: .9rem; line-height: 1.7; } .blog-hero__stats { display: grid; grid-template-columns: auto 1fr; column-gap: 1rem; align-items: end; min-width: 0; padding: 1.15rem 0 0; border-top: 1px solid rgba(255,255,255,.2); border-left: 0; } .blog-hero__stats strong { font-size: 2.8rem; } .blog-hero__stats small { grid-column: 2; } .article-grid, .blog-skeleton { grid-template-columns: 1fr; } .section-heading { align-items: flex-start; flex-direction: column; } .featured-story__cover { aspect-ratio: 16 / 10; } .article-card h3, .article-card p { min-height: auto; } }
+@media (max-width: 640px) { .blog-hero { grid-template-columns: 1fr; gap: 2rem; width: calc(100vw - .75rem); padding: 2.75rem 1.35rem; border-radius: 0 0 var(--brand-radius-lg) var(--brand-radius-lg); } .blog-hero h1 { display: block; max-width: 10ch; font-size: clamp(2.45rem, 12vw, 3.5rem); line-height: 1.06; } .blog-hero h1 span { display: block; } .blog-hero__intro { margin-top: 1.1rem; font-size: .9rem; line-height: 1.7; } .blog-hero__stats { display: grid; grid-template-columns: auto 1fr; column-gap: 1rem; align-items: end; min-width: 0; padding: 1.15rem 0 0; border-top: 1px solid rgba(255,255,255,.2); border-left: 0; } .blog-hero__stats strong { font-size: 2.8rem; } .blog-hero__stats small { grid-column: 2; } .topic-nav-shell { width: 100vw; } .topic-nav { flex-wrap: nowrap; justify-content: flex-start; gap: .5rem; width: 100%; padding: 1rem .75rem; overflow-x: auto; overscroll-behavior-inline: contain; scroll-padding-inline: .75rem; scroll-snap-type: x proximity; scrollbar-width: none; } .topic-nav::-webkit-scrollbar { display: none; } .topic-nav a { min-height: 2.6rem; padding: .62rem .88rem; font-size: .9rem; scroll-snap-align: start; } .article-grid, .blog-skeleton { grid-template-columns: 1fr; } .section-heading { align-items: flex-start; flex-direction: column; } .featured-story__cover { aspect-ratio: 16 / 10; } .article-card h3, .article-card p { min-height: auto; } }
 @media (prefers-reduced-motion: reduce) { .featured-story__cover img, .article-card, .article-card__cover img { transition: none; } .blog-skeleton div { animation: none; } }
 </style>
