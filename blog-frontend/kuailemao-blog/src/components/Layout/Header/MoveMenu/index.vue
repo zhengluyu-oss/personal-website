@@ -14,7 +14,7 @@ function isClose(){
   emit("update:closeDrawer")
 }
 
-const {categories, loadCategories} = useBlogCategories()
+const {categoryEntries, loadCategories} = useBlogCategories()
 onMounted(loadCategories)
 </script>
 <template>
@@ -45,9 +45,9 @@ onMounted(loadCategories)
         <el-icon><DocumentCopy/></el-icon>
         全部栏目
       </el-menu-item>
-      <el-menu-item v-for="category in categories" :key="category.id" :index="`/blog/categories/${category.id}`" @click="isClose">
-        <span class="mobile-category-name">{{ category.categoryName }}</span>
-        <small v-if="category.articleCount !== undefined">{{ category.articleCount }}</small>
+      <el-menu-item v-for="entry in categoryEntries" :key="entry.categoryId" :index="entry.path" @click="isClose">
+        <span class="mobile-category-name">{{ entry.category.categoryName }}</span>
+        <small v-if="entry.category.articleCount !== undefined">{{ entry.category.articleCount }}</small>
       </el-menu-item>
     </el-sub-menu>
     <el-menu-item index="/photos" @click="isClose">

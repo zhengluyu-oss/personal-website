@@ -16,11 +16,19 @@ import MobileDirectoryCard from "./MobileDirectoryCard/index.vue";
 import {ARTICLE_VISIT_PREFIX} from "@/const/Visits";
 import { ossUrl } from '@/config/site'
 import { setSeoMeta } from '@/utils/seo'
+import { categoryRoute } from '@/utils/category-slug'
+import { useBlogCategories } from '@/composables/useBlogCategories'
 
 const payQrUrl = ossUrl('blog/pay/支付宝支付二维码_.png')
 const env = import.meta.env;
 
 const websiteStore = useWebsiteStore()
+const { categories, loadCategories } = useBlogCategories()
+
+async function openArticleCategory() {
+  await loadCategories()
+  router.push(categoryRoute(categories.value, articleDetail.value.categoryId))
+}
 const mode = 'light'
 const id = 'preview-only';
 const scrollElement = document.documentElement;
@@ -61,6 +69,7 @@ watch(() => route.params.id, () => {
 
 
 onMounted(async () => {
+  void loadCategories()
   await getArticleDetailById()
 })
 
@@ -219,7 +228,7 @@ const readingMinutes = computed(() => {
     <main v-if="loading" class="article-shell">
       <header class="article-intro">
         <div class="article-kicker">
-          <button type="button" @click="$router.push(`/blog/categories/${articleDetail.categoryId}`)">{{ articleDetail.categoryName }}</button>
+          <button type="button" @click="openArticleCategory">{{ articleDetail.categoryName }}</button>
           <span>ARTICLE {{ String(articleDetail.id).padStart(3, '0') }}</span>
         </div>
         <h1>{{ articleDetail.articleTitle }}</h1>
