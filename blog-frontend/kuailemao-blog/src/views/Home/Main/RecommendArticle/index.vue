@@ -48,7 +48,7 @@ function loadContent(){
             v-if="recommendArticles.length > 0"
     >
       <swiper-slide v-for="recommendArticle in recommendArticles" :key="recommendArticle.id"
-                    @click="$router.push(`/article/${recommendArticle.id}`)">
+                    @click="$router.push(`/blog/articles/${recommendArticle.id}`)">
         <el-image :src="recommendArticle.articleCover" fit="cover"/>
         <div class="slide-shade" aria-hidden="true"/>
         <div class="item_text">

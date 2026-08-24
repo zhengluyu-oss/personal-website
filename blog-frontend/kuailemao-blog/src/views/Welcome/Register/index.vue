@@ -96,7 +96,7 @@ function registerBtn() {
       register(form).then(res => {
         if (res.code === 200) {
           ElMessage.success('注册成功，欢迎加入我们')
-          router.push('/login')
+          router.push('/auth/login')
         } else {
           ElMessage.warning(res.msg)
         }
@@ -178,7 +178,7 @@ function registerBtn() {
     </div>
     <div style="margin-top: 20px">
       <span style="font-size: 14px;line-height: 15px;color: grey">已有账号?</span>
-      <el-link style="translate: 0 -1px" @click="$router.push('/login')">立即登录</el-link>
+      <el-link style="translate: 0 -1px" @click="$router.push('/auth/login')">立即登录</el-link>
     </div>
   </div>
 </template>

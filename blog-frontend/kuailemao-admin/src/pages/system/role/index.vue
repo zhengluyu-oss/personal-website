@@ -307,7 +307,7 @@ async function updateOrInsertRole(id?: string) {
                 <span style="margin-inline-start:1px">删除</span>
               </a-button>
             </a-popconfirm>
-            <a-button type="link" style="padding: 0;margin-left: 5px" @click="$router.push({ path: '/role/authorization', query: { id: record.id, name: record.roleName } })">
+            <a-button type="link" style="padding: 0;margin-left: 5px" @click="$router.push({ path: `/roles/${record.id}`, query: { name: record.roleName } })">
               <template #icon>
                 <KeyOutlined />
               </template>

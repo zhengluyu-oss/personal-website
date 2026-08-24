@@ -32,7 +32,7 @@ function loadContent() {
 
 // 跳转到标签详情页
 function goToTag(tagId: number) {
-  router.push(`/tags/${tagId}`);
+  router.push(`/blog/tags/${tagId}`);
 }
 
 onMounted(() => {
