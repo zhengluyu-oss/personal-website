@@ -340,7 +340,8 @@ printf '%s\n' "`$HEADERS" | grep -qi '^Content-Encoding: gzip'
 printf '%s\n' "`$HEADERS" | grep -qi '^Cache-Control: .*immutable'
 curl -fsS -H 'Host: www.zhengluyu.com' http://127.0.0.1/api/websiteInfo/front >/dev/null
 trap - ERR
-rm -rf "`${REMOTE_BLOG}.previous"
+# 保留一版静态资源，为部署前已打开的页面继续提供旧哈希分包。
+# 下一次部署会先删除并重新生成该目录，因此磁盘占用不会持续累积。
 rm -f "`$NGINX_BACKUP"
 echo REMOTE_HEALTH_OK
 "@
