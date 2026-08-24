@@ -3,10 +3,9 @@ export interface SeoMeta { title: string; description: string; keywords: string 
 const fixedSeo: Record<string, SeoMeta> = {
   home: { title: '陆屿的个人博客，欢迎来到我的小世界', description: '郑陆宇的个人博客，分享前后端开发、项目实践、技术笔记、工作经历与持续成长。', keywords: '郑陆宇,个人博客,Java,Spring Boot,Vue,前端开发,后端开发,项目复盘' },
   blog: { title: '个人博客 | 郑陆宇', description: '浏览郑陆宇发布的技术文章、项目复盘与成长记录。', keywords: '个人博客,技术文章,项目复盘,郑陆宇' },
-  categories: { title: '文章分类 | 郑陆宇的个人博客', description: '按分类浏览技术笔记、项目实践与开发经验。', keywords: '文章分类,技术笔记,开发经验' },
   experience: { title: '工作经历 | 郑陆宇', description: '了解郑陆宇的工作经历、项目职责、技术实践与职业成长。', keywords: '郑陆宇,工作经历,项目经验,软件开发' },
   timeline: { title: '文章归档 | 郑陆宇的个人博客', description: '按时间浏览郑陆宇个人博客发布的技术文章与成长记录。', keywords: '文章归档,技术博客,时间轴,郑陆宇' },
-  category: { title: '文章分类 | 郑陆宇的个人博客', description: '按分类浏览技术笔记、项目实践与开发经验。', keywords: '文章分类,技术笔记,开发经验' },
+  category: { title: '博客主题 | 郑陆宇的个人博客', description: '按主题浏览郑陆宇的技术笔记、项目实践与开发经验。', keywords: '博客主题,技术笔记,开发经验,郑陆宇' },
   tags: { title: '文章标签 | 郑陆宇的个人博客', description: '通过标签快速发现感兴趣的技术主题与项目记录。', keywords: '文章标签,技术主题,项目记录' },
   tag: { title: '文章标签 | 郑陆宇的个人博客', description: '通过标签快速发现感兴趣的技术主题与项目记录。', keywords: '文章标签,技术主题,项目记录' },
   treeHole: { title: '心灵树洞 | 郑陆宇的个人博客', description: '记录与分享生活中的想法、感受和温暖片段。', keywords: '心灵树洞,生活记录,随想' },

@@ -18,7 +18,7 @@ import {useBlogCategories} from "@/composables/useBlogCategories";
 const userStore = useUserStore()
 const useWebsite = useWebsiteStore()
 const dialogVisible = ref(false)
-const {categories, loadCategories} = useBlogCategories()
+const {categoryEntries, loadCategories} = useBlogCategories()
 
 const logoutSub = () => {
   logout().then((res: any) => {
@@ -88,8 +88,8 @@ onMounted(() => {
               <li class="all-categories" @click.stop="router.push('/blog')">
                 <span><el-icon><DocumentCopy/></el-icon><span>全部栏目</span></span>
               </li>
-              <li v-for="category in categories" :key="category.id" @click.stop="router.push(`/blog/categories/${category.id}`)">
-                <span class="category-link"><span>{{ category.categoryName }}</span><small v-if="category.articleCount !== undefined">{{ category.articleCount }}</small></span>
+              <li v-for="entry in categoryEntries" :key="entry.categoryId" @click.stop="router.push(entry.path)">
+                <span class="category-link"><span>{{ entry.category.categoryName }}</span><small v-if="entry.category.articleCount !== undefined">{{ entry.category.articleCount }}</small></span>
               </li>
             </ul>
           </div>
