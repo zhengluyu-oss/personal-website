@@ -37,10 +37,32 @@ export const useAppStore = defineStore('app', () => {
   const themeConfig = reactive<ThemeConfig>({
     algorithm: antdTheme.defaultAlgorithm,
     token: {
-      colorBgContainer: '#fff',
+      colorBgBase: '#f7f9fc',
+      colorBgContainer: '#ffffff',
+      colorBorderSecondary: '#e5eaf2',
+      colorText: '#162033',
+      colorTextSecondary: '#647089',
       colorPrimary: layoutSetting.colorPrimary,
+      borderRadius: 10,
+      borderRadiusLG: 14,
+      boxShadowSecondary: '0 18px 45px rgba(23, 43, 77, 0.08)',
     },
-    components: {},
+    components: {
+      Layout: {
+        bodyBg: '#f4f7fb',
+        headerBg: 'rgba(255, 255, 255, 0.88)',
+        siderBg: '#ffffff',
+      },
+      Menu: {
+        itemBg: 'transparent',
+        itemColor: '#526079',
+        itemHoverBg: '#eef4ff',
+        itemHoverColor: '#155eef',
+        itemSelectedBg: '#e8f0ff',
+        itemSelectedColor: '#155eef',
+        subMenuItemBg: 'transparent',
+      },
+    },
   })
   const locale = ref<string>(lsLocaleState.value)
   const toggleLocale = (locale: string) => {
@@ -88,16 +110,8 @@ export const useAppStore = defineStore('app', () => {
       themeConfig.token.colorPrimary = color
   }
 
-  // 如果加载进来是暗色模式，就切换到暗色模式
-  if (isDark.value)
-    toggleTheme('dark')
-
-  // 监听isDark的变化
-  watch(isDark, () => {
-    if (isDark.value)
-      toggleTheme('dark')
-    else toggleTheme('light')
-  })
+  // 管理工作台采用固定浅色主题，避免跟随系统主题退回黑灰界面。
+  toggleDark(false)
 
   // 监听isDark的变化
   watch(preferredLanguages, () => {

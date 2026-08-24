@@ -17,6 +17,7 @@ import 'uno.css'
 
 // 自定义 a-button 颜色
 import '~/assets/styles/my-a-button.css'
+import '~/assets/styles/workspace.scss'
 
 const pinia = createPinia()
 

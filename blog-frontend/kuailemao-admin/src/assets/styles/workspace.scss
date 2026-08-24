@@ -1,0 +1,115 @@
+:root {
+  color-scheme: light;
+  --workspace-canvas: #f4f7fb;
+  --workspace-surface: #ffffff;
+  --workspace-ink: #162033;
+  --workspace-muted: #647089;
+  --workspace-line: #e5eaf2;
+  --workspace-accent: #155eef;
+}
+
+html,
+body,
+#app {
+  min-width: 320px;
+  min-height: 100dvh;
+  background: var(--workspace-canvas);
+  color: var(--workspace-ink);
+}
+
+body {
+  background-image:
+    linear-gradient(rgba(21, 94, 239, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(21, 94, 239, 0.025) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.ant-pro-basicLayout .ant-layout {
+  background: transparent !important;
+}
+
+.ant-pro-basicLayout-content {
+  margin: 18px 22px 24px !important;
+}
+
+.ant-pro-sider {
+  border-right: 1px solid var(--workspace-line);
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(18px);
+}
+
+.ant-pro-sider-fixed {
+  box-shadow: 14px 0 40px rgba(34, 58, 94, 0.055) !important;
+}
+
+.ant-pro-sider-logo {
+  min-height: 72px;
+  margin: 0 12px;
+  padding: 18px 12px !important;
+  border-bottom: 1px solid var(--workspace-line);
+}
+
+.ant-pro-sider-logo h1 {
+  color: var(--workspace-ink) !important;
+  font-size: 16px !important;
+  letter-spacing: -0.02em;
+}
+
+.ant-pro-sider-menu {
+  padding: 12px 10px 18px;
+}
+
+.ant-pro-sider-menu .ant-menu-item,
+.ant-pro-sider-menu .ant-menu-submenu-title {
+  min-height: 42px;
+  margin-block: 4px !important;
+  border-radius: 9px !important;
+  font-weight: 600;
+}
+
+.ant-pro-sider-menu .ant-menu-item-selected {
+  box-shadow: inset 3px 0 0 var(--workspace-accent);
+}
+
+.ant-pro-global-header {
+  border-bottom: 1px solid rgba(229, 234, 242, 0.92);
+  background: rgba(255, 255, 255, 0.86) !important;
+  backdrop-filter: blur(18px);
+  box-shadow: none !important;
+}
+
+.ant-pro-global-header-layout-side {
+  padding-inline: 18px !important;
+}
+
+.ant-card,
+.ant-table-wrapper .ant-table,
+.ant-modal-content,
+.ant-drawer-content {
+  border: 1px solid var(--workspace-line);
+  box-shadow: 0 16px 44px rgba(32, 55, 88, 0.07) !important;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th {
+  background: #f7f9fc !important;
+  color: #526079;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 767px) {
+  .ant-pro-basicLayout-content {
+    margin: 10px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

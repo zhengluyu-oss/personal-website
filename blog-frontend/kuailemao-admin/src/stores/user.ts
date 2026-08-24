@@ -26,7 +26,12 @@ export const useUserStore = defineStore('user', () => {
     const dynamicLoadWay = DYNAMIC_LOAD_WAY === DynamicLoadEnum.BACKEND ? getMenuRoutes : generateRoutes
     const { menuData: treeMenuData, routeData } = await dynamicLoadWay()
 
-    menuData.value = treeMenuData
+    // 顶级工作区只展示内容管理与系统管理。其余路由仍会注册，旧链接保持可访问。
+    const workspaceRootIds = new Set([1, 28, '1', '28'])
+    menuData.value = treeMenuData.filter((item) => {
+      const normalizedPath = item.path?.replace(/\/$/, '')
+      return workspaceRootIds.has(item.id ?? '') || normalizedPath === '/blog' || normalizedPath === '/system'
+    })
 
     routerData.value = {
       ...rootRoute,
