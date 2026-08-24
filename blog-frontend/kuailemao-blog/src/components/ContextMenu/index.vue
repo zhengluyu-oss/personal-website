@@ -47,7 +47,7 @@
             </div>
           </div>
           <ul class="submenu" :style="isDarkMode ? 'background-color: #1e1b2d; border-color: #2d2644;' : 'background-color: #ffffff;'">
-            <li class="submenu-item" @click.stop="navigateTo('/category')">
+            <li class="submenu-item" @click.stop="navigateTo('/blog/categories')">
               <div class="submenu-item-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" :stroke="isDarkMode ? '#a78bfa' : '#8b5cf6'" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -59,7 +59,7 @@
               </div>
               <span>分类</span>
             </li>
-            <li class="submenu-item" @click.stop="navigateTo('/tags')">
+            <li class="submenu-item" @click.stop="navigateTo('/blog/tags')">
               <div class="submenu-item-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" :stroke="isDarkMode ? '#a78bfa' : '#8b5cf6'" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
@@ -68,7 +68,7 @@
               </div>
               <span>标签</span>
             </li>
-            <li class="submenu-item" @click.stop="navigateTo('/timeline')">
+            <li class="submenu-item" @click.stop="navigateTo('/blog/archive')">
               <div class="submenu-item-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" :stroke="isDarkMode ? '#a78bfa' : '#8b5cf6'" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10"></circle>
@@ -108,7 +108,7 @@
               </div>
               <span>树洞</span>
             </li>
-            <li class="submenu-item" @click.stop="navigateTo('/message')">
+            <li class="submenu-item" @click.stop="navigateTo('/messages')">
               <div class="submenu-item-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" :stroke="isDarkMode ? '#a78bfa' : '#8b5cf6'" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -130,7 +130,7 @@
         </li>
         
         <!-- 友链 -->
-        <li class="menu-item" @click="navigateTo('/link')">
+        <li class="menu-item" @click="navigateTo('/links')">
           <div class="menu-item-icon">
             <svg viewBox="0 0 24 24" width="24" height="24" :stroke="isDarkMode ? '#a78bfa' : '#8b5cf6'" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
@@ -153,7 +153,7 @@
         </li>
         
         <!-- 相册 -->
-        <li class="menu-item" @click="navigateTo('/photo')">
+        <li class="menu-item" @click="navigateTo('/photos')">
           <div class="menu-item-icon">
             <svg viewBox="0 0 24 24" width="24" height="24" :stroke="isDarkMode ? '#a78bfa' : '#8b5cf6'" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -633,4 +633,4 @@ html[class='dark'] .submenu-item:hover .submenu-item-icon svg {
   font-weight: 600;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
-</style> 
+</style>

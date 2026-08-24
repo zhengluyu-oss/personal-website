@@ -121,7 +121,7 @@ function cancelFavoriteFunc() {
 <template>
   <div>
     <div>
-      <el-link :icon="ArrowLeftBold" @click="$router.push('/message')">回到留言列表</el-link>
+      <el-link :icon="ArrowLeftBold" @click="$router.push('/messages')">回到留言列表</el-link>
       <el-divider/>
     </div>
     <div class="user">

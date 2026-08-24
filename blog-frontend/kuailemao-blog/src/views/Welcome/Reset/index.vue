@@ -86,7 +86,7 @@ function doReset() {
       resetPasswordStepTwo(form).then(res => {
         if (res.code === 200) {
           ElMessage.success('密码重置成功，请重新登录')
-          router.push('/login')
+          router.push('/auth/login')
         } else {
           ElMessage.warning(res.msg)
         }
@@ -182,7 +182,7 @@ function doReset() {
     </div>
     <div style="margin-top: 20px">
       <span style="font-size: 14px;line-height: 15px;color: grey">改变注意?</span>
-      <el-link style="translate: 0 -1px" @click="$router.push('/login')">返回登录</el-link>
+      <el-link style="translate: 0 -1px" @click="$router.push('/auth/login')">返回登录</el-link>
     </div>
   </div>
 </template>

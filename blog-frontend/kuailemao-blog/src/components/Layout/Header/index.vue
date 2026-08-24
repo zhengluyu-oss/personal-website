@@ -104,7 +104,7 @@ const drawer = ref(false)
               content="点击去登录"
               placement="right"
           >
-            <el-avatar @click="$router.push('/welcome')" style="margin-right: 3rem">登录</el-avatar>
+            <el-avatar @click="$router.push('/auth/login')" style="margin-right: 3rem">登录</el-avatar>
           </el-tooltip>
         </div>
         <div v-else style="display: flex">
@@ -131,7 +131,7 @@ const drawer = ref(false)
               <el-avatar style="margin-right: 3rem"
                          :src="userStore.userInfo?.avatar"></el-avatar>
               <template #dropdown>
-                <el-dropdown-item @click="router.push('/setting')">
+                <el-dropdown-item @click="router.push('/account')">
                   <template #default>
                     <el-icon>
                       <Setting/>

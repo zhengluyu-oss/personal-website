@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { categoryList } from '@/apis/category'
 import { whereArticleList } from '@/apis/article'
 import { getArticleList } from '@/apis/home'
@@ -8,203 +8,192 @@ import WritingPageHeader from '@/components/Writing/WritingPageHeader.vue'
 import WritingArticleList, { type WritingArticleItem } from '@/components/Writing/WritingArticleList.vue'
 import WritingFilterNav from '@/components/Writing/WritingFilterNav.vue'
 
-interface CategoryItem {
-  id: number
-  categoryName: string
-  articleCount?: number
-}
+interface CategoryItem { id: number; categoryName: string; articleCount?: number }
+type BlogArticle = WritingArticleItem
 
 const route = useRoute()
+const router = useRouter()
 const categories = ref<CategoryItem[]>([])
-const articleList = ref<WritingArticleItem[]>([])
-const groupedArticles = ref<Array<{ category: CategoryItem; articles: WritingArticleItem[] }>>([])
+const articles = ref<BlogArticle[]>([])
+const articleList = ref<BlogArticle[]>([])
 const loading = ref(true)
+const loadError = ref(false)
 
 const isDetailView = computed(() => Boolean(route.params.id))
 const activeCategoryId = computed(() => route.params.id as string | undefined)
-const activeCategory = computed(() =>
-  categories.value.find(item => String(item.id) === String(activeCategoryId.value)),
-)
-const totalArticles = computed(() =>
-  categories.value.reduce((sum, item) => sum + Number(item.articleCount || 0), 0),
-)
-const filterItems = computed(() =>
-  categories.value.map(item => ({ id: item.id, label: item.categoryName })),
-)
+const activeCategory = computed(() => categories.value.find(item => String(item.id) === String(activeCategoryId.value)))
+const featuredArticle = computed(() => articles.value[0])
+const remainingArticles = computed(() => articles.value.slice(1))
+const totalArticles = computed(() => categories.value.reduce((sum, item) => sum + Number(item.articleCount || 0), 0))
+const activeCategories = computed(() => categories.value.filter(item => Number(item.articleCount) > 0))
+const filterItems = computed(() => categories.value.map(item => ({ id: item.id, label: item.categoryName })))
 
-async function loadCategories() {
-  const res = await categoryList()
-  if (res.code === 200) {
-    categories.value = res.data || []
+function normalizeArticle(item: any): BlogArticle {
+  return {
+    ...item,
+    tags: Array.isArray(item.tags)
+      ? item.tags.map((tag: string | { id?: number; tagName?: string }, index: number) =>
+          typeof tag === 'string' ? { id: index, tagName: tag } : { id: tag.id ?? index, tagName: tag.tagName || '' },
+        ).filter((tag: { tagName: string }) => tag.tagName)
+      : [],
   }
 }
 
-async function loadGroupedArticles() {
-  const res = await getArticleList(1, 100)
-  const articles: WritingArticleItem[] = res?.data?.page || []
-  const map = new Map<number, WritingArticleItem[]>()
-
-  articles.forEach(article => {
-    const categoryId = Number((article as WritingArticleItem & { categoryId?: number }).categoryId)
-    if (!categoryId) return
-    const bucket = map.get(categoryId) || []
-    bucket.push(article)
-    map.set(categoryId, bucket)
-  })
-
-  groupedArticles.value = categories.value
-    .filter(category => (map.get(category.id)?.length || Number(category.articleCount) > 0))
-    .map(category => ({
-      category,
-      articles: (map.get(category.id) || []).slice(0, 3),
-    }))
-    .filter(group => group.articles.length > 0)
+function excerpt(value?: string, limit = 110) {
+  const text = (value || '').replace(/```[\s\S]*?```/g, ' ').replace(/[#>*`~\[\]()_-]/g, ' ').replace(/\s+/g, ' ').trim()
+  return text.length > limit ? `${text.slice(0, limit)}…` : text
 }
-
-async function loadCategoryArticles(id: string) {
-  const res = await whereArticleList(1, id)
-  articleList.value = res.code === 200 && res.data ? res.data : []
-}
+const displayDate = (value?: string) => value?.slice(0, 10).replace(/-/g, '.') || ''
+const openArticle = (id: number | string) => router.push(`/blog/articles/${id}`)
 
 async function bootstrap() {
   loading.value = true
+  loadError.value = false
   try {
-    await loadCategories()
+    const categoryRes = await categoryList()
+    if (categoryRes.code === 200) categories.value = categoryRes.data || []
     if (route.params.id) {
-      await loadCategoryArticles(String(route.params.id))
+      const res = await whereArticleList(1, String(route.params.id))
+      articleList.value = res.code === 200 && res.data ? res.data.map(normalizeArticle) : []
     } else {
-      await loadGroupedArticles()
+      const res = await getArticleList(1, 100)
+      articles.value = (res?.data?.page || []).map(normalizeArticle)
     }
+  } catch {
+    loadError.value = true
   } finally {
     loading.value = false
   }
 }
 
 onMounted(bootstrap)
-
-watch(() => route.params.id, async (id) => {
-  loading.value = true
-  try {
-    if (id) {
-      await loadCategoryArticles(String(id))
-    } else {
-      await loadGroupedArticles()
-    }
-  } finally {
-    loading.value = false
-  }
-})
+watch(() => route.params.id, bootstrap)
 </script>
 
 <template>
   <Main only-father-container>
     <template #content>
-      <div class="writing-page">
+      <main class="blog-journal">
         <template v-if="!isDetailView">
-          <WritingPageHeader
-            title="技术写作"
-            description="按主题整理的技术笔记与项目复盘，延续首页「近期写作」的阅读体验。"
-            :meta="`${totalArticles} articles`"
-          />
+          <header class="blog-hero">
+            <div class="blog-hero__copy">
+              <p class="blog-hero__eyebrow">CODE · NOTES · PRACTICE</p>
+              <h1>在代码之外，<br><span>记录思考发生的地方。</span></h1>
+              <p class="blog-hero__intro">技术实践、工具研究与项目复盘。这里收录我在构建产品、解决问题和持续学习过程中留下的完整记录。</p>
+            </div>
+            <div class="blog-hero__stats" aria-label="博客数据">
+              <strong>{{ totalArticles }}</strong><span>篇公开文章</span><small>{{ activeCategories.length }} 个持续更新的主题</small>
+            </div>
+          </header>
 
-          <p v-if="loading" class="writing-page__state">加载中…</p>
+          <nav v-if="categories.length" class="topic-nav" aria-label="文章分类">
+            <router-link to="/blog" class="is-active">全部文章</router-link>
+            <router-link v-for="category in categories" :key="category.id" :to="`/blog/categories/${category.id}`">
+              {{ category.categoryName }}<sup>{{ category.articleCount || 0 }}</sup>
+            </router-link>
+          </nav>
 
-          <section
-            v-for="group in groupedArticles"
-            :key="group.category.id"
-            class="writing-section"
-          >
-            <header class="writing-section__header">
-              <h2>{{ group.category.categoryName }}</h2>
-              <router-link :to="`/category/${group.category.id}`">
-                查看全部 <span aria-hidden="true">→</span>
-              </router-link>
-            </header>
-            <WritingArticleList :articles="group.articles" />
+          <section v-if="loading" class="blog-skeleton" aria-label="文章正在加载"><div /><div /><div /></section>
+          <section v-else-if="loadError" class="blog-state">
+            <strong>内容暂时没有加载成功</strong><p>请检查网络后重新尝试。</p><button type="button" @click="bootstrap">重新加载</button>
           </section>
+          <section v-else-if="featuredArticle" class="journal-content">
+            <article class="featured-story" tabindex="0" @click="openArticle(featuredArticle.id)" @keydown.enter="openArticle(featuredArticle.id)">
+              <div class="featured-story__cover"><img v-if="featuredArticle.articleCover" :src="featuredArticle.articleCover" :alt="featuredArticle.articleTitle"></div>
+              <div class="featured-story__content">
+                <div class="story-meta"><span>{{ featuredArticle.categoryName || '近期写作' }}</span><time>{{ displayDate(featuredArticle.createTime) }}</time></div>
+                <h2>{{ featuredArticle.articleTitle }}</h2><p>{{ excerpt(featuredArticle.articleContent, 145) }}</p>
+                <span class="story-link">阅读全文 <b aria-hidden="true">→</b></span>
+              </div>
+            </article>
 
-          <section v-if="!loading && !groupedArticles.length" class="writing-section">
-            <WritingArticleList :articles="[]" empty-text="暂无文章，稍后再来看看。" />
+            <div class="section-heading">
+              <div><p>LATEST NOTES</p><h2>最近更新</h2></div><router-link to="/blog/archive">按时间浏览全部文章 →</router-link>
+            </div>
+            <div class="article-grid">
+              <article v-for="article in remainingArticles" :key="article.id" class="article-card" tabindex="0" @click="openArticle(article.id)" @keydown.enter="openArticle(article.id)">
+                <div class="article-card__cover"><img v-if="article.articleCover" :src="article.articleCover" :alt="article.articleTitle" loading="lazy"></div>
+                <div class="article-card__body">
+                  <div class="story-meta"><span>{{ article.categoryName || '技术笔记' }}</span><time>{{ displayDate(article.createTime) }}</time></div>
+                  <h3>{{ article.articleTitle }}</h3><p>{{ excerpt(article.articleContent) }}</p>
+                  <footer><span>{{ article.visitCount || 0 }} 次阅读</span><b aria-hidden="true">↗</b></footer>
+                </div>
+              </article>
+            </div>
           </section>
+          <section v-else class="blog-state"><strong>第一篇文章正在路上</strong><p>这里将用于记录技术实践、项目复盘与持续学习。</p></section>
         </template>
 
         <template v-else>
-          <WritingPageHeader
-            :title="activeCategory?.categoryName || '文章分类'"
-            description="该分类下的全部文章。"
-            :meta="`${articleList.length} articles`"
-          />
-
-          <WritingFilterNav
-            v-if="filterItems.length"
-            :items="filterItems"
-            :active-id="activeCategoryId"
-            base-path="/category"
-          />
-
-          <p v-if="loading" class="writing-page__state">加载中…</p>
-          <WritingArticleList
-            v-else
-            :articles="articleList"
-            empty-text="该分类下暂无文章。"
-          />
+          <section class="category-detail">
+            <WritingPageHeader :title="activeCategory?.categoryName || '文章分类'" description="该主题下的全部技术记录与实践复盘。" :meta="`${articleList.length} articles`" />
+            <WritingFilterNav v-if="filterItems.length" :items="filterItems" :active-id="activeCategoryId" base-path="/blog/categories" />
+            <p v-if="loading" class="category-detail__state">加载中…</p>
+            <WritingArticleList v-else :articles="articleList" empty-text="该分类下暂无文章。" />
+          </section>
         </template>
-      </div>
+      </main>
     </template>
   </Main>
 </template>
 
 <style scoped lang="scss">
-.writing-page {
-  --accent: var(--brand-accent);
-  width: min(calc(100% - 1rem), 72rem);
-  margin-inline: auto;
-  padding: clamp(1.25rem, 3vw, 2.5rem);
-}
-
-.writing-page__state {
-  margin: 0;
-  padding: 2rem 0;
-  color: var(--brand-ink-soft);
-  text-align: center;
-}
-
-.writing-section + .writing-section {
-  margin-top: clamp(2.5rem, 6vw, 4rem);
-}
-
-.writing-section__header {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-
-  h2 {
-    margin: 0;
-    font-size: clamp(1.35rem, 3vw, 2rem);
-    font-weight: 700;
-    letter-spacing: -0.04em;
-    color: var(--brand-ink);
-  }
-
-  a {
-    color: var(--brand-ink);
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-decoration: none;
-    white-space: nowrap;
-
-    span {
-      color: var(--accent);
-    }
-  }
-}
-
-@media (max-width: 720px) {
-  .writing-section__header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-}
+.blog-journal { --journal-blue: #112a4a; --journal-accent: var(--brand-accent); min-height: 72vh; color: var(--brand-ink); }
+.blog-hero { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(13rem, .55fr); gap: clamp(2rem, 8vw, 7rem); align-items: end; padding: clamp(4rem, 9vw, 8rem) max(1.25rem, calc((100vw - 72rem) / 2)); background: radial-gradient(circle at 82% 20%, rgba(72,124,181,.22), transparent 26rem), linear-gradient(135deg, #0b1c35, var(--journal-blue)); color: #fff; }
+.blog-hero__eyebrow { margin: 0 0 1.25rem; color: #a9bed8; font-family: "Share TechMono", monospace; font-size: .72rem; letter-spacing: .18em; }
+.blog-hero h1 { margin: 0; max-width: 13ch; font-size: clamp(2.8rem, 6.4vw, 6rem); font-weight: 780; line-height: 1.02; letter-spacing: -.065em; }
+.blog-hero h1 span { color: #c9d8e9; }
+.blog-hero__intro { max-width: 39rem; margin: 1.6rem 0 0; color: #b8c8dc; font-size: clamp(.95rem, 1.4vw, 1.08rem); line-height: 1.85; }
+.blog-hero__stats { padding-left: 1.5rem; border-left: 1px solid rgba(255,255,255,.24); }
+.blog-hero__stats strong { display: block; font-family: "Share TechMono", monospace; font-size: clamp(3rem, 6vw, 5.5rem); font-weight: 500; line-height: .9; }
+.blog-hero__stats span, .blog-hero__stats small { display: block; }
+.blog-hero__stats span { margin-top: .85rem; font-weight: 700; }
+.blog-hero__stats small { margin-top: .4rem; color: #9eb2cb; font-size: .78rem; }
+.topic-nav { display: flex; gap: .55rem; overflow-x: auto; padding: 1.35rem max(1.25rem, calc((100vw - 72rem) / 2)); border-bottom: 1px solid var(--brand-line); scrollbar-width: none; }
+.topic-nav a { flex: 0 0 auto; padding: .55rem .85rem; border-radius: var(--brand-radius-sm); color: var(--brand-ink-soft); font-size: .82rem; font-weight: 650; text-decoration: none; transition: background .2s ease, color .2s ease; }
+.topic-nav a:hover, .topic-nav a.is-active { background: var(--brand-accent-soft); color: var(--brand-accent-strong); }
+.topic-nav sup { margin-left: .25rem; color: var(--brand-ink-faint); font-family: "Share TechMono", monospace; }
+.journal-content, .category-detail, .blog-state, .blog-skeleton { width: min(calc(100% - 2rem), 72rem); margin-inline: auto; }
+.journal-content { padding: clamp(2rem, 5vw, 4.5rem) 0 5rem; }
+.featured-story { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(18rem, .85fr); min-height: 25rem; overflow: hidden; border-radius: var(--brand-radius-lg); background: var(--brand-surface); box-shadow: 0 22px 70px rgba(24,55,91,.12); cursor: pointer; }
+.featured-story:focus-visible { outline: 3px solid var(--journal-accent); outline-offset: 4px; }
+.featured-story__cover { min-height: 20rem; overflow: hidden; background: var(--brand-canvas-soft); }
+.featured-story__cover img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s cubic-bezier(.2,.65,.3,1); }
+.featured-story:hover .featured-story__cover img { transform: scale(1.035); }
+.featured-story__content { display: flex; flex-direction: column; justify-content: center; padding: clamp(1.5rem, 4vw, 3.25rem); }
+.featured-story h2 { margin: 1rem 0 0; font-size: clamp(1.8rem, 3.5vw, 3rem); line-height: 1.16; letter-spacing: -.045em; }
+.featured-story p { margin: 1rem 0 0; color: var(--brand-ink-soft); line-height: 1.75; }
+.story-meta { display: flex; flex-wrap: wrap; gap: .8rem; color: var(--brand-ink-faint); font-family: "Share TechMono", monospace; font-size: .7rem; }
+.story-meta span { color: var(--journal-accent); font-weight: 700; }
+.story-link { margin-top: 1.5rem; color: var(--brand-ink); font-weight: 750; }
+.story-link b { margin-left: .35rem; color: var(--journal-accent); }
+.section-heading { display: flex; align-items: end; justify-content: space-between; gap: 1.5rem; margin: clamp(3.5rem, 7vw, 6rem) 0 1.4rem; }
+.section-heading p { margin: 0 0 .4rem; color: var(--brand-ink-faint); font-family: "Share TechMono", monospace; font-size: .68rem; letter-spacing: .13em; }
+.section-heading h2 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.8rem); letter-spacing: -.045em; }
+.section-heading a { color: var(--brand-ink-soft); font-size: .8rem; font-weight: 700; text-decoration: none; }
+.section-heading a:hover { color: var(--journal-accent); }
+.article-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
+.article-card { overflow: hidden; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-lg); background: var(--brand-surface); cursor: pointer; transition: transform .24s ease, border-color .24s ease, box-shadow .24s ease; }
+.article-card:hover { transform: translateY(-4px); border-color: rgba(38,94,154,.35); box-shadow: 0 18px 45px rgba(24,55,91,.1); }
+.article-card:focus-visible { outline: 3px solid var(--journal-accent); outline-offset: 3px; }
+.article-card__cover { aspect-ratio: 16 / 10; overflow: hidden; background: linear-gradient(135deg, #dce7f2, #eef3f8); }
+.article-card__cover img { width: 100%; height: 100%; object-fit: cover; transition: transform .45s ease; }
+.article-card:hover img { transform: scale(1.04); }
+.article-card__body { padding: 1.15rem; }
+.article-card h3 { min-height: 2.8em; margin: .8rem 0 0; font-size: 1.08rem; line-height: 1.4; letter-spacing: -.02em; }
+.article-card p { min-height: 4.8em; margin: .7rem 0 0; color: var(--brand-ink-soft); font-size: .82rem; line-height: 1.6; }
+.article-card footer { display: flex; justify-content: space-between; margin-top: 1.1rem; color: var(--brand-ink-faint); font-size: .72rem; }
+.article-card footer b { color: var(--journal-accent); }
+.blog-state { margin-block: 4rem; padding: 4rem 1.5rem; text-align: center; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-lg); background: var(--brand-surface); }
+.blog-state strong { font-size: 1.3rem; }
+.blog-state p { color: var(--brand-ink-soft); }
+.blog-state button { margin-top: .5rem; padding: .7rem 1rem; border: 0; border-radius: var(--brand-radius-sm); background: var(--journal-blue); color: #fff; cursor: pointer; }
+.blog-skeleton { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding-block: 4rem; }
+.blog-skeleton div { height: 20rem; border-radius: var(--brand-radius-lg); background: linear-gradient(100deg, var(--brand-canvas-soft) 30%, var(--brand-surface) 50%, var(--brand-canvas-soft) 70%); background-size: 300% 100%; animation: shimmer 1.3s infinite; }
+.category-detail { padding: clamp(2rem, 5vw, 4rem) 0 5rem; }
+.category-detail__state { padding: 2rem; text-align: center; color: var(--brand-ink-soft); }
+@keyframes shimmer { to { background-position-x: -200%; } }
+@media (max-width: 900px) { .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .featured-story { grid-template-columns: 1fr; } .featured-story__cover { aspect-ratio: 16 / 8; min-height: 0; } }
+@media (max-width: 640px) { .blog-hero { grid-template-columns: 1fr; gap: 2.5rem; padding-block: 3.5rem; } .blog-hero h1 { font-size: clamp(2.5rem, 13vw, 4rem); } .blog-hero__stats { display: grid; grid-template-columns: auto 1fr; column-gap: 1rem; align-items: end; } .blog-hero__stats small { grid-column: 2; } .article-grid, .blog-skeleton { grid-template-columns: 1fr; } .section-heading { align-items: flex-start; flex-direction: column; } .featured-story__cover { aspect-ratio: 16 / 10; } .article-card h3, .article-card p { min-height: auto; } }
+@media (prefers-reduced-motion: reduce) { .featured-story__cover img, .article-card, .article-card__cover img { transition: none; } .blog-skeleton div { animation: none; } }
 </style>

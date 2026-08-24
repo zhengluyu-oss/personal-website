@@ -67,14 +67,14 @@ onMounted(async () => {
     </section>
 
     <section v-if="featured || articles.length" class="writing section-shell" aria-labelledby="writing-title">
-      <header><h2 id="writing-title">近期写作</h2><router-link to="/category">查看全部文章 <span aria-hidden="true">→</span></router-link></header>
+      <header><h2 id="writing-title">近期写作</h2><router-link to="/blog">查看全部文章 <span aria-hidden="true">→</span></router-link></header>
       <div class="writing-grid">
-        <article v-if="featured" class="featured-story" tabindex="0" @click="router.push(`/article/${featured.id}`)" @keydown.enter="router.push(`/article/${featured.id}`)">
+        <article v-if="featured" class="featured-story" tabindex="0" @click="router.push(`/blog/articles/${featured.id}`)" @keydown.enter="router.push(`/blog/articles/${featured.id}`)">
           <img v-if="featured.articleCover" :src="featured.articleCover" :alt="featured.articleTitle" loading="lazy">
           <div><p>{{ featured.categoryName || '推荐阅读' }}</p><h3>{{ featured.articleTitle }}</h3><span>{{ excerpt(featured.articleContent) }}</span></div>
         </article>
         <div class="story-list">
-          <article v-for="item in articles.filter(article => article.id !== featured?.id).slice(0,4)" :key="item.id" tabindex="0" @click="router.push(`/article/${item.id}`)" @keydown.enter="router.push(`/article/${item.id}`)">
+          <article v-for="item in articles.filter(article => article.id !== featured?.id).slice(0,4)" :key="item.id" tabindex="0" @click="router.push(`/blog/articles/${item.id}`)" @keydown.enter="router.push(`/blog/articles/${item.id}`)">
             <time>{{ item.createTime?.slice(0,10) }}</time><div><p>{{ item.categoryName }}</p><h3>{{ item.articleTitle }}</h3></div><span aria-hidden="true">↗</span>
           </article>
         </div>
@@ -82,7 +82,7 @@ onMounted(async () => {
     </section>
 
     <section v-if="failed && !loading" class="state section-shell"><h2>内容暂时没有连上</h2><p>首页视觉已经就绪，刷新后可以重新读取文章与经历。</p></section>
-    <section class="closing section-shell"><p>持续学习，也持续把事情做完。</p><h2>下一段值得解决的问题，<br>正在路上。</h2><nav><router-link to="/about">关于我</router-link><router-link to="/category">阅读博客</router-link></nav></section>
+    <section class="closing section-shell"><p>持续学习，也持续把事情做完。</p><h2>下一段值得解决的问题，<br>正在路上。</h2><nav><router-link to="/about">关于我</router-link><router-link to="/blog">阅读博客</router-link></nav></section>
   </div>
 </template>
 

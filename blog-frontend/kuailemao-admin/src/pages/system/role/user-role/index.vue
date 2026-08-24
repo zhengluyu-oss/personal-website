@@ -85,7 +85,7 @@ async function refreshFunc(searchData?: object) {
     newData = searchData
   }
   else {
-    const { data } = await queryRoleUser(route.query.id as string)
+    const { data } = await queryRoleUser(route.params.id as string)
     if (data)
       newData = data
   }
@@ -100,7 +100,7 @@ const formData = reactive({
 
 async function onFinish(values: { username: string; email: string }) {
   loading.value = true
-  const { data } = await queryRoleUser(route.query.id as string, values.username, values.email)
+  const { data } = await queryRoleUser(route.params.id as string, values.username, values.email)
   await refreshFunc(data)
 }
 
@@ -120,7 +120,7 @@ async function deleteFunc(userId: string[]) {
   }
 
   const deleteData = {
-    roleId: route.query.id as string,
+    roleId: route.params.id as string,
     userId,
   }
   Modal.confirm({

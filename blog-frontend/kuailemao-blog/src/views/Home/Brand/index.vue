@@ -19,7 +19,7 @@ const hero = computed(() => {
     primaryText: info?.heroPrimaryText || '查看工作经历',
     primaryUrl: info?.heroPrimaryUrl || '/experience',
     secondaryText: info?.heroSecondaryText || '阅读博客',
-    secondaryUrl: info?.heroSecondaryUrl || '/category',
+    secondaryUrl: info?.heroSecondaryUrl || '/blog',
     sideLines: sideLines.length ? sideLines : [...HERO_SIDE_LINES],
   }
 })

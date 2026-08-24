@@ -53,11 +53,11 @@ async function refreshFunc(searchData?: { username: string | undefined; email: s
   loading.value = true
   let newData: any = []
   if (searchData) {
-    const { data } = await queryNotRoleUser(route.query.id as string, searchData.username, searchData.email)
+    const { data } = await queryNotRoleUser(route.params.id as string, searchData.username, searchData.email)
     newData = data
   }
   else {
-    const { data } = await queryNotRoleUser(route.query.id as string)
+    const { data } = await queryNotRoleUser(route.params.id as string)
     if (data)
       newData = data
   }
@@ -103,10 +103,10 @@ function onSelectChange(selectedRowKeys: Key[]) {
  * 确定
  */
 async function handleOk() {
-  if (state.selectedRowKeys.length > 0 && route.query.id) {
+  if (state.selectedRowKeys.length > 0 && route.params.id) {
     const addData = {
       userId: state.selectedRowKeys,
-      roleId: route.query.id,
+      roleId: route.params.id,
     }
     const data = await addUserRole(addData)
     if (data.code === 200)

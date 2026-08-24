@@ -1,0 +1,25 @@
+export const PUBLIC_PATHS = {
+  home: '/',
+  experience: '/experience',
+  experienceDetail: '/experience/:id',
+  blog: '/blog',
+  article: '/blog/articles/:id',
+  categories: '/blog/categories',
+  category: '/blog/categories/:id',
+  tags: '/blog/tags',
+  tag: '/blog/tags/:id',
+  archive: '/blog/archive',
+  treeHole: '/tree-hole',
+  messages: '/messages',
+  message: '/messages/:id',
+  links: '/links',
+  music: '/music',
+  about: '/about',
+  photos: '/photos',
+  login: '/auth/login',
+  register: '/auth/register',
+  reset: '/auth/reset',
+  account: '/account',
+} as const
+
+export const routeWithId = (path: string, id: string | number) => path.replace(':id', String(id))

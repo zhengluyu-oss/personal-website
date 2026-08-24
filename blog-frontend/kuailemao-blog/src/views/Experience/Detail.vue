@@ -34,7 +34,7 @@ onMounted(async()=>{try{const response:any=await getExperience(String(route.para
           <article class="story"><h2>经历详情</h2><MdPreview v-if="item.content?.trim()" :model-value="item.content" :theme="mode"/><p v-else>详细内容正在整理，可先查看上方公开的职责与成果。</p></article>
         </div>
       </section>
-      <footer class="next page-shell"><p>继续了解</p><h2>真实经历之外，<br>还有持续写下的思考。</h2><nav><router-link to="/category">阅读技术文章</router-link><router-link to="/about">关于我</router-link></nav></footer>
+      <footer class="next page-shell"><p>继续了解</p><h2>真实经历之外，<br>还有持续写下的思考。</h2><nav><router-link to="/blog">阅读技术文章</router-link><router-link to="/about">关于我</router-link></nav></footer>
     </template>
   </main>
 </template>

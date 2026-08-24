@@ -85,7 +85,7 @@ async function refreshFunc(searchData?: object) {
     newData = searchData
   }
   else {
-    const { data } = await queryPermissionRole(route.query.id as string)
+    const { data } = await queryPermissionRole(route.params.id as string)
     if (data)
       newData = data
   }
@@ -100,7 +100,7 @@ const formData = reactive({
 
 async function onFinish(values: { roleName: string; roleKey: string }) {
   loading.value = true
-  const { data } = await queryPermissionRole(route.query.id as string, values.roleName, values.roleKey)
+  const { data } = await queryPermissionRole(route.params.id as string, values.roleName, values.roleKey)
   await refreshFunc(data)
 }
 
@@ -120,7 +120,7 @@ async function deleteFunc(roleId: string[]) {
   }
 
   const deleteData = {
-    permissionId: [route.query.id] as string[],
+    permissionId: [route.params.id] as string[],
     roleId,
   }
   Modal.confirm({

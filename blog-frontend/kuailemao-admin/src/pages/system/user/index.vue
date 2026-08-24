@@ -296,7 +296,7 @@ function closeModalFunc() {
               </template>
               <span style="margin-inline-start:1px">删除</span>
             </a-button>
-            <a-button type="link" style="padding: 0;margin-left: 5px" @click="$router.push({ path: '/user/role', query: { id: record.id, name: record.roleName } })">
+            <a-button type="link" style="padding: 0;margin-left: 5px" @click="$router.push({ path: `/users/${record.id}`, query: { name: record.roleName } })">
               <template #icon>
                 <KeyOutlined />
               </template>

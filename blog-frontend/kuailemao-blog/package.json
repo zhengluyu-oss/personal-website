@@ -9,6 +9,7 @@
     "build:app": "vite build",
     "test": "node --experimental-strip-types --test src/utils/request-tracker.test.ts",
     "check:performance": "node scripts/check-performance-budget.mjs",
+    "check:routes": "node ../../scripts/check-page-routes.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

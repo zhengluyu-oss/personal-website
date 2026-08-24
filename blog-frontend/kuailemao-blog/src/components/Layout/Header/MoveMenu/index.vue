@@ -41,16 +41,16 @@ onMounted(loadCategories)
         <el-icon><DocumentCopy/></el-icon>
         个人博客
       </template>
-      <el-menu-item index="/category" @click="isClose">
+      <el-menu-item index="/blog" @click="isClose">
         <el-icon><DocumentCopy/></el-icon>
         全部栏目
       </el-menu-item>
-      <el-menu-item v-for="category in categories" :key="category.id" :index="`/category/${category.id}`" @click="isClose">
+      <el-menu-item v-for="category in categories" :key="category.id" :index="`/blog/categories/${category.id}`" @click="isClose">
         <span class="mobile-category-name">{{ category.categoryName }}</span>
         <small v-if="category.articleCount !== undefined">{{ category.articleCount }}</small>
       </el-menu-item>
     </el-sub-menu>
-    <el-menu-item index="/photo" @click="isClose">
+    <el-menu-item index="/photos" @click="isClose">
       <el-icon>
         <PictureFilled/>
       </el-icon>

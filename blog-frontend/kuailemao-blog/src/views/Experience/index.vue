@@ -58,7 +58,7 @@ onMounted(async () => {
       </div>
     </section>
 
-    <section class="career-closing page-shell"><p>持续构建，持续复盘。</p><h2>让每一次交付，<br>都成为下一次进步的证据。</h2><nav><router-link to="/category">阅读技术文章</router-link><router-link to="/about">了解更多</router-link></nav></section>
+    <section class="career-closing page-shell"><p>持续构建，持续复盘。</p><h2>让每一次交付，<br>都成为下一次进步的证据。</h2><nav><router-link to="/blog">阅读技术文章</router-link><router-link to="/about">了解更多</router-link></nav></section>
   </main>
 </template>
 

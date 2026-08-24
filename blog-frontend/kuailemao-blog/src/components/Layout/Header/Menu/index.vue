@@ -78,22 +78,22 @@ onMounted(() => {
               <span>工作经历</span>
             </span>
           </div>
-          <div class="menus_item blog-menu" @click="router.push('/category')">
+          <div class="menus_item blog-menu" @click="router.push('/blog')">
             <span>
               <el-icon><DocumentCopy/></el-icon>
               <span>个人博客</span>
               <el-icon class="arrow"><ArrowDownBold/></el-icon>
             </span>
             <ul class="menus_item_child blog-menu-child">
-              <li class="all-categories" @click.stop="router.push('/category')">
+              <li class="all-categories" @click.stop="router.push('/blog')">
                 <span><el-icon><DocumentCopy/></el-icon><span>全部栏目</span></span>
               </li>
-              <li v-for="category in categories" :key="category.id" @click.stop="router.push(`/category/${category.id}`)">
+              <li v-for="category in categories" :key="category.id" @click.stop="router.push(`/blog/categories/${category.id}`)">
                 <span class="category-link"><span>{{ category.categoryName }}</span><small v-if="category.articleCount !== undefined">{{ category.articleCount }}</small></span>
               </li>
             </ul>
           </div>
-          <div class="menus_item" @click="router.push('/photo')">
+          <div class="menus_item" @click="router.push('/photos')">
             <span>
               <el-icon>
                 <PictureFilled/>
@@ -127,7 +127,7 @@ onMounted(() => {
               content="点击去登录"
               placement="right"
           >
-            <el-avatar @click="$router.push('/welcome')" style="margin-right: 3rem">登录</el-avatar>
+            <el-avatar @click="$router.push('/auth/login')" style="margin-right: 3rem">登录</el-avatar>
           </el-tooltip>
         </div>
         <div v-else style="display: flex">
@@ -144,7 +144,7 @@ onMounted(() => {
             <el-avatar style="margin-right: 3rem"
                        :src="userStore.userInfo?.avatar"></el-avatar>
             <template #dropdown>
-              <el-dropdown-item @click="router.push('/setting')">
+              <el-dropdown-item @click="router.push('/account')">
                 <template #default>
                   <el-icon>
                     <Setting/>
