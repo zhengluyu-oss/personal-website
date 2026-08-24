@@ -47,7 +47,7 @@
             </div>
           </div>
           <ul class="submenu" :style="isDarkMode ? 'background-color: #1e1b2d; border-color: #2d2644;' : 'background-color: #ffffff;'">
-            <li class="submenu-item" @click.stop="navigateTo('/blog/categories')">
+            <li class="submenu-item" @click.stop="navigateTo('/blog')">
               <div class="submenu-item-icon">
                 <svg viewBox="0 0 24 24" width="24" height="24" :stroke="isDarkMode ? '#a78bfa' : '#8b5cf6'" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
