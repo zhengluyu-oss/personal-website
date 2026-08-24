@@ -4,9 +4,10 @@ import { useRoute, useRouter } from 'vue-router'
 import { categoryList } from '@/apis/category'
 import { whereArticleList } from '@/apis/article'
 import { getArticleList } from '@/apis/home'
-import WritingPageHeader from '@/components/Writing/WritingPageHeader.vue'
-import WritingArticleList, { type WritingArticleItem } from '@/components/Writing/WritingArticleList.vue'
-import WritingFilterNav from '@/components/Writing/WritingFilterNav.vue'
+import type { WritingArticleItem } from '@/components/Writing/WritingArticleList.vue'
+import NotFound from '@/views/NotFound/index.vue'
+import { buildCategorySlugEntries, resolveCategorySlug } from '@/utils/category-slug'
+import { setSeoMeta } from '@/utils/seo'
 
 interface CategoryItem { id: number; categoryName: string; articleCount?: number }
 type BlogArticle = WritingArticleItem
@@ -15,18 +16,19 @@ const route = useRoute()
 const router = useRouter()
 const categories = ref<CategoryItem[]>([])
 const articles = ref<BlogArticle[]>([])
-const articleList = ref<BlogArticle[]>([])
 const loading = ref(true)
 const loadError = ref(false)
+const notFound = ref(false)
+let requestVersion = 0
 
-const isDetailView = computed(() => Boolean(route.params.id))
-const activeCategoryId = computed(() => route.params.id as string | undefined)
-const activeCategory = computed(() => categories.value.find(item => String(item.id) === String(activeCategoryId.value)))
+const activeSlug = computed(() => String(route.params.slug || ''))
+const categoryEntries = computed(() => buildCategorySlugEntries(categories.value))
+const activeCategoryEntry = computed(() => categoryEntries.value.find(entry => entry.slug === activeSlug.value))
+const activeCategory = computed(() => activeCategoryEntry.value?.category)
 const featuredArticle = computed(() => articles.value[0])
 const remainingArticles = computed(() => articles.value.slice(1))
 const totalArticles = computed(() => categories.value.reduce((sum, item) => sum + Number(item.articleCount || 0), 0))
 const activeCategories = computed(() => categories.value.filter(item => Number(item.articleCount) > 0))
-const filterItems = computed(() => categories.value.map(item => ({ id: item.id, label: item.categoryName })))
 
 function normalizeArticle(item: any): BlogArticle {
   return {
@@ -47,34 +49,52 @@ const displayDate = (value?: string) => value?.slice(0, 10).replace(/-/g, '.') |
 const openArticle = (id: number | string) => router.push(`/blog/articles/${id}`)
 
 async function bootstrap() {
+  const version = ++requestVersion
   loading.value = true
   loadError.value = false
+  notFound.value = false
   try {
-    const categoryRes = await categoryList()
-    if (categoryRes.code === 200) categories.value = categoryRes.data || []
-    if (route.params.id) {
-      const res = await whereArticleList(1, String(route.params.id))
-      articleList.value = res.code === 200 && res.data ? res.data.map(normalizeArticle) : []
+    if (!categories.value.length) {
+      const categoryRes = await categoryList()
+      if (version !== requestVersion) return
+      if (categoryRes.code === 200) categories.value = categoryRes.data || []
+    }
+    if (activeSlug.value) {
+      const entry = resolveCategorySlug(categories.value, activeSlug.value)
+      if (!entry) {
+        notFound.value = true
+        return
+      }
+      setSeoMeta({
+        title: `${entry.category.categoryName} | 陆屿的个人博客`,
+        description: `浏览“${entry.category.categoryName}”主题下的技术记录、实践经验与项目复盘。`,
+        keywords: `${entry.category.categoryName},技术博客,项目实践,郑陆宇`,
+      })
+      const res = await whereArticleList(1, String(entry.categoryId))
+      if (version !== requestVersion) return
+      articles.value = res.code === 200 && Array.isArray(res.data) ? res.data.map(normalizeArticle) : []
     } else {
       const res = await getArticleList(1, 100)
+      if (version !== requestVersion) return
       articles.value = (res?.data?.page || []).map(normalizeArticle)
     }
   } catch {
+    if (version !== requestVersion) return
     loadError.value = true
   } finally {
-    loading.value = false
+    if (version === requestVersion) loading.value = false
   }
 }
 
 onMounted(bootstrap)
-watch(() => route.params.id, bootstrap)
+watch(() => route.params.slug, bootstrap)
 </script>
 
 <template>
-  <Main only-father-container>
+  <NotFound v-if="notFound" />
+  <Main v-else only-father-container>
     <template #content>
       <main class="blog-journal">
-        <template v-if="!isDetailView">
           <header class="blog-hero">
             <div class="blog-hero__copy">
               <p class="blog-hero__eyebrow">CODE · NOTES · PRACTICE</p>
@@ -87,9 +107,9 @@ watch(() => route.params.id, bootstrap)
           </header>
 
           <nav v-if="categories.length" class="topic-nav" aria-label="文章分类">
-            <router-link to="/blog" class="is-active">全部文章</router-link>
-            <router-link v-for="category in categories" :key="category.id" :to="`/blog/categories/${category.id}`">
-              {{ category.categoryName }}<sup>{{ category.articleCount || 0 }}</sup>
+            <router-link to="/blog" :class="{ 'is-active': !activeSlug }">全部文章</router-link>
+            <router-link v-for="entry in categoryEntries" :key="entry.categoryId" :to="entry.path" :class="{ 'is-active': entry.slug === activeSlug }">
+              {{ entry.category.categoryName }}<sup>{{ entry.category.articleCount || 0 }}</sup>
             </router-link>
           </nav>
 
@@ -121,17 +141,7 @@ watch(() => route.params.id, bootstrap)
               </article>
             </div>
           </section>
-          <section v-else class="blog-state"><strong>第一篇文章正在路上</strong><p>这里将用于记录技术实践、项目复盘与持续学习。</p></section>
-        </template>
-
-        <template v-else>
-          <section class="category-detail">
-            <WritingPageHeader :title="activeCategory?.categoryName || '文章分类'" description="该主题下的全部技术记录与实践复盘。" :meta="`${articleList.length} articles`" />
-            <WritingFilterNav v-if="filterItems.length" :items="filterItems" :active-id="activeCategoryId" base-path="/blog/categories" />
-            <p v-if="loading" class="category-detail__state">加载中…</p>
-            <WritingArticleList v-else :articles="articleList" empty-text="该分类下暂无文章。" />
-          </section>
-        </template>
+          <section v-else class="blog-state"><strong>{{ activeCategory ? `“${activeCategory.categoryName}”下暂时没有文章` : '第一篇文章正在路上' }}</strong><p>{{ activeCategory ? '可以浏览其他主题，或稍后再回来看看。' : '这里将用于记录技术实践、项目复盘与持续学习。' }}</p></section>
       </main>
     </template>
   </Main>
@@ -154,7 +164,7 @@ watch(() => route.params.id, bootstrap)
 .topic-nav a { flex: 0 0 auto; padding: .55rem .85rem; border-radius: var(--brand-radius-sm); color: var(--brand-ink-soft); font-size: .82rem; font-weight: 650; text-decoration: none; transition: background .2s ease, color .2s ease; }
 .topic-nav a:hover, .topic-nav a.is-active { background: var(--brand-accent-soft); color: var(--brand-accent-strong); }
 .topic-nav sup { margin-left: .25rem; color: var(--brand-ink-faint); font-family: "Share TechMono", monospace; }
-.journal-content, .category-detail, .blog-state, .blog-skeleton { width: min(calc(100% - 2rem), 72rem); margin-inline: auto; }
+.journal-content, .blog-state, .blog-skeleton { width: min(calc(100% - 2rem), 72rem); margin-inline: auto; }
 .journal-content { padding: clamp(2rem, 5vw, 4.5rem) 0 5rem; }
 .featured-story { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(18rem, .85fr); min-height: 25rem; overflow: hidden; border-radius: var(--brand-radius-lg); background: var(--brand-surface); box-shadow: 0 22px 70px rgba(24,55,91,.12); cursor: pointer; }
 .featured-story:focus-visible { outline: 3px solid var(--journal-accent); outline-offset: 4px; }
@@ -191,8 +201,6 @@ watch(() => route.params.id, bootstrap)
 .blog-state button { margin-top: .5rem; padding: .7rem 1rem; border: 0; border-radius: var(--brand-radius-sm); background: var(--journal-blue); color: #fff; cursor: pointer; }
 .blog-skeleton { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; padding-block: 4rem; }
 .blog-skeleton div { height: 20rem; border-radius: var(--brand-radius-lg); background: linear-gradient(100deg, var(--brand-canvas-soft) 30%, var(--brand-surface) 50%, var(--brand-canvas-soft) 70%); background-size: 300% 100%; animation: shimmer 1.3s infinite; }
-.category-detail { padding: clamp(2rem, 5vw, 4rem) 0 5rem; }
-.category-detail__state { padding: 2rem; text-align: center; color: var(--brand-ink-soft); }
 @keyframes shimmer { to { background-position-x: -200%; } }
 @media (max-width: 900px) { .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .featured-story { grid-template-columns: 1fr; } .featured-story__cover { aspect-ratio: 16 / 8; min-height: 0; } }
 @media (max-width: 640px) { .blog-hero { grid-template-columns: 1fr; gap: 2rem; width: calc(100vw - .75rem); padding: 2.75rem 1.35rem; border-radius: 0 0 var(--brand-radius-lg) var(--brand-radius-lg); } .blog-hero h1 { display: block; max-width: 10ch; font-size: clamp(2.45rem, 12vw, 3.5rem); line-height: 1.06; } .blog-hero h1 span { display: block; } .blog-hero__intro { margin-top: 1.1rem; font-size: .9rem; line-height: 1.7; } .blog-hero__stats { display: grid; grid-template-columns: auto 1fr; column-gap: 1rem; align-items: end; min-width: 0; padding: 1.15rem 0 0; border-top: 1px solid rgba(255,255,255,.2); border-left: 0; } .blog-hero__stats strong { font-size: 2.8rem; } .blog-hero__stats small { grid-column: 2; } .article-grid, .blog-skeleton { grid-template-columns: 1fr; } .section-heading { align-items: flex-start; flex-direction: column; } .featured-story__cover { aspect-ratio: 16 / 10; } .article-card h3, .article-card p { min-height: auto; } }

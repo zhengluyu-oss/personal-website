@@ -52,12 +52,6 @@ export const constantRouter = [
                 }
             },
             {
-                path: PUBLIC_PATHS.categories,
-                component: () => import('@/views/Pigeonhole/Category/CategoriesIndex.vue'),
-                name: 'categories',
-                meta: { title: '文章分类' }
-            },
-            {
                 path: PUBLIC_PATHS.category,
                 component: () => import('@/views/Pigeonhole/Category/index.vue'),
                 name: 'category',
