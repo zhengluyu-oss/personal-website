@@ -4,8 +4,6 @@ import {
   Setting, Promotion, Close
 } from '@element-plus/icons-vue'
 import SvgIcon from '@/components/SvgIcon/index.vue'
-import {useColorMode} from '@vueuse/core'
-import DayNightToggleButton from "@/components/DayNightToggle"
 import useUserStore from "@/store/modules/user.ts"
 import {logout, oauthLogin} from "@/apis/user"
 import {REMOVE_TOKEN, SET_TOKEN} from "@/utils/auth.ts"
@@ -14,15 +12,10 @@ import router from "@/router"
 
 const userStore = useUserStore()
 const route = useRoute()
-// 日夜切换
-const mode = useColorMode()
 const dialogVisible = ref(false)
 
 onMounted(async () => {
   try {
-    if (!customElements.get("toggle-button")) {
-      customElements.define("toggle-button", DayNightToggleButton);
-    }
     await userStore.getInfo();
   } catch (error) {
     console.error("Error defining custom element or getting user info:", error);
@@ -66,10 +59,6 @@ const logoutSub = () => {
 
 const drawer = ref(false)
 
-function changeToggle({detail}) {
-  mode.value = detail
-}
-
 </script>
 <template>
   <div class="search_dialog_container">
@@ -100,10 +89,6 @@ function changeToggle({detail}) {
         <SvgIcon name="directory_icon" width="30" height="30" color="#409EFF" class="icon"/>
       </button>
       <router-link class="mobile-brand" to="/">陆屿</router-link>
-      <!-- 移动端日夜切换 -->
-      <div class="mobile-theme">
-        <toggle-button @change="changeToggle" size="1"></toggle-button>
-      </div>
     </div>
 
     <!-- 搜索按钮 -->
@@ -210,8 +195,8 @@ function changeToggle({detail}) {
   top: 0;
   z-index: 999;
   width: 100vw;
-  background: rgba(14, 19, 28, .88);
-  border-bottom: 1px solid rgba(255,255,255,.08);
+  background: rgba(255, 255, 255, .9);
+  border-bottom: 1px solid var(--brand-line);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   @media screen and (min-width: 910px) {
@@ -225,9 +210,8 @@ function changeToggle({detail}) {
 }
 
 .move_nav__left { display:flex; align-items:center; gap:.65rem; }
-.mobile-action { display:grid; width:2.6rem; height:2.6rem; place-items:center; padding:0; border:0; border-radius:.7rem; background:rgba(255,255,255,.06); }
-.mobile-brand { color:#f5f3ef; font-size:1rem; font-weight:750; text-decoration:none; }
-.mobile-theme { display:flex; margin-left:.15rem; }
+.mobile-action { display:grid; width:2.6rem; height:2.6rem; place-items:center; padding:0; border:1px solid var(--brand-line); border-radius:.7rem; background:var(--brand-surface-solid); }
+.mobile-brand { color:var(--brand-ink); font-size:1rem; font-weight:750; text-decoration:none; }
 
 .search {
   display: flex;

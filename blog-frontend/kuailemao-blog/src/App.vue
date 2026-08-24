@@ -12,7 +12,6 @@
 
 <script setup lang="ts">
 import {defineAsyncComponent, onBeforeUnmount, onMounted, ref} from 'vue'
-import {useDark, useToggle} from "@vueuse/core";
 import useWebsiteStore from "@/store/modules/website.ts";
 
 const Music = defineAsyncComponent(() => import('@/components/Music/index.vue'))
@@ -26,25 +25,15 @@ const enhancementsReady = ref(false)
 const revealEnhancements = () => { enhancementsReady.value = true }
 
 onMounted(() => {
+  document.documentElement.classList.remove('dark')
+  document.documentElement.classList.add('light')
+  localStorage.removeItem('vueuse-color-scheme')
   void useWebsite.getInfo()
   window.addEventListener('pointerdown', revealEnhancements, {once: true, passive: true})
 })
 
 onBeforeUnmount(() => window.removeEventListener('pointerdown', revealEnhancements))
 
-//  深色切换
-useDark({
-  selector: 'html',
-  attribute: 'class',
-  valueLight: 'light',
-  valueDark: 'dark'
-})
-
-useDark({
-  onChanged(dark) {
-    useToggle(dark)
-  }
-})
 </script>
 
 <style scoped lang="scss">
