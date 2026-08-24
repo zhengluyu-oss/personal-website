@@ -7,11 +7,11 @@ const useWebsite = useWebsiteStore()
 const env = import.meta.env
 
 const secondaryLinks = [
-  { label: '标签', path: '/tags' },
-  { label: '时间轴', path: '/timeline' },
+  { label: '标签', path: '/blog/tags' },
+  { label: '时间轴', path: '/blog/archive' },
   { label: '树洞', path: '/tree-hole' },
-  { label: '留言板', path: '/message' },
-  { label: '友链', path: '/link' },
+  { label: '留言板', path: '/messages' },
+  { label: '友链', path: '/links' },
 ]
 
 const visibleLinks = computed(() => {

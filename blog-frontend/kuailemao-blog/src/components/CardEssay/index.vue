@@ -44,7 +44,7 @@ function loadContent() {
   <!-- 封装文章列表卡片 -->
   <div v-view-request="{ callback: loadContent }">
     <template v-for="(article,index) in articleList" :key="article.id" v-if="articleList.length > 0">
-      <article v-slide-in tabindex="0" @click="$router.push('/article/'+article.id)" @keydown.enter="$router.push('/article/'+article.id)" class="h-92 md:h-60 mt-4 flex flex-col md:flex-row card overflow-hidden mb-5 mx-2">
+      <article v-slide-in tabindex="0" @click="$router.push('/blog/articles/'+article.id)" @keydown.enter="$router.push('/blog/articles/'+article.id)" class="h-92 md:h-60 mt-4 flex flex-col md:flex-row card overflow-hidden mb-5 mx-2">
         <div class="w-full md:h-full md:w-1/2 h-40" v-if="index % 2 == 1 || width < 768">
           <div class="relative w-full h-full">
             <div class="relative img w-full h-full">

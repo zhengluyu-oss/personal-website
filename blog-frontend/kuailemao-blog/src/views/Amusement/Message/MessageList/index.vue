@@ -167,7 +167,7 @@ function mdContent(content: string) {
                 </div>
               </div>
               <div>
-                <el-link type="primary" @click="$router.push(`/message/detail/${item.id}`)">
+                <el-link type="primary" @click="$router.push(`/messages/${item.id}`)">
                   <template #icon>
                     <el-icon>
                       <ArrowRightBold/>
