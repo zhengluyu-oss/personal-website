@@ -78,7 +78,7 @@ watch(() => route.params.id, bootstrap)
           <header class="blog-hero">
             <div class="blog-hero__copy">
               <p class="blog-hero__eyebrow">CODE · NOTES · PRACTICE</p>
-              <h1>在代码之外，<br><span>记录思考发生的地方。</span></h1>
+              <h1><span>在代码之外，</span>记录思考发生的地方。</h1>
               <p class="blog-hero__intro">技术实践、工具研究与项目复盘。这里收录我在构建产品、解决问题和持续学习过程中留下的完整记录。</p>
             </div>
             <div class="blog-hero__stats" aria-label="博客数据">
@@ -139,13 +139,14 @@ watch(() => route.params.id, bootstrap)
 
 <style scoped lang="scss">
 .blog-journal { --journal-blue: #112a4a; --journal-accent: var(--brand-accent); min-height: 72vh; color: var(--brand-ink); }
-.blog-hero { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(13rem, .55fr); gap: clamp(2rem, 8vw, 7rem); align-items: end; padding: clamp(4rem, 9vw, 8rem) max(1.25rem, calc((100vw - 72rem) / 2)); background: radial-gradient(circle at 82% 20%, rgba(72,124,181,.22), transparent 26rem), linear-gradient(135deg, #0b1c35, var(--journal-blue)); color: #fff; }
-.blog-hero__eyebrow { margin: 0 0 1.25rem; color: #a9bed8; font-family: "Share TechMono", monospace; font-size: .72rem; letter-spacing: .18em; }
-.blog-hero h1 { margin: 0; max-width: 13ch; font-size: clamp(2.8rem, 6.4vw, 6rem); font-weight: 780; line-height: 1.02; letter-spacing: -.065em; }
-.blog-hero h1 span { color: #c9d8e9; }
-.blog-hero__intro { max-width: 39rem; margin: 1.6rem 0 0; color: #b8c8dc; font-size: clamp(.95rem, 1.4vw, 1.08rem); line-height: 1.85; }
-.blog-hero__stats { padding-left: 1.5rem; border-left: 1px solid rgba(255,255,255,.24); }
-.blog-hero__stats strong { display: block; font-family: "Share TechMono", monospace; font-size: clamp(3rem, 6vw, 5.5rem); font-weight: 500; line-height: .9; }
+.blog-hero { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: clamp(2.5rem, 7vw, 7.5rem); align-items: center; width: min(calc(100vw - 2rem), 112rem); margin-inline: 50%; padding: clamp(3rem, 5vw, 4.75rem) clamp(2rem, 7vw, 8rem); overflow: hidden; border-radius: 0 0 var(--brand-radius-lg) var(--brand-radius-lg); background: radial-gradient(circle at 86% 8%, rgba(79,135,195,.2), transparent 25rem), linear-gradient(122deg, #0b1c35 0%, #112a4a 72%, #17375d 100%); color: #fff; transform: translateX(-50%); }
+.blog-hero::after { content: ""; position: absolute; right: clamp(1.5rem, 5vw, 5rem); bottom: -5rem; z-index: -1; width: 20rem; aspect-ratio: 1; border: 1px solid rgba(255,255,255,.09); border-radius: 50%; box-shadow: 0 0 0 4rem rgba(255,255,255,.018), 0 0 0 8rem rgba(255,255,255,.012); }
+.blog-hero__eyebrow { margin: 0 0 1rem; color: #a9bed8; font-family: "Share TechMono", monospace; font-size: .68rem; letter-spacing: .18em; }
+.blog-hero h1 { display: flex; flex-wrap: wrap; gap: 0 .22em; margin: 0; max-width: 18ch; color: #c9d8e9; font-size: clamp(2.7rem, 4.35vw, 4.8rem); font-weight: 780; line-height: 1.04; letter-spacing: -.06em; }
+.blog-hero h1 span { color: #fff; }
+.blog-hero__intro { max-width: 47rem; margin: 1.35rem 0 0; color: #b8c8dc; font-size: clamp(.9rem, 1.15vw, 1.02rem); line-height: 1.75; }
+.blog-hero__stats { min-width: 11rem; padding: .4rem 0 .4rem 1.75rem; border-left: 1px solid rgba(255,255,255,.24); }
+.blog-hero__stats strong { display: block; font-family: "Share TechMono", monospace; font-size: clamp(3rem, 4.5vw, 4.5rem); font-weight: 500; line-height: .9; }
 .blog-hero__stats span, .blog-hero__stats small { display: block; }
 .blog-hero__stats span { margin-top: .85rem; font-weight: 700; }
 .blog-hero__stats small { margin-top: .4rem; color: #9eb2cb; font-size: .78rem; }
@@ -194,6 +195,6 @@ watch(() => route.params.id, bootstrap)
 .category-detail__state { padding: 2rem; text-align: center; color: var(--brand-ink-soft); }
 @keyframes shimmer { to { background-position-x: -200%; } }
 @media (max-width: 900px) { .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .featured-story { grid-template-columns: 1fr; } .featured-story__cover { aspect-ratio: 16 / 8; min-height: 0; } }
-@media (max-width: 640px) { .blog-hero { grid-template-columns: 1fr; gap: 2.5rem; padding-block: 3.5rem; } .blog-hero h1 { font-size: clamp(2.5rem, 13vw, 4rem); } .blog-hero__stats { display: grid; grid-template-columns: auto 1fr; column-gap: 1rem; align-items: end; } .blog-hero__stats small { grid-column: 2; } .article-grid, .blog-skeleton { grid-template-columns: 1fr; } .section-heading { align-items: flex-start; flex-direction: column; } .featured-story__cover { aspect-ratio: 16 / 10; } .article-card h3, .article-card p { min-height: auto; } }
+@media (max-width: 640px) { .blog-hero { grid-template-columns: 1fr; gap: 2rem; width: calc(100vw - .75rem); padding: 2.75rem 1.35rem; border-radius: 0 0 var(--brand-radius-lg) var(--brand-radius-lg); } .blog-hero h1 { display: block; max-width: 10ch; font-size: clamp(2.45rem, 12vw, 3.5rem); line-height: 1.06; } .blog-hero h1 span { display: block; } .blog-hero__intro { margin-top: 1.1rem; font-size: .9rem; line-height: 1.7; } .blog-hero__stats { display: grid; grid-template-columns: auto 1fr; column-gap: 1rem; align-items: end; min-width: 0; padding: 1.15rem 0 0; border-top: 1px solid rgba(255,255,255,.2); border-left: 0; } .blog-hero__stats strong { font-size: 2.8rem; } .blog-hero__stats small { grid-column: 2; } .article-grid, .blog-skeleton { grid-template-columns: 1fr; } .section-heading { align-items: flex-start; flex-direction: column; } .featured-story__cover { aspect-ratio: 16 / 10; } .article-card h3, .article-card p { min-height: auto; } }
 @media (prefers-reduced-motion: reduce) { .featured-story__cover img, .article-card, .article-card__cover img { transition: none; } .blog-skeleton div { animation: none; } }
 </style>
