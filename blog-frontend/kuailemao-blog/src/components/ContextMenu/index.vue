@@ -183,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import useWebsiteStore from "@/store/modules/website.ts";
 
@@ -194,10 +194,7 @@ const isVisible = ref(false);
 const x = ref(0);
 const y = ref(0);
 
-// 检测暗色模式
-const isDarkMode = computed(() => {
-  return document.documentElement.classList.contains('dark');
-});
+const isDarkMode = false;
 
 // 显示菜单
 const showMenu = (event: MouseEvent) => {

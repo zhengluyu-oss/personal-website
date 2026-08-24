@@ -6,9 +6,7 @@ import {ArrowRightBold} from "@element-plus/icons-vue";
 import {Ref, UnwrapRef} from "vue";
 import {ElMessage} from "element-plus";
 import {getLeaveWordList, userLeaveWord} from "@/apis/leaveWord";
-import {useColorMode} from "@vueuse/core";
-
-const mode = useColorMode()
+const mode = 'light'
 const isShow = ref(false);
 const text = ref('');
 const LeaveWordList = ref([]);
