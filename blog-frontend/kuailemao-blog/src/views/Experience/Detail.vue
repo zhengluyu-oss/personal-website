@@ -16,17 +16,17 @@ onMounted(async()=>{try{const response:any=await getExperience(String(route.para
 
 <template>
   <main class="case-page">
-    <nav class="back page-shell"><button type="button" @click="router.push('/experience')">← 返回职业轨迹</button></nav>
+    <nav class="back page-shell"><button type="button" @click="router.push('/experience')">← 返回职业轨迹</button><span>CAREER CASE FILE</span></nav>
     <div v-if="loading" class="case-loading page-shell"><span/><b/><i/></div>
     <section v-else-if="notFound || !item" class="case-state page-shell"><h1>这段经历暂时无法查看</h1><p>内容可能已停用，或链接已经失效。</p><button type="button" @click="router.push('/experience')">返回列表</button></section>
     <template v-else>
       <header class="case-hero page-shell">
-        <div><p>{{ period(item) }}</p><h1>{{ item.roleTitle }}</h1><h2>{{ item.company }}</h2></div>
-        <aside><span v-if="item.isCurrent===1">CURRENT</span><p>{{ item.projectSummary || lines(item.highlights)[0] || '负责业务系统的设计、开发与持续优化。' }}</p></aside>
+        <div><p>EXPERIENCE · {{ period(item) }}</p><h1>{{ item.roleTitle }}</h1><h2>{{ item.company }}</h2></div>
+        <aside><small>ROLE BRIEF</small><span v-if="item.isCurrent===1">CURRENT</span><p>{{ item.projectSummary || lines(item.highlights)[0] || '负责业务系统的设计、开发与持续优化。' }}</p></aside>
       </header>
       <figure v-if="item.coverImage" class="case-cover page-shell"><img :src="item.coverImage" :alt="`${item.company} 工作经历封面`"></figure>
       <section class="case-body page-shell">
-        <aside class="facts"><h2>经历概览</h2><dl><div><dt>公司</dt><dd>{{ item.company }}</dd></div><div><dt>岗位</dt><dd>{{ item.roleTitle }}</dd></div><div><dt>时间</dt><dd>{{ period(item) }}</dd></div><div><dt>状态</dt><dd>{{ item.isCurrent===1?'目前在职':'已结束' }}</dd></div></dl><div v-if="tokens(item.techStack).length" class="tech"><h3>Technology</h3><ul><li v-for="tech in tokens(item.techStack)" :key="tech">{{ tech }}</li></ul></div></aside>
+        <aside class="facts"><span class="facts-mark">PROFILE</span><h2>经历概览</h2><p class="facts-intro">一眼了解这段经历的基本背景与技术边界。</p><dl><div><dt>公司</dt><dd>{{ item.company }}</dd></div><div><dt>岗位</dt><dd>{{ item.roleTitle }}</dd></div><div><dt>时间</dt><dd>{{ period(item) }}</dd></div><div><dt>状态</dt><dd>{{ item.isCurrent===1?'目前在职':'已结束' }}</dd></div></dl><div v-if="tokens(item.techStack).length" class="tech"><h3>Technology</h3><ul><li v-for="tech in tokens(item.techStack)" :key="tech">{{ tech }}</li></ul></div></aside>
         <div class="narrative">
           <section v-if="responsibilities.length" class="work"><h2>Selected Work</h2><ol><li v-for="(line,index) in responsibilities" :key="line"><span>{{ String(index+1).padStart(2,'0') }}</span><p>{{ line }}</p></li></ol></section>
           <section v-if="metrics.length" class="outcomes"><h2>Impact</h2><div><p v-for="metric in metrics" :key="metric">{{ metric }}</p></div></section>
@@ -43,4 +43,39 @@ onMounted(async()=>{try{const response:any=await getExperience(String(route.para
 @media(max-width:800px){.page-shell{width:min(calc(100% - 2rem),44rem)}.case-hero{grid-template-columns:1fr;gap:3rem;padding:4rem 0}.case-hero h1{font-size:clamp(3.2rem,13vw,5rem)}.case-body{grid-template-columns:1fr;gap:4rem}.facts{position:static}.facts dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 1.5rem}.outcomes>div{grid-template-columns:1fr}.next{min-height:62dvh}}
 @media(max-width:480px){.case-page{padding-top:56px}.case-hero h1{font-size:clamp(2.7rem,12vw,3.2rem)}.facts dl{grid-template-columns:1fr}.work li{grid-template-columns:2rem 1fr}.next h2{font-size:2.7rem}}
 @media(prefers-reduced-motion:reduce){.case-loading>*{animation:none}}
+
+/* Case file — richer light presentation with clear evidence hierarchy */
+.case-page{background:
+  linear-gradient(rgba(47,116,191,.035) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(47,116,191,.035) 1px,transparent 1px),
+  linear-gradient(180deg,#f8fbff 0,#f1f6fc 44rem,#fff 78rem);
+  background-size:32px 32px,32px 32px,100% 100%}
+.back{display:flex;align-items:center;justify-content:space-between;margin-top:1.5rem;padding:1rem 0;border-bottom-color:rgba(47,116,191,.15)}
+.back span{color:var(--faint);font-family:"Share TechMono",monospace;font-size:.62rem;letter-spacing:.16em}
+.case-hero{margin-top:2rem;padding:clamp(4rem,8vw,7rem);border:1px solid rgba(47,116,191,.17);border-radius:2rem;background:linear-gradient(135deg,rgba(255,255,255,.97),rgba(232,242,255,.9));box-shadow:0 30px 90px rgba(29,76,125,.12);overflow:hidden}
+.case-hero::before{right:-8rem;bottom:-15rem;width:36rem;border:1px solid rgba(47,116,191,.12);background:radial-gradient(circle,rgba(47,116,191,.12) 0 32%,transparent 32.5% 48%,rgba(47,116,191,.08) 48.5% 49%,transparent 49.5%)}
+.case-hero::after{content:'CASE';position:absolute;right:2%;top:.08em;color:rgba(47,116,191,.055);font-family:Georgia,serif;font-size:clamp(7rem,16vw,15rem);line-height:1;letter-spacing:-.08em;pointer-events:none}
+.case-hero h1{font-size:clamp(3.5rem,6.3vw,6.4rem)}
+.case-hero h2{max-width:36rem;line-height:1.45}
+.case-hero aside{padding:1.6rem 1.7rem;border:1px solid rgba(47,116,191,.17);border-top:3px solid var(--accent);border-radius:1rem;background:rgba(255,255,255,.86);box-shadow:0 18px 45px rgba(29,76,125,.1);backdrop-filter:blur(10px)}
+.case-hero aside small{display:block;margin-bottom:.7rem;color:var(--faint);font-family:"Share TechMono",monospace;font-size:.6rem;letter-spacing:.14em}.case-hero aside span{display:inline-block;margin-bottom:.2rem}
+.case-cover{position:relative;margin-top:2rem;margin-bottom:clamp(4rem,8vw,7rem);padding:.8rem;border:1px solid rgba(47,116,191,.16);border-radius:1.5rem;background:#fff;box-shadow:0 25px 70px rgba(29,76,125,.12)}
+.case-cover::before{content:'PROJECT VISUAL';position:absolute;z-index:1;top:1.5rem;left:1.5rem;padding:.45rem .65rem;border-radius:.25rem;background:rgba(13,41,72,.86);color:#fff;font-family:"Share TechMono",monospace;font-size:.58rem;letter-spacing:.1em}
+.case-cover img{border-radius:1rem}
+.case-body{grid-template-columns:minmax(15rem,19rem) minmax(0,1fr);gap:clamp(3rem,7vw,8rem);padding:clamp(5rem,9vw,9rem) 0;border-top:0}
+.facts{top:6.5rem;padding:1.8rem;border:1px solid rgba(47,116,191,.16);border-radius:1.2rem;background:linear-gradient(160deg,#fff,#f3f8ff);box-shadow:0 20px 55px rgba(28,63,103,.1);overflow:hidden}
+.facts::after{content:'';position:absolute;right:-3rem;top:-3rem;width:8rem;aspect-ratio:1;border:1px solid rgba(47,116,191,.12);border-radius:50%;box-shadow:0 0 0 1.5rem rgba(47,116,191,.035)}
+.facts-mark{position:relative;z-index:1;display:block;margin-bottom:.8rem;color:var(--accent);font-family:"Share TechMono",monospace;font-size:.6rem;letter-spacing:.14em}
+.facts h2{position:relative;z-index:1;margin-bottom:.6rem;font-family:inherit;font-size:1.55rem;letter-spacing:-.04em}
+.facts-intro{position:relative;z-index:1;margin:0 0 1.6rem;color:var(--muted);font-size:.76rem;line-height:1.65}
+.facts dl>div{display:grid;grid-template-columns:3.5rem 1fr;gap:.8rem;align-items:start}.facts dd{margin:0;font-weight:620}.tech{margin-top:2rem;padding-top:1.4rem;border-top:1px solid var(--line)}.tech li{border-color:rgba(47,116,191,.16);border-radius:999px;background:#fff}
+.narrative{min-width:0}.work,.outcomes,.story{position:relative}
+.work h2,.outcomes h2,.story>h2{display:flex;align-items:center;gap:.8rem;margin-bottom:1.7rem;color:var(--accent);font-size:.68rem;letter-spacing:.12em}.work h2::after,.outcomes h2::after,.story>h2::after{content:'';height:1px;flex:1;background:linear-gradient(90deg,rgba(47,116,191,.28),transparent)}
+.work ol{display:grid;gap:.8rem}.work li{grid-template-columns:3.2rem 1fr;padding:1.35rem 1.45rem;border:1px solid rgba(47,116,191,.13);border-radius:.9rem;background:rgba(255,255,255,.84);box-shadow:0 10px 30px rgba(28,63,103,.045);transition:border-color .2s ease,transform .2s ease}.work li:hover{border-color:rgba(47,116,191,.32);transform:translateX(4px)}.work li span{display:grid;width:2rem;height:2rem;place-items:center;border-radius:50%;background:#e7f1ff;font-weight:700}.work li p{padding-top:.15rem}
+.outcomes{margin-top:4.5rem}.outcomes>div{gap:1rem}.outcomes p{position:relative;padding:1.6rem 1.6rem 1.6rem 2rem;border:1px solid rgba(47,116,191,.14);border-radius:1rem;background:linear-gradient(135deg,#eef6ff,#f8fbff);box-shadow:0 12px 35px rgba(28,63,103,.055)}.outcomes p::before{content:'↗';position:absolute;top:1.55rem;left:.75rem;color:var(--accent);font-weight:800}
+.story{margin-top:4.5rem;padding:2rem clamp(1.2rem,4vw,3.5rem) 3.5rem;border:1px solid rgba(47,116,191,.14);border-radius:1.2rem;background:#fff;box-shadow:0 18px 60px rgba(28,63,103,.07)}
+.story :deep(.md-editor-preview){font-size:1.03rem;line-height:2}.story :deep(h2){margin-top:2.4em;padding-bottom:.55em;border-bottom:1px solid var(--line)}.story :deep(h3){margin-top:2em}.story :deep(blockquote){border-radius:0 .65rem .65rem 0}.story :deep(pre){border:1px solid rgba(47,116,191,.14);border-radius:.7rem}
+.next{position:relative;min-height:auto;margin-bottom:clamp(3rem,7vw,7rem);padding:clamp(4rem,8vw,7rem);border:0;border-radius:2rem;background:linear-gradient(130deg,#0d2948,#174c7d);color:#fff;box-shadow:0 30px 80px rgba(16,48,82,.2);overflow:hidden}.next::after{content:'';position:absolute;width:24rem;aspect-ratio:1;right:-6rem;border:1px solid rgba(255,255,255,.14);border-radius:50%;box-shadow:0 0 0 4rem rgba(255,255,255,.035),0 0 0 8rem rgba(255,255,255,.025)}.next>p{color:#9dcbff}.next h2,.next nav{position:relative;z-index:1}.next a{border-color:rgba(255,255,255,.45);color:#fff}
+@media(max-width:800px){.case-hero{margin-top:1rem;padding:3.5rem 2rem;border-radius:1.4rem}.case-hero::after{font-size:8rem}.case-body{gap:3rem}.facts{position:static}.next{padding:4rem 2rem;border-radius:1.4rem}}
+@media(max-width:480px){.back span{display:none}.case-hero{padding:3rem 1.25rem}.case-hero h1{font-size:clamp(2.65rem,12vw,3.15rem)}.case-cover{padding:.45rem;border-radius:1rem}.case-cover::before{top:1rem;left:1rem}.facts{padding:1.4rem}.facts dl{display:block}.work li{grid-template-columns:2.5rem 1fr;padding:1.1rem}.outcomes>div{grid-template-columns:1fr}.story{padding:1.5rem 1rem 2.5rem}.next{padding:3.5rem 1.25rem}}
 </style>
