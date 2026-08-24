@@ -87,7 +87,7 @@ watch(() => route.params.id, async (id) => {
             <router-link
               v-for="tag in tags"
               :key="tag.id"
-              :to="`/tags/${tag.id}`"
+              :to="`/blog/tags/${tag.id}`"
               class="tag-index__item"
             >
               <span>#{{ tag.tagName }}</span>
@@ -107,7 +107,7 @@ watch(() => route.params.id, async (id) => {
             v-if="filterItems.length"
             :items="filterItems"
             :active-id="activeTagId"
-            base-path="/tags"
+            base-path="/blog/tags"
           />
 
           <p v-if="loading" class="writing-page__state">加载中…</p>

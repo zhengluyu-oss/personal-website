@@ -5,8 +5,6 @@ export default {
   'layout.user.link.terms': 'Terms',
   'app.copyright.produced': 'Produced by Ant Financial Experience Department',
   'app.preview.down.block': 'Download this page to your local project',
-  'app.welcome.link.fetch-blocks': 'Get all block',
-  'app.welcome.link.block-list': 'Quickly build standard, pages based on `block` development',
 
   // SettingDrawer
   'app.setting.pagestyle': 'Page style setting',
@@ -67,7 +65,6 @@ export default {
   'app.multiTab.closeLeft': 'Close Left',
 
   // Menu
-  'menu.welcome': 'Welcome',
   'menu.more-blocks': 'More Blocks',
   'menu.home': 'Home',
   'menu.admin': 'Admin',

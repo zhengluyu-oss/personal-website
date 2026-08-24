@@ -15,6 +15,7 @@
     "preview": "mist preview",
     "lint": "eslint src --fix",
     "typecheck": "vue-tsc --noEmit",
+    "check:routes": "node ../../scripts/check-page-routes.mjs",
     "bump:patch": "changelogen --bump --output CHANGELOG.md --release --prerelease",
     "bump:minor": "changelogen --bump --output CHANGELOG.md --release --minor",
     "bump:major": "changelogen --bump --output CHANGELOG.md --release --major",

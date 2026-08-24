@@ -80,7 +80,7 @@ onMounted(async () => {
           <div class="timeline">
             <template v-for="(item,year) in items" :key="item.id">
               <div class="year">--{{ year }}--</div>
-              <div class="item" @click="$router.push(`/article/${i.id}`)" :data-text="i.createTime" v-for="i in item">
+              <div class="item" @click="$router.push(`/blog/articles/${i.id}`)" :data-text="i.createTime" v-for="i in item">
                 <div class="content">
                   <img class="img" :src="i.articleCover"/>
                   <h2 class="content-title">{{ i.articleTitle }}</h2>
