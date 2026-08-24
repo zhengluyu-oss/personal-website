@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import PhotoGallery from './components/PhotoGallery.vue'
 import { ref, computed, watch } from 'vue'
-import { useDark } from '@vueuse/core'
 import { getPhotoList } from '@/apis/photo'
 import type { PhotoAndAlbumVO } from '@/apis/photo'
 import type { GalleryItem } from './components/PhotoGallery.vue'
@@ -234,8 +233,7 @@ const albumTree = computed(() => {
   return buildTree();
 });
 
-// 使用 VueUse 的 useDark
-const isDark = useDark()
+const isDark = false
 </script>
 
 <template>

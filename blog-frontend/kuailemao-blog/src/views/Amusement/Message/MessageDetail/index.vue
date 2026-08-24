@@ -5,9 +5,7 @@ import {MdPreview} from "md-editor-v3";
 import {cancelLike, isLike, userLike} from "@/apis/like";
 import {ElMessage} from "element-plus";
 import {cancelFavorite, isFavorite, userFavorite} from "@/apis/favorite";
-import {useColorMode} from "@vueuse/core";
-
-const mode = useColorMode()
+const mode = 'light'
 const leaveWord = ref([]);
 const route = useRoute()
 const loadingComment = ref(false)
