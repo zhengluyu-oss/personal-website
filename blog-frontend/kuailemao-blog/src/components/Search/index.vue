@@ -102,7 +102,7 @@ function clickSearchResult(articleId: number) {
     historyList.value.push(searchValue.value)
   }
   searchValue.value = ''
-  router.push('/article/' + articleId)
+  router.push('/blog/articles/' + articleId)
   emit('isShowSearch')
 }
 
@@ -202,7 +202,7 @@ function changeToggle() {
         <div class="recommend_container">
           <div class="item" v-for="hot in hotList" :key="hot.id" @click="() => {
             emit('isShowSearch')
-            $router.push('/article/' + hot.id)
+            $router.push('/blog/articles/' + hot.id)
           }">
             {{ hot.articleTitle }}
             <div>

@@ -276,8 +276,8 @@ const toolbars = [
 
 // 数据回显
 function getFormData() {
-  if (route.query.id) {
-    getArticle(route.query.id as string).then((res) => {
+  if (route.params.id) {
+    getArticle(route.params.id as string).then((res) => {
       if (res.data)
         formData.value = res.data
     })

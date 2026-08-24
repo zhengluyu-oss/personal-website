@@ -250,7 +250,7 @@ async function deletePermissionBtn(pId: string) {
                 <span style="margin-inline-start:1px">删除</span>
               </a-button>
             </a-popconfirm>
-            <a-button type="link" style="padding: 0;margin-left: 5px" @click="$router.push({ path: '/permission/authorization', query: { id: record.id } })">
+            <a-button type="link" style="padding: 0;margin-left: 5px" @click="$router.push({ path: `/permissions/${record.id}` })">
               <template #icon>
                 <SmileOutlined />
               </template>

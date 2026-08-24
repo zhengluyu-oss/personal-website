@@ -322,35 +322,30 @@ CREATE TABLE `sys_menu`  (
 -- ----------------------------
 -- Records of sys_menu
 -- ----------------------------
-INSERT INTO `sys_menu` VALUES (1, '系统管理', 'SettingTwoTone', '/system', 'RouteView', '/system/menu', 0, NULL, 'System', 0, NULL, 1, 0, 1, NULL, 0, 2, '2023-11-17 14:49:02', '2023-11-29 17:33:13', 0);
-INSERT INTO `sys_menu` VALUES (2, '菜单管理', 'MenuOutlined', '/system/menu', '/system/menu', '', 0, 1, 'Menu', 0, NULL, 1, 0, 1, NULL, 0, 1, '2023-11-17 14:49:02', '2023-11-28 17:27:43', 0);
-INSERT INTO `sys_menu` VALUES (3, '用户管理', 'UserOutlined', '/system/user', '/system/user', '', 0, 1, 'User', 0, NULL, 1, 0, 1, NULL, 0, 0, '2023-11-17 14:49:02', '2023-11-29 14:46:27', 0);
-INSERT INTO `sys_menu` VALUES (21, '首页', 'HomeTwoTone', '/welcome', '/welcome', '', 0, NULL, NULL, 0, NULL, 1, 1, 1, '', 0, 0, '2023-11-28 16:36:33', '2023-11-28 19:57:13', 0);
-INSERT INTO `sys_menu` VALUES (23, '角色管理', 'TeamOutlined', '/system/role', '/system/role', NULL, 0, 1, NULL, 0, NULL, 1, 1, 1, '', 0, 3, '2023-11-29 15:41:30', '2023-12-04 12:16:00', 0);
-INSERT INTO `sys_menu` VALUES (24, '权限管理', 'UnlockOutlined', '/system/permission', '/system/permission', '', 0, 1, NULL, 0, NULL, 1, 1, 1, '', 0, 4, '2023-11-29 17:13:50', '2023-11-29 17:14:10', 0);
-INSERT INTO `sys_menu` VALUES (25, '日志管理', 'HighlightOutlined', '/log', 'RouteView', '/log/operate', 0, 1, NULL, 0, '', 1, 1, 1, '', 0, 5, '2023-11-29 17:17:29', '2023-11-29 17:17:29', 0);
-INSERT INTO `sys_menu` VALUES (26, '操作日志', 'FileProtectOutlined', '/log/operate', '/system/log/operate', '', 0, 25, NULL, 0, NULL, 1, 1, 1, '', 0, 0, '2023-11-29 17:20:28', '2023-11-29 17:29:20', 0);
-INSERT INTO `sys_menu` VALUES (27, '登录日志', 'SolutionOutlined', '/log/login', '/system/log/login', '', 0, 25, NULL, 0, '', 1, 1, 1, '', 0, 1, '2023-11-29 17:29:02', '2023-11-29 17:29:02', 0);
-INSERT INTO `sys_menu` VALUES (28, '网站管理', 'AppstoreTwoTone', '/blog', 'RouteView', NULL, 0, NULL, NULL, 0, NULL, 1, 1, 1, '', 0, 1, '2023-11-29 17:34:17', '2023-12-25 23:50:05', 0);
-INSERT INTO `sys_menu` VALUES (29, '信息管理', 'ReadOutlined', '/blog/info', '/blog/info', '', 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 0, '2023-11-29 20:05:20', '2023-11-29 20:09:38', 0);
-INSERT INTO `sys_menu` VALUES (30, '文章管理', 'FormOutlined', '/blog/essay', '', NULL, 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 0, '2023-11-29 20:11:25', '2023-12-26 11:16:20', 0);
-INSERT INTO `sys_menu` VALUES (31, '发布文章', 'SendOutlined', '/blog/essay/publish', '/blog/essay/publish', '', 0, 30, NULL, 0, '', 1, 1, 1, '', 0, 0, '2023-11-29 20:13:00', '2023-11-29 20:13:00', 0);
-INSERT INTO `sys_menu` VALUES (32, '文章列表', 'OrderedListOutlined', '/blog/essay/list', '/blog/essay/list', '', 0, 30, NULL, 0, '', 1, 1, 1, '', 0, 0, '2023-11-29 20:14:13', '2023-11-29 20:14:13', 0);
-INSERT INTO `sys_menu` VALUES (33, '标签管理', 'TagsOutlined', '/blog/tag', '/blog/tag', '', 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 2, '2023-11-29 20:15:13', '2023-11-29 20:20:28', 0);
-INSERT INTO `sys_menu` VALUES (34, '分类管理', 'ContainerOutlined', '/blog/category', '/blog/category', '', 0, 28, NULL, 0, '', 1, 1, 1, '', 0, 3, '2023-11-29 20:19:09', '2023-11-29 20:19:09', 0);
-INSERT INTO `sys_menu` VALUES (35, '评论管理', 'CommentOutlined', '/blog/comment', '/blog/comment', '', 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 4, '2023-11-29 20:21:48', '2023-11-29 20:22:06', 0);
-INSERT INTO `sys_menu` VALUES (36, '留言管理', 'ScheduleOutlined', '/blog/message', '/blog/message', NULL, 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 1, '2023-11-29 20:23:19', '2023-12-26 11:16:24', 0);
-INSERT INTO `sys_menu` VALUES (37, '树洞管理', 'BulbOutlined', '/blog/tree-hole', '/blog/tree-hole', '', 0, 28, NULL, 0, '', 1, 1, 1, '', 0, 5, '2023-11-29 20:27:40', '2023-11-29 20:27:40', 0);
-INSERT INTO `sys_menu` VALUES (38, '聊天管理', 'RobotOutlined', '/blog/gpt', '/blog/gpt', '', 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 6, '2023-11-29 20:29:08', '2023-11-29 20:29:27', 0);
-INSERT INTO `sys_menu` VALUES (39, '友链管理', 'NodeIndexOutlined', '/blog/link', '/blog/link', NULL, 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 6, '2023-11-29 20:31:25', '2024-01-22 20:27:26', 0);
-INSERT INTO `sys_menu` VALUES (42, '数据大屏', 'PieChartTwoTone', '/data-screen', '/data-screen', NULL, 0, NULL, NULL, 1, NULL, 1, 1, 1, '', 0, 4, '2023-11-29 20:51:14', '2024-01-22 22:07:04', 0);
-INSERT INTO `sys_menu` VALUES (43, '收藏管理', 'InboxOutlined', '/blog/collect', '/blog/collect', NULL, 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 3, '2023-11-29 20:54:15', '2023-11-29 20:54:47', 0);
-INSERT INTO `sys_menu` VALUES (44, '服务监控', 'AlertOutlined', '/system/server-monitoring', '/system/server-monitoring', NULL, 0, 1, NULL, 0, NULL, 1, 1, 1, '', 0, 6, '2023-11-29 21:01:24', '2023-12-14 15:26:34', 0);
-INSERT INTO `sys_menu` VALUES (64, '角色授权', '', '/role/authorization', '/system/role/user-role', NULL, 0, 1, NULL, 1, NULL, 1, 1, 1, '', 0, 0, '2023-12-04 12:07:00', '2023-12-05 09:57:09', 0);
-INSERT INTO `sys_menu` VALUES (65, '权限授权', '', '/permission/authorization', '/system/permission/role-permission', NULL, 0, 1, NULL, 1, NULL, 1, 1, 1, '', 0, 0, '2023-12-07 14:38:45', '2023-12-07 14:41:44', 0);
-INSERT INTO `sys_menu` VALUES (68, '用户授权', '', '/user/role', '/system/user/role-user', NULL, 0, 1, NULL, 1, NULL, 1, 1, 1, '', 0, 0, '2023-12-19 10:37:05', '2023-12-19 10:38:16', 0);
-INSERT INTO `sys_menu` VALUES (69, '接口文档', 'FileTextTwoTone', 'http://blog.kuailemao.xyz/doc.html#/home', NULL, NULL, 0, NULL, NULL, 0, 'http://127.0.0.1:8088/doc.html#/home', 1, 1, 1, '_blank', 0, 5, '2024-01-22 20:32:18', '2024-02-28 14:03:19', 0);
-INSERT INTO `sys_menu` VALUES (70, '跳转前台', 'TabletTwoTone', 'http://blog.kuailemao.xyz', NULL, NULL, 0, NULL, NULL, 0, '', 1, 1, 1, '_blank', 0, 6, '2024-01-22 20:38:54', '2024-02-28 14:02:45', 0);
+INSERT INTO `sys_menu` VALUES (1, '系统管理', 'SettingTwoTone', '/system', 'RouteView', '/system/menus', 0, NULL, 'System', 0, NULL, 1, 0, 1, NULL, 0, 2, '2023-11-17 14:49:02', '2023-11-29 17:33:13', 0);
+INSERT INTO `sys_menu` VALUES (2, '菜单管理', 'MenuOutlined', '/system/menus', '/system/menu', '', 0, 1, 'Menu', 0, NULL, 1, 0, 1, NULL, 0, 1, '2023-11-17 14:49:02', '2023-11-28 17:27:43', 0);
+INSERT INTO `sys_menu` VALUES (3, '用户管理', 'UserOutlined', '/system/users', '/system/user', '', 0, 1, 'User', 0, NULL, 1, 0, 1, NULL, 0, 0, '2023-11-17 14:49:02', '2023-11-29 14:46:27', 0);
+INSERT INTO `sys_menu` VALUES (23, '角色管理', 'TeamOutlined', '/system/roles', '/system/role', NULL, 0, 1, NULL, 0, NULL, 1, 1, 1, '', 0, 3, '2023-11-29 15:41:30', '2023-12-04 12:16:00', 0);
+INSERT INTO `sys_menu` VALUES (24, '权限管理', 'UnlockOutlined', '/system/permissions', '/system/permission', '', 0, 1, NULL, 0, NULL, 1, 1, 1, '', 0, 4, '2023-11-29 17:13:50', '2023-11-29 17:14:10', 0);
+INSERT INTO `sys_menu` VALUES (25, '日志管理', 'HighlightOutlined', '/system/logs', 'RouteView', '/system/operations', 0, 1, NULL, 0, '', 1, 1, 1, '', 0, 5, '2023-11-29 17:17:29', '2023-11-29 17:17:29', 0);
+INSERT INTO `sys_menu` VALUES (26, '操作日志', 'FileProtectOutlined', '/system/operations', '/system/log/operate', '', 0, 25, NULL, 0, NULL, 1, 1, 1, '', 0, 0, '2023-11-29 17:20:28', '2023-11-29 17:29:20', 0);
+INSERT INTO `sys_menu` VALUES (27, '登录日志', 'SolutionOutlined', '/system/logins', '/system/log/login', '', 0, 25, NULL, 0, '', 1, 1, 1, '', 0, 1, '2023-11-29 17:29:02', '2023-11-29 17:29:02', 0);
+INSERT INTO `sys_menu` VALUES (28, '网站管理', 'AppstoreTwoTone', '/site', 'RouteView', '/site/info', 0, NULL, NULL, 0, NULL, 1, 1, 1, '', 0, 1, '2023-11-29 17:34:17', '2023-12-25 23:50:05', 0);
+INSERT INTO `sys_menu` VALUES (29, '信息管理', 'ReadOutlined', '/site/info', '/blog/info', '', 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 0, '2023-11-29 20:05:20', '2023-11-29 20:09:38', 0);
+INSERT INTO `sys_menu` VALUES (30, '编辑文章', 'FormOutlined', '/articles/:id', '/blog/essay/publish', NULL, 0, 28, NULL, 1, NULL, 1, 1, 1, '', 0, 0, '2023-11-29 20:11:25', '2023-12-26 11:16:20', 0);
+INSERT INTO `sys_menu` VALUES (31, '发布文章', 'SendOutlined', '/articles/new', '/blog/essay/publish', '', 0, 28, NULL, 0, '', 1, 1, 1, '', 0, 0, '2023-11-29 20:13:00', '2023-11-29 20:13:00', 0);
+INSERT INTO `sys_menu` VALUES (32, '文章列表', 'OrderedListOutlined', '/articles', '/blog/essay/list', '', 0, 28, NULL, 0, '', 1, 1, 1, '', 0, 0, '2023-11-29 20:14:13', '2023-11-29 20:14:13', 0);
+INSERT INTO `sys_menu` VALUES (33, '标签管理', 'TagsOutlined', '/tags', '/blog/tag', '', 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 2, '2023-11-29 20:15:13', '2023-11-29 20:20:28', 0);
+INSERT INTO `sys_menu` VALUES (34, '分类管理', 'ContainerOutlined', '/categories', '/blog/category', '', 0, 28, NULL, 0, '', 1, 1, 1, '', 0, 3, '2023-11-29 20:19:09', '2023-11-29 20:19:09', 0);
+INSERT INTO `sys_menu` VALUES (35, '评论管理', 'CommentOutlined', '/comments', '/blog/comment', '', 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 4, '2023-11-29 20:21:48', '2023-11-29 20:22:06', 0);
+INSERT INTO `sys_menu` VALUES (36, '留言管理', 'ScheduleOutlined', '/messages', '/blog/message', NULL, 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 1, '2023-11-29 20:23:19', '2023-12-26 11:16:24', 0);
+INSERT INTO `sys_menu` VALUES (37, '树洞管理', 'BulbOutlined', '/tree-hole', '/blog/tree-hole', '', 0, 28, NULL, 0, '', 1, 1, 1, '', 0, 5, '2023-11-29 20:27:40', '2023-11-29 20:27:40', 0);
+INSERT INTO `sys_menu` VALUES (39, '友链管理', 'NodeIndexOutlined', '/links', '/blog/link', NULL, 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 6, '2023-11-29 20:31:25', '2024-01-22 20:27:26', 0);
+INSERT INTO `sys_menu` VALUES (43, '收藏管理', 'InboxOutlined', '/collections', '/blog/collect', NULL, 0, 28, NULL, 0, NULL, 1, 1, 1, '', 0, 3, '2023-11-29 20:54:15', '2023-11-29 20:54:47', 0);
+INSERT INTO `sys_menu` VALUES (44, '服务监控', 'AlertOutlined', '/system/server', '/system/server-monitoring', NULL, 0, 1, NULL, 0, NULL, 1, 1, 1, '', 0, 6, '2023-11-29 21:01:24', '2023-12-14 15:26:34', 0);
+INSERT INTO `sys_menu` VALUES (64, '角色授权', '', '/roles/:id', '/system/role/user-role', NULL, 0, 1, NULL, 1, NULL, 1, 1, 1, '', 0, 0, '2023-12-04 12:07:00', '2023-12-05 09:57:09', 0);
+INSERT INTO `sys_menu` VALUES (65, '权限授权', '', '/permissions/:id', '/system/permission/role-permission', NULL, 0, 1, NULL, 1, NULL, 1, 1, 1, '', 0, 0, '2023-12-07 14:38:45', '2023-12-07 14:41:44', 0);
+INSERT INTO `sys_menu` VALUES (68, '用户授权', '', '/users/:id', '/system/user/role-user', NULL, 0, 1, NULL, 1, NULL, 1, 1, 1, '', 0, 0, '2023-12-19 10:37:05', '2023-12-19 10:38:16', 0);
 
 -- ----------------------------
 -- Table structure for sys_permission
@@ -506,7 +501,6 @@ CREATE TABLE `sys_role_menu`  (
 -- ----------------------------
 -- Records of sys_role_menu
 -- ----------------------------
-INSERT INTO `sys_role_menu` VALUES (1290, 1, 21, 0);
 INSERT INTO `sys_role_menu` VALUES (1292, 1, 29, 0);
 INSERT INTO `sys_role_menu` VALUES (1295, 1, 31, 0);
 INSERT INTO `sys_role_menu` VALUES (1296, 1, 32, 0);
@@ -515,7 +509,6 @@ INSERT INTO `sys_role_menu` VALUES (1298, 1, 34, 0);
 INSERT INTO `sys_role_menu` VALUES (1299, 1, 43, 0);
 INSERT INTO `sys_role_menu` VALUES (1300, 1, 35, 0);
 INSERT INTO `sys_role_menu` VALUES (1301, 1, 37, 0);
-INSERT INTO `sys_role_menu` VALUES (1302, 1, 38, 0);
 INSERT INTO `sys_role_menu` VALUES (1306, 1, 1, 0);
 INSERT INTO `sys_role_menu` VALUES (1307, 1, 3, 0);
 INSERT INTO `sys_role_menu` VALUES (1308, 1, 64, 0);
@@ -527,7 +520,6 @@ INSERT INTO `sys_role_menu` VALUES (1313, 1, 25, 0);
 INSERT INTO `sys_role_menu` VALUES (1314, 1, 26, 0);
 INSERT INTO `sys_role_menu` VALUES (1315, 1, 27, 0);
 INSERT INTO `sys_role_menu` VALUES (1316, 1, 44, 0);
-INSERT INTO `sys_role_menu` VALUES (1345, 2, 21, 0);
 INSERT INTO `sys_role_menu` VALUES (1346, 2, 29, 0);
 INSERT INTO `sys_role_menu` VALUES (1349, 2, 31, 0);
 INSERT INTO `sys_role_menu` VALUES (1350, 2, 32, 0);
@@ -536,7 +528,6 @@ INSERT INTO `sys_role_menu` VALUES (1352, 2, 34, 0);
 INSERT INTO `sys_role_menu` VALUES (1353, 2, 43, 0);
 INSERT INTO `sys_role_menu` VALUES (1354, 2, 35, 0);
 INSERT INTO `sys_role_menu` VALUES (1355, 2, 37, 0);
-INSERT INTO `sys_role_menu` VALUES (1356, 2, 38, 0);
 INSERT INTO `sys_role_menu` VALUES (1360, 2, 1, 0);
 INSERT INTO `sys_role_menu` VALUES (1361, 2, 3, 0);
 INSERT INTO `sys_role_menu` VALUES (1362, 2, 64, 0);
@@ -555,9 +546,6 @@ INSERT INTO `sys_role_menu` VALUES (1384, 1, 36, 0);
 INSERT INTO `sys_role_menu` VALUES (1385, 2, 36, 0);
 INSERT INTO `sys_role_menu` VALUES (1386, 1, 39, 0);
 INSERT INTO `sys_role_menu` VALUES (1387, 2, 39, 0);
-INSERT INTO `sys_role_menu` VALUES (1392, 1, 42, 0);
-INSERT INTO `sys_role_menu` VALUES (1393, 2, 42, 0);
-INSERT INTO `sys_role_menu` VALUES (1394, 1, 69, 0);
 
 -- ----------------------------
 -- Table structure for sys_role_permission

@@ -55,11 +55,11 @@ async function refreshFunc(searchData?: { roleName: string | undefined; roleKey:
   loading.value = true
   let newData: any = []
   if (searchData) {
-    const { data } = await queryPermissionNotRole(route.query.id as string, searchData.roleName, searchData.roleKey)
+    const { data } = await queryPermissionNotRole(route.params.id as string, searchData.roleName, searchData.roleKey)
     newData = data
   }
   else {
-    const { data } = await queryPermissionNotRole(route.query.id as string)
+    const { data } = await queryPermissionNotRole(route.params.id as string)
     if (data)
       newData = data
   }
@@ -106,10 +106,10 @@ function onSelectChange(selectedRowKeys: Key[]) {
  */
 async function handleOk() {
   // 当个授权
-  if (state.selectedRowKeys.length > 0 && route.query.id) {
+  if (state.selectedRowKeys.length > 0 && route.params.id) {
     const addData = {
       roleId: state.selectedRowKeys,
-      permissionId: [route.query.id],
+      permissionId: [route.params.id],
     }
     const data = await addRolePermission(addData)
     if (data.code === 200)

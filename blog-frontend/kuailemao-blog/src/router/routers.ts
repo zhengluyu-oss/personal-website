@@ -1,4 +1,5 @@
 import { SITE_TITLE } from '@/config/site'
+import { PUBLIC_PATHS } from '@/router/paths'
 
 export const constantRouter = [
     {
@@ -17,7 +18,7 @@ export const constantRouter = [
             },
             // 工作经历
             {
-                path: '/experience',
+                path: PUBLIC_PATHS.experience,
                 component: () => import('@/views/Experience/index.vue'),
                 name: 'experience',
                 meta: {
@@ -25,7 +26,7 @@ export const constantRouter = [
                 }
             },
             {
-                path: '/experience/:id',
+                path: PUBLIC_PATHS.experienceDetail,
                 component: () => import('@/views/Experience/Detail.vue'),
                 name: 'experienceDetail',
                 meta: {
@@ -34,7 +35,7 @@ export const constantRouter = [
             },
             // 时间轴
             {
-                path: '/timeline',
+                path: PUBLIC_PATHS.archive,
                 component: () => import('@/views/Pigeonhole/TimeLine/index.vue'),
                 name: 'timeline',
                 meta: {
@@ -43,25 +44,43 @@ export const constantRouter = [
             },
             // 分类
             {
-                path: '/category/:id?',
+                path: PUBLIC_PATHS.blog,
+                component: () => import('@/views/Pigeonhole/Category/index.vue'),
+                name: 'blog',
+                meta: {
+                    title: '个人博客',
+                }
+            },
+            {
+                path: PUBLIC_PATHS.categories,
+                component: () => import('@/views/Pigeonhole/Category/CategoriesIndex.vue'),
+                name: 'categories',
+                meta: { title: '文章分类' }
+            },
+            {
+                path: PUBLIC_PATHS.category,
                 component: () => import('@/views/Pigeonhole/Category/index.vue'),
                 name: 'category',
-                meta: {
-                    title: '文章分类',
-                }
+                meta: { title: '文章分类' }
             },
             // 标签
             {
-                path: '/tags/:id?',
+                path: PUBLIC_PATHS.tags,
                 component: () => import('@/views/Pigeonhole/Tags/index.vue'),
                 name: 'tags',
                 meta: {
                     title: '文章标签',
                 }
             },
+            {
+                path: PUBLIC_PATHS.tag,
+                component: () => import('@/views/Pigeonhole/Tags/index.vue'),
+                name: 'tag',
+                meta: { title: '文章标签' }
+            },
             // 树洞
             {
-                path: '/tree-hole',
+                path: PUBLIC_PATHS.treeHole,
                 component: () => import('@/views/Amusement/TreeHole/index.vue'),
                 name: 'treeHole',
                 meta: {
@@ -70,7 +89,7 @@ export const constantRouter = [
             },
             // 留言版
             {
-                path: '/message',
+                path: PUBLIC_PATHS.messages,
                 component: () => import('@/views/Amusement/Message/index.vue'),
                 name: 'message',
                 children: [
@@ -83,7 +102,7 @@ export const constantRouter = [
                         }
                     },
                     {
-                        path: '/message/detail/:id?',
+                        path: PUBLIC_PATHS.message,
                         component: () => import('@/views/Amusement/Message/MessageDetail/index.vue'),
                         name: 'messageDetail',
                         meta: {
@@ -94,7 +113,7 @@ export const constantRouter = [
             },
             // 友链
             {
-                path: '/link',
+                path: PUBLIC_PATHS.links,
                 component: () => import('@/views/Link/index.vue'),
                 name: 'link',
                 meta: {
@@ -103,7 +122,7 @@ export const constantRouter = [
             },
             // 音乐
             {
-                path: '/music',
+                path: PUBLIC_PATHS.music,
                 component: () => import('@/views/Music/index.vue'),
                 name: 'music',
                 meta: {
@@ -112,7 +131,7 @@ export const constantRouter = [
             },
             // 关于
             {
-                path: '/about',
+                path: PUBLIC_PATHS.about,
                 component: () => import('@/views/About/index.vue'),
                 name: 'about',
                 meta: {
@@ -121,7 +140,7 @@ export const constantRouter = [
             },
             // 相册
             {
-                path: '/photo',
+                path: PUBLIC_PATHS.photos,
                 component: () => import('@/views/Photo/index.vue'),
                 name: 'photo',
                 meta: {
@@ -132,7 +151,7 @@ export const constantRouter = [
     },
     // 文章
     {
-        path: '/article/:id',
+        path: PUBLIC_PATHS.article,
         component:
             () => import('@/views/Article/index.vue'),
         name: 'article',
@@ -142,13 +161,12 @@ export const constantRouter = [
     },
     // 登录
     {
-        path: '/welcome',
+        path: '/auth',
         component: () => import('@/views/Welcome/index.vue'),
         name: 'welcome',
-        redirect: '/login',
         children: [
             {
-                path: '/login',
+                path: PUBLIC_PATHS.login,
                 component: () => import('@/views/Welcome/Login/index.vue'),
                 name: 'welcome-login',
                 meta: {
@@ -156,7 +174,7 @@ export const constantRouter = [
                 }
             },
             {
-                path: '/register',
+                path: PUBLIC_PATHS.register,
                 component: () => import('@/views/Welcome/Register/index.vue'),
                 name: 'welcome-register',
                 meta: {
@@ -164,7 +182,7 @@ export const constantRouter = [
                 }
             },
             {
-                path: '/reset',
+                path: PUBLIC_PATHS.reset,
                 component: () => import('@/views/Welcome/Reset/index.vue'),
                 name: 'welcome-reset',
                 meta: {
@@ -175,17 +193,18 @@ export const constantRouter = [
     },
     // 设置
     {
-        path: '/setting',
+        path: PUBLIC_PATHS.account,
         component: () => import('@/views/Setting/index.vue'),
         name: 'setting',
         meta: {
             title: '用户设置',
         }
     },
-    // 访问其他任何不存在的路由，重定向到首页
+    // 旧地址不兼容：不存在的页面明确显示 404。
     {
         path: '/:pathMatch(.*)*',
-        redirect: '/',
-        name: 'any',
+        component: () => import('@/views/NotFound/index.vue'),
+        name: 'notFound',
+        meta: { title: '页面不存在' },
     }
 ]

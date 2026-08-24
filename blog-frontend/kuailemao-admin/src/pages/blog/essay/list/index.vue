@@ -277,7 +277,7 @@ const domain = import.meta.env.VITE_APP_DOMAIN_NAME_FRONT
       </a-form-item>
     </template>
     <template #operate-btn>
-      <a-button type="primary" style="margin-right: 10px" @click="$router.push({ path: '/blog/essay/publish' })">
+      <a-button type="primary" style="margin-right: 10px" @click="$router.push({ path: '/articles/new' })">
         <template #icon>
           <PlusOutlined />
         </template>
@@ -293,7 +293,7 @@ const domain = import.meta.env.VITE_APP_DOMAIN_NAME_FRONT
         class="green"
         style="margin-right: 10px"
         :disabled="state.selectedRowKeys.length === 0 || state.selectedRowKeys.length > 1"
-        @click="$router.push({ path: '/blog/essay/publish', query: { id: state.selectedRowKeys[0] } })"
+        @click="$router.push({ path: `/articles/${state.selectedRowKeys[0]}` })"
       >
         <template #icon>
           <FileSyncOutlined />
@@ -382,7 +382,7 @@ const domain = import.meta.env.VITE_APP_DOMAIN_NAME_FRONT
                 <span style="margin-left: 3px">跳转</span>
               </a-button>
             </a>
-            <a-button type="link" style="padding: 0" @click="$router.push({ path: '/blog/essay/publish', query: { id: record.id } })">
+            <a-button type="link" style="padding: 0" @click="$router.push({ path: `/articles/${record.id}` })">
               <template #icon>
                 <FileSyncOutlined />
               </template>

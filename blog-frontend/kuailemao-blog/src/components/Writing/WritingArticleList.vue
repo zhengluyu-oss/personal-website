@@ -27,7 +27,7 @@ const excerpt = (value?: string, limit = 72) => {
 const displayDate = (value?: string) => value?.slice(0, 10) || ''
 
 function openArticle(id: number | string) {
-  router.push(`/article/${id}`)
+  router.push(`/blog/articles/${id}`)
 }
 </script>
 
@@ -67,7 +67,7 @@ function openArticle(id: number | string) {
           <span
             v-for="tag in item.tags"
             :key="tag.id"
-            @click.stop="router.push(`/tags/${tag.id}`)"
+            @click.stop="router.push(`/blog/tags/${tag.id}`)"
           >#{{ tag.tagName }}</span>
         </div>
       </div>

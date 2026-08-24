@@ -220,7 +220,7 @@ const readingMinutes = computed(() => {
     <main v-if="loading" class="article-shell">
       <header class="article-intro">
         <div class="article-kicker">
-          <button type="button" @click="$router.push(`/category/${articleDetail.categoryId}`)">{{ articleDetail.categoryName }}</button>
+          <button type="button" @click="$router.push(`/blog/categories/${articleDetail.categoryId}`)">{{ articleDetail.categoryName }}</button>
           <span>ARTICLE {{ String(articleDetail.id).padStart(3, '0') }}</span>
         </div>
         <h1>{{ articleDetail.articleTitle }}</h1>
@@ -263,7 +263,7 @@ const readingMinutes = computed(() => {
 
           <footer class="article-ending">
             <div class="article-tags">
-              <button v-for="tag in articleDetail.tags" :key="tag.id" type="button" @click="$router.push(`/tags/${tag.id}`)"># {{ tag.tagName }}</button>
+              <button v-for="tag in articleDetail.tags" :key="tag.id" type="button" @click="$router.push(`/blog/tags/${tag.id}`)"># {{ tag.tagName }}</button>
             </div>
             <div class="article-actions" aria-label="文章互动">
               <button type="button" :class="{active: like}" @click="likeBtn(articleDetail)">
@@ -281,10 +281,10 @@ const readingMinutes = computed(() => {
           </footer>
 
           <nav class="article-neighbours" aria-label="上一篇和下一篇">
-            <button v-if="articleDetail.preArticleId > 0" type="button" @click="$router.push(`/article/${articleDetail.preArticleId}`)">
+            <button v-if="articleDetail.preArticleId > 0" type="button" @click="$router.push(`/blog/articles/${articleDetail.preArticleId}`)">
               <span>上一篇</span><strong>{{ articleDetail.preArticleTitle }}</strong>
             </button>
-            <button v-if="articleDetail.nextArticleId > 0" type="button" @click="$router.push(`/article/${articleDetail.nextArticleId}`)">
+            <button v-if="articleDetail.nextArticleId > 0" type="button" @click="$router.push(`/blog/articles/${articleDetail.nextArticleId}`)">
               <span>下一篇</span><strong>{{ articleDetail.nextArticleTitle }}</strong>
             </button>
           </nav>
