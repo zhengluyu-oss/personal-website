@@ -6,12 +6,12 @@ export default {
   'logo': '/blog-icon.svg',
   'collapsed': false,
   'drawerVisible': true,
-  'colorPrimary': '#1677FF',
-  'layout': 'mix',
+  'colorPrimary': '#155EEF',
+  'layout': 'side',
   'contentWidth': 'Fluid',
   'fixedHeader': false,
   'fixedSider': true,
-  'splitMenus': true,
+  'splitMenus': false,
   'header': true,
   'menu': true,
   'watermark': false,
@@ -25,7 +25,7 @@ export default {
   'leftCollapsed': true,
   'headerHeight': 48,
   'copyright': 'ruyu-blog 2024',
-  'animationName': 'slide-fadein-right',
+  'animationName': 'fadein',
 } as LayoutSetting
 
 export const animationNameList = [

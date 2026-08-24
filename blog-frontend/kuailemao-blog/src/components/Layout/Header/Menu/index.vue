@@ -8,7 +8,6 @@ import {
 } from "@element-plus/icons-vue";
 import {logout} from "@/apis/user"
 import {REMOVE_TOKEN} from "@/utils/auth.ts";
-import {useColorMode} from '@vueuse/core'
 import useUserStore from "@/store/modules/user.ts"
 import router from "@/router";
 import useWebsiteStore from "@/store/modules/website.ts";
@@ -18,8 +17,6 @@ import {useBlogCategories} from "@/composables/useBlogCategories";
 
 const userStore = useUserStore()
 const useWebsite = useWebsiteStore()
-// 日夜切换
-const mode = useColorMode()
 const dialogVisible = ref(false)
 const {categories, loadCategories} = useBlogCategories()
 
@@ -32,10 +29,6 @@ const logoutSub = () => {
       router.push('/')
     }
   })
-}
-
-function changeToggle({detail}) {
-  mode.value = detail
 }
 
 onMounted(() => {
@@ -120,10 +113,6 @@ onMounted(() => {
       </div>
     </div>
     <div id="menu-right">
-      <!-- 日夜切换 -->
-      <div style="margin-right: 4.5rem;margin-top: -0.2rem">
-        <toggle-button @change="changeToggle" size="1"></toggle-button>
-      </div>
       <div id="search-button">
         <!-- 搜索按钮 -->
         <div class="search" @click="dialogVisible = true">
