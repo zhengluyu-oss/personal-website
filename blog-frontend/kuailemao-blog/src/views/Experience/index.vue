@@ -30,7 +30,7 @@ onMounted(async () => {
 <template>
   <main class="career-page">
     <section class="career-hero page-shell">
-      <div class="hero-copy"><p>EXPERIENCE</p><h1>从业务问题出发，<br>交付可靠的软件。</h1><span>我的职业经历、核心职责和可验证成果。</span></div>
+      <div class="hero-copy"><p>CAREER DOSSIER · 职业档案</p><h1>从业务问题出发，<br>交付可靠的软件。</h1><span>这里不只记录任职时间，更展示我承担过什么、解决了什么，以及最终留下了哪些可验证结果。</span><div class="hero-proof"><b>面向真实业务</b><i></i><b>强调交付结果</b><i></i><b>持续复盘成长</b></div></div>
       <dl class="career-snapshot">
         <div v-if="current"><dt>当前岗位</dt><dd>{{ current.roleTitle }}</dd><small>{{ current.company }}</small></div>
         <div><dt>经历记录</dt><dd>{{ list.length }} 段真实业务经历</dd></div>
@@ -39,14 +39,14 @@ onMounted(async () => {
     </section>
 
     <section class="career-list page-shell" aria-labelledby="career-title">
-      <header><h2 id="career-title">职业轨迹</h2><p>按时间由近到远，点击进入完整案例。</p></header>
+      <header><div><span>CAREER TIMELINE</span><h2 id="career-title">职业轨迹</h2></div><p>按时间由近到远，点击进入完整案例。</p></header>
       <div v-if="loading" class="loading" aria-label="工作经历加载中"><div v-for="n in 2" :key="n"><span/><b/><i/></div></div>
       <div v-else-if="failed" class="state"><h2>工作经历暂时无法读取</h2><p>请稍后刷新页面重试。</p></div>
       <div v-else-if="!list.length" class="state"><h2>工作经历正在整理</h2><p>完成后会在这里公开。</p></div>
       <div v-else class="timeline">
-        <article v-for="item in list" :key="item.id" class="career-case" :class="{'career-case--current':item.isCurrent===1}" tabindex="0" role="link" :aria-label="`查看 ${item.company} 工作经历`" @click="router.push(`/experience/${item.id}`)" @keydown.enter="router.push(`/experience/${item.id}`)">
+        <article v-for="(item,index) in list" :key="item.id" class="career-case" :class="{'career-case--current':item.isCurrent===1}" tabindex="0" role="link" :aria-label="`查看 ${item.company} 工作经历`" @click="router.push(`/experience/${item.id}`)" @keydown.enter="router.push(`/experience/${item.id}`)">
           <aside class="case-time"><strong>{{ year(item.startDate) }}</strong><time>{{ period(item) }}</time><span>{{ duration(item) }}</span></aside>
-          <div class="case-main">
+          <div class="case-main"><span class="case-index">CASE {{ String(index + 1).padStart(2,'0') }}</span>
             <p class="company">{{ item.company }}</p><h3>{{ item.roleTitle }}</h3>
             <p class="case-summary">{{ item.projectSummary || lines(item.highlights)[0] || '负责业务系统的设计、开发与持续优化。' }}</p>
             <section v-if="lines(item.highlights).length" class="selected"><h4>Selected Work</h4><ol><li v-for="work in lines(item.highlights).slice(0,4)" :key="work">{{ work }}</li></ol></section>
@@ -67,4 +67,42 @@ onMounted(async () => {
 @media(max-width:850px){.page-shell{width:min(calc(100% - 2rem),44rem)}.career-hero{min-height:auto;grid-template-columns:1fr;gap:3rem;padding:5rem 0}.hero-copy h1{font-size:clamp(3rem,12vw,5rem)}.career-list>header{align-items:flex-start;flex-direction:column;gap:.8rem}.timeline::before{left:.28rem}.career-case{grid-template-columns:1.5rem 1fr;padding:3rem 0;gap:1rem}.career-case::before{top:3.35rem;left:0}.case-time{position:static;grid-column:2}.case-time strong{font-size:2.4rem}.case-main{grid-column:2}.case-action{position:absolute;top:3rem;right:0}.selected,.impact{grid-template-columns:1fr;gap:.8rem}.loading>div{grid-template-columns:1fr;gap:1rem}.loading i{grid-column:1}.career-closing{min-height:65dvh}}
 @media(max-width:480px){.career-page{padding-top:56px}.hero-copy h1{max-width:none;font-size:clamp(2rem,9vw,2.35rem);line-height:1.08;letter-spacing:-.055em}.case-main h3{font-size:2.25rem;padding-right:1rem}.case-action b{display:none}.impact>div{grid-template-columns:1fr}.career-closing h2{font-size:2.7rem}}
 @media(prefers-reduced-motion:reduce){.career-case,.career-case h3,.loading>*{animation:none;transition:none}}
+
+/* Career dossier — layered light editorial system */
+.career-page{background:
+  linear-gradient(rgba(47,116,191,.035) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(47,116,191,.035) 1px,transparent 1px),
+  linear-gradient(180deg,#f8fbff 0,#f3f7fc 46rem,#fff 76rem);
+  background-size:32px 32px,32px 32px,100% 100%}
+.career-hero{min-height:auto;margin-top:clamp(2rem,5vw,4.5rem);padding:clamp(4rem,8vw,7rem);border:1px solid rgba(47,116,191,.17);border-radius:2rem;background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(235,244,255,.9));box-shadow:0 30px 90px rgba(29,76,125,.12);overflow:hidden}
+.career-hero::before{top:auto;right:-7rem;bottom:-13rem;width:34rem;border:1px solid rgba(47,116,191,.12);background:radial-gradient(circle,rgba(47,116,191,.12) 0 32%,transparent 32.5% 48%,rgba(47,116,191,.08) 48.5% 49%,transparent 49.5%)}
+.career-hero::after{content:'01';position:absolute;right:4%;top:-.16em;color:rgba(47,116,191,.055);font-family:Georgia,serif;font-size:clamp(12rem,26vw,28rem);line-height:1;pointer-events:none}
+.hero-copy h1{max-width:12ch;font-size:clamp(3.2rem,5.6vw,6rem)}
+.hero-copy>span{max-width:39rem;font-size:1.05rem}
+.hero-proof{display:flex;align-items:center;flex-wrap:wrap;gap:.8rem;margin-top:2rem;color:var(--muted)}
+.hero-proof b{font-size:.72rem;letter-spacing:.04em}.hero-proof i{width:3px;height:3px;border-radius:50%;background:var(--accent)}
+.career-snapshot{padding:0 1.8rem;border:1px solid rgba(47,116,191,.18);border-top:3px solid var(--accent);border-radius:1rem;background:rgba(255,255,255,.82);box-shadow:0 18px 45px rgba(29,76,125,.1);backdrop-filter:blur(10px)}
+.career-snapshot div{padding:1.35rem 0}.career-snapshot dd{font-size:1.08rem}
+.career-list{padding:clamp(6rem,10vw,10rem) 0}
+.career-list>header{padding-bottom:2rem;border-bottom:1px solid var(--line)}
+.career-list>header span{display:block;margin-bottom:.8rem;color:var(--accent);font-family:"Share TechMono",monospace;font-size:.66rem;letter-spacing:.13em}
+.career-list>header h2{line-height:1}
+.timeline::before{left:8.55rem;background:linear-gradient(var(--accent),var(--line) 32%,var(--line))}
+.career-case{grid-template-columns:8.6rem minmax(0,1fr) 7rem;gap:clamp(1.8rem,4vw,4.5rem);margin:1.25rem 0;padding:clamp(2.3rem,4.2vw,4rem);border:1px solid rgba(47,116,191,.13)!important;border-radius:1.5rem;background:rgba(255,255,255,.84);box-shadow:0 15px 45px rgba(28,63,103,.07);overflow:hidden;transform:translateY(0);transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}
+.career-case::after{content:'';position:absolute;inset:0 auto 0 0;width:4px;background:linear-gradient(180deg,var(--accent),rgba(47,116,191,.22));opacity:.42}
+.career-case::before{top:3rem;left:8.23rem;border-color:#fff}
+.career-case:hover,.career-case:focus-visible{border-color:rgba(47,116,191,.35)!important;background:#fff;box-shadow:0 25px 65px rgba(28,63,103,.13);transform:translateY(-4px)}
+.career-case--current{background:linear-gradient(120deg,#fff 0,#fff 68%,rgba(226,239,255,.72) 100%)}
+.case-time{top:7rem;padding-right:1.3rem}.case-time strong{color:var(--accent);font-family:Georgia,serif;font-weight:500}.case-time time{font-size:.72rem}.case-index{display:block;margin-bottom:.75rem;color:var(--accent);font-family:"Share TechMono",monospace;font-size:.62rem;letter-spacing:.12em}
+.company{font-size:.9rem;font-weight:650}.case-main h3{font-size:clamp(2.25rem,4vw,4rem)}
+.case-summary{margin-top:1.35rem;font-size:clamp(1.02rem,1.4vw,1.16rem)}
+.selected,.impact{grid-template-columns:7rem 1fr;margin-top:2rem;padding-top:1.4rem}
+.selected li{font-size:.88rem}.impact p{border:1px solid rgba(47,116,191,.12);border-left:3px solid var(--accent);border-radius:.7rem;background:#f5f9ff}
+.metadata li{border-color:rgba(47,116,191,.16);border-radius:999px;background:#f7faff}
+.case-action b{color:var(--accent)}
+.career-closing{min-height:auto;margin-bottom:clamp(3rem,7vw,7rem);padding:clamp(4rem,8vw,7rem);border:0;border-radius:2rem;background:linear-gradient(130deg,#0d2948,#174c7d);color:#fff;box-shadow:0 30px 80px rgba(16,48,82,.2);overflow:hidden}
+.career-closing::after{content:'';position:absolute;width:24rem;aspect-ratio:1;right:-6rem;border:1px solid rgba(255,255,255,.14);border-radius:50%;box-shadow:0 0 0 4rem rgba(255,255,255,.035),0 0 0 8rem rgba(255,255,255,.025)}
+.career-closing{position:relative}.career-closing h2{position:relative;z-index:1}.career-closing>p{color:#9dcbff}.career-closing nav{position:relative;z-index:1}.career-closing a{border-color:rgba(255,255,255,.45);color:#fff}
+@media(max-width:850px){.career-hero{margin-top:1rem;padding:3.5rem 2rem;border-radius:1.4rem}.career-hero::after{font-size:15rem}.career-snapshot{max-width:34rem}.timeline::before{left:.28rem}.career-case{grid-template-columns:1.5rem 1fr;margin:1rem 0;padding:2.2rem 1.3rem}.career-case::before{top:2.6rem;left:0}.career-case::after{display:none}.case-action{top:2rem;right:1.3rem}.career-closing{padding:4rem 2rem;border-radius:1.4rem}}
+@media(max-width:480px){.career-hero{padding:3rem 1.25rem}.hero-proof{gap:.55rem}.hero-proof b{font-size:.66rem}.career-case{padding:2rem 1rem}.case-time,.case-main{grid-column:2}.case-main h3{font-size:2.1rem}.career-closing{padding:3.5rem 1.25rem}.career-closing::after{opacity:.5}}
 </style>
