@@ -2,10 +2,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MdPreview } from 'md-editor-v3'
-import { useDark } from '@vueuse/core'
 import { getExperience, type WorkExperienceItem } from '@/apis/experience'
 
-const route=useRoute(); const router=useRouter(); const item=ref<WorkExperienceItem>(); const loading=ref(true); const notFound=ref(false); const mode=computed(()=>useDark().value?'dark':'light')
+const route=useRoute(); const router=useRouter(); const item=ref<WorkExperienceItem>(); const loading=ref(true); const notFound=ref(false); const mode='light'
 const lines=(value?:string)=>value?.split(/\r?\n/).map(line=>line.trim()).filter(Boolean)||[]
 const tokens=(value?:string)=>lines(value).flatMap(line=>line.split(/[,，/|]/)).map(line=>line.trim()).filter(Boolean)
 const month=(value?:string)=>value?value.slice(0,7).replace('-','.') : ''
