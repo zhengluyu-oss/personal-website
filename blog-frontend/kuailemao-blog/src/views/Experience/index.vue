@@ -30,7 +30,7 @@ onMounted(async () => {
 <template>
   <main class="career-page">
     <section class="career-hero page-shell">
-      <div class="hero-copy"><p>CAREER DOSSIER · 职业档案</p><h1>从业务问题出发，<br>交付可靠的软件。</h1><span>这里不只记录任职时间，更展示我承担过什么、解决了什么，以及最终留下了哪些可验证结果。</span><div class="hero-proof"><b>面向真实业务</b><i></i><b>强调交付结果</b><i></i><b>持续复盘成长</b></div></div>
+      <div class="hero-copy"><p>CAREER DOSSIER · 职业档案</p><h1>从业务问题出发，交付可靠的软件。</h1><span>记录我承担过什么、解决了什么，以及最终留下了哪些可验证结果。</span></div>
       <dl class="career-snapshot">
         <div v-if="current"><dt>当前岗位</dt><dd>{{ current.roleTitle }}</dd><small>{{ current.company }}</small></div>
         <div><dt>经历记录</dt><dd>{{ list.length }} 段真实业务经历</dd></div>
@@ -74,16 +74,14 @@ onMounted(async () => {
   linear-gradient(90deg,rgba(47,116,191,.035) 1px,transparent 1px),
   linear-gradient(180deg,#f8fbff 0,#f3f7fc 46rem,#fff 76rem);
   background-size:32px 32px,32px 32px,100% 100%}
-.career-hero{min-height:auto;margin-top:clamp(2rem,5vw,4.5rem);padding:clamp(4rem,8vw,7rem);border:1px solid rgba(47,116,191,.17);border-radius:2rem;background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(235,244,255,.9));box-shadow:0 30px 90px rgba(29,76,125,.12);overflow:hidden}
-.career-hero::before{top:auto;right:-7rem;bottom:-13rem;width:34rem;border:1px solid rgba(47,116,191,.12);background:radial-gradient(circle,rgba(47,116,191,.12) 0 32%,transparent 32.5% 48%,rgba(47,116,191,.08) 48.5% 49%,transparent 49.5%)}
-.career-hero::after{content:'01';position:absolute;right:4%;top:-.16em;color:rgba(47,116,191,.055);font-family:Georgia,serif;font-size:clamp(12rem,26vw,28rem);line-height:1;pointer-events:none}
-.hero-copy h1{max-width:12ch;font-size:clamp(3.2rem,5.6vw,6rem)}
-.hero-copy>span{max-width:39rem;font-size:1.05rem}
-.hero-proof{display:flex;align-items:center;flex-wrap:wrap;gap:.8rem;margin-top:2rem;color:var(--muted)}
-.hero-proof b{font-size:.72rem;letter-spacing:.04em}.hero-proof i{width:3px;height:3px;border-radius:50%;background:var(--accent)}
-.career-snapshot{padding:0 1.8rem;border:1px solid rgba(47,116,191,.18);border-top:3px solid var(--accent);border-radius:1rem;background:rgba(255,255,255,.82);box-shadow:0 18px 45px rgba(29,76,125,.1);backdrop-filter:blur(10px)}
-.career-snapshot div{padding:1.35rem 0}.career-snapshot dd{font-size:1.08rem}
-.career-list{padding:clamp(6rem,10vw,10rem) 0}
+.career-hero{min-height:auto;grid-template-columns:minmax(0,1.55fr) minmax(18rem,.45fr);gap:clamp(2.5rem,6vw,6rem);margin-top:clamp(1.25rem,3vw,2.5rem);padding:clamp(2.5rem,4.5vw,4rem);border:1px solid rgba(47,116,191,.17);border-radius:1.5rem;background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(235,244,255,.9));box-shadow:0 20px 60px rgba(29,76,125,.1);overflow:hidden}
+.career-hero::before{top:auto;right:-6rem;bottom:-11rem;width:25rem;border:1px solid rgba(47,116,191,.1);background:radial-gradient(circle,rgba(47,116,191,.1) 0 32%,transparent 32.5% 48%,rgba(47,116,191,.06) 48.5% 49%,transparent 49.5%)}
+.career-hero::after{content:'01';position:absolute;right:5%;top:-.12em;color:rgba(47,116,191,.045);font-family:Georgia,serif;font-size:clamp(8rem,17vw,16rem);line-height:1;pointer-events:none}
+.hero-copy>p{margin-bottom:1rem}.hero-copy h1{max-width:16ch;font-size:clamp(2.5rem,4vw,4.2rem);line-height:1.05;letter-spacing:-.06em}
+.hero-copy>span{max-width:36rem;margin-top:1.25rem;font-size:.96rem}
+.career-snapshot{padding:0 1.35rem;border:1px solid rgba(47,116,191,.18);border-top:3px solid var(--accent);border-radius:.9rem;background:rgba(255,255,255,.84);box-shadow:0 14px 36px rgba(29,76,125,.085);backdrop-filter:blur(10px)}
+.career-snapshot div{padding:.9rem 0}.career-snapshot dd{margin-top:.35rem;font-size:.94rem}.career-snapshot small{font-size:.7rem}
+.career-list{padding:clamp(3.5rem,6vw,6rem) 0}
 .career-list>header{padding-bottom:2rem;border-bottom:1px solid var(--line)}
 .career-list>header span{display:block;margin-bottom:.8rem;color:var(--accent);font-family:"Share TechMono",monospace;font-size:.66rem;letter-spacing:.13em}
 .career-list>header h2{line-height:1}
@@ -103,6 +101,6 @@ onMounted(async () => {
 .career-closing{min-height:auto;margin-bottom:clamp(3rem,7vw,7rem);padding:clamp(4rem,8vw,7rem);border:0;border-radius:2rem;background:linear-gradient(130deg,#0d2948,#174c7d);color:#fff;box-shadow:0 30px 80px rgba(16,48,82,.2);overflow:hidden}
 .career-closing::after{content:'';position:absolute;width:24rem;aspect-ratio:1;right:-6rem;border:1px solid rgba(255,255,255,.14);border-radius:50%;box-shadow:0 0 0 4rem rgba(255,255,255,.035),0 0 0 8rem rgba(255,255,255,.025)}
 .career-closing{position:relative}.career-closing h2{position:relative;z-index:1}.career-closing>p{color:#9dcbff}.career-closing nav{position:relative;z-index:1}.career-closing a{border-color:rgba(255,255,255,.45);color:#fff}
-@media(max-width:850px){.career-hero{margin-top:1rem;padding:3.5rem 2rem;border-radius:1.4rem}.career-hero::after{font-size:15rem}.career-snapshot{max-width:34rem}.timeline::before{left:.28rem}.career-case{grid-template-columns:1.5rem 1fr;margin:1rem 0;padding:2.2rem 1.3rem}.career-case::before{top:2.6rem;left:0}.career-case::after{display:none}.case-action{top:2rem;right:1.3rem}.career-closing{padding:4rem 2rem;border-radius:1.4rem}}
-@media(max-width:480px){.career-hero{padding:3rem 1.25rem}.hero-proof{gap:.55rem}.hero-proof b{font-size:.66rem}.career-case{padding:2rem 1rem}.case-time,.case-main{grid-column:2}.case-main h3{font-size:2.1rem}.career-closing{padding:3.5rem 1.25rem}.career-closing::after{opacity:.5}}
+@media(max-width:850px){.career-hero{margin-top:1rem;padding:2.75rem 2rem;border-radius:1.25rem}.career-hero::after{font-size:10rem}.career-snapshot{max-width:34rem}.timeline::before{left:.28rem}.career-case{grid-template-columns:1.5rem 1fr;margin:1rem 0;padding:2.2rem 1.3rem}.career-case::before{top:2.6rem;left:0}.career-case::after{display:none}.case-action{top:2rem;right:1.3rem}.career-closing{padding:4rem 2rem;border-radius:1.4rem}}
+@media(max-width:480px){.career-hero{gap:2rem;padding:2.25rem 1.25rem}.hero-copy h1{font-size:clamp(2rem,9vw,2.35rem)}.career-snapshot div{padding:.75rem 0}.career-case{padding:2rem 1rem}.case-time,.case-main{grid-column:2}.case-main h3{font-size:2.1rem}.career-closing{padding:3.5rem 1.25rem}.career-closing::after{opacity:.5}}
 </style>
