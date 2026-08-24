@@ -33,7 +33,7 @@ onBeforeUnmount(() => footerObserver?.disconnect())
   <Header/>
   <div style="min-height: 100vh">
     <router-view v-slot="{Component}">
-      <transition name="el-fade-in-linear" mode="out-in">
+      <transition name="el-fade-in-linear">
         <component :is="Component"/>
       </transition>
     </router-view>
