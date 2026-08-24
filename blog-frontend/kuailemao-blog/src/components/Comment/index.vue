@@ -11,7 +11,6 @@ import {
 import {cancelLike, isLike, userLike} from '@/apis/like'
 import ChildComment from "./ChildComment.vue";
 import {ElMessage} from "element-plus";
-import {useColorMode} from "@vueuse/core";
 
 const props = defineProps({
   authorId: {
@@ -96,7 +95,7 @@ const showAllChildComments = ref(false)
 // 查询评论数
 const pageSize = ref(2)
 
-const mode = useColorMode()
+const mode = 'light'
 
 // 默认选中第一个
 onMounted(() => {
