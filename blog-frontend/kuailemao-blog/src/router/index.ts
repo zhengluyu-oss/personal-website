@@ -3,12 +3,15 @@ import {createRouter, createWebHistory} from 'vue-router'
 import {constantRouter} from '@/router/routers.ts'
 import {GET_TOKEN} from "@/utils/auth.ts";
 import {applyFixedSeo} from '@/utils/seo'
+import {installAsyncChunkRecovery} from '@/utils/chunk-recovery'
 
 let router = createRouter({
     // 路由模式 History
     history: createWebHistory(),
     routes: constantRouter
 })
+
+installAsyncChunkRecovery(router)
 
 router.beforeEach((to, from, next) => {
     // 用户是否登录
