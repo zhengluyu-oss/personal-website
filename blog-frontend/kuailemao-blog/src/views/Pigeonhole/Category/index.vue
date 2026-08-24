@@ -121,7 +121,12 @@ watch(() => route.params.slug, bootstrap)
           </section>
           <section v-else-if="featuredArticle" class="journal-content">
             <article class="featured-story" tabindex="0" @click="openArticle(featuredArticle.id)" @keydown.enter="openArticle(featuredArticle.id)">
-              <div class="featured-story__cover"><img v-if="featuredArticle.articleCover" :src="featuredArticle.articleCover" :alt="featuredArticle.articleTitle"></div>
+              <div class="featured-story__cover">
+                <template v-if="featuredArticle.articleCover">
+                  <img class="story-cover__backdrop" :src="featuredArticle.articleCover" alt="" aria-hidden="true">
+                  <img class="story-cover__image" :src="featuredArticle.articleCover" :alt="featuredArticle.articleTitle">
+                </template>
+              </div>
               <div class="featured-story__content">
                 <div class="story-meta"><span>{{ featuredArticle.categoryName || '近期写作' }}</span><time>{{ displayDate(featuredArticle.createTime) }}</time></div>
                 <h2>{{ featuredArticle.articleTitle }}</h2><p>{{ excerpt(featuredArticle.articleContent, 145) }}</p>
@@ -134,7 +139,12 @@ watch(() => route.params.slug, bootstrap)
             </div>
             <div class="article-grid">
               <article v-for="article in remainingArticles" :key="article.id" class="article-card" tabindex="0" @click="openArticle(article.id)" @keydown.enter="openArticle(article.id)">
-                <div class="article-card__cover"><img v-if="article.articleCover" :src="article.articleCover" :alt="article.articleTitle" loading="lazy"></div>
+                <div class="article-card__cover">
+                  <template v-if="article.articleCover">
+                    <img class="story-cover__backdrop" :src="article.articleCover" alt="" aria-hidden="true" loading="lazy">
+                    <img class="story-cover__image" :src="article.articleCover" :alt="article.articleTitle" loading="lazy">
+                  </template>
+                </div>
                 <div class="article-card__body">
                   <div class="story-meta"><span>{{ article.categoryName || '技术笔记' }}</span><time>{{ displayDate(article.createTime) }}</time></div>
                   <h3>{{ article.articleTitle }}</h3><p>{{ excerpt(article.articleContent) }}</p>
@@ -172,9 +182,11 @@ watch(() => route.params.slug, bootstrap)
 .journal-content { padding: clamp(2rem, 5vw, 4.5rem) 0 5rem; }
 .featured-story { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(18rem, .85fr); min-height: 25rem; overflow: hidden; border-radius: var(--brand-radius-lg); background: var(--brand-surface); box-shadow: 0 22px 70px rgba(24,55,91,.12); cursor: pointer; }
 .featured-story:focus-visible { outline: 3px solid var(--journal-accent); outline-offset: 4px; }
-.featured-story__cover { min-height: 20rem; overflow: hidden; background: var(--brand-canvas-soft); }
-.featured-story__cover img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s cubic-bezier(.2,.65,.3,1); }
-.featured-story:hover .featured-story__cover img { transform: scale(1.035); }
+.featured-story__cover { position: relative; isolation: isolate; min-height: 20rem; overflow: hidden; background: var(--brand-canvas-soft); }
+.story-cover__backdrop, .story-cover__image { position: absolute; inset: 0; width: 100%; height: 100%; }
+.story-cover__backdrop { z-index: 0; object-fit: cover; opacity: .28; filter: blur(18px) saturate(.8); transform: scale(1.1); }
+.story-cover__image { z-index: 1; object-fit: contain; transition: transform .6s cubic-bezier(.2,.65,.3,1); }
+.featured-story:hover .story-cover__image { transform: scale(1.018); }
 .featured-story__content { display: flex; flex-direction: column; justify-content: center; padding: clamp(1.5rem, 4vw, 3.25rem); }
 .featured-story h2 { margin: 1rem 0 0; font-size: clamp(1.8rem, 3.5vw, 3rem); line-height: 1.16; letter-spacing: -.045em; }
 .featured-story p { margin: 1rem 0 0; color: var(--brand-ink-soft); line-height: 1.75; }
@@ -191,9 +203,9 @@ watch(() => route.params.slug, bootstrap)
 .article-card { overflow: hidden; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-lg); background: var(--brand-surface); cursor: pointer; transition: transform .24s ease, border-color .24s ease, box-shadow .24s ease; }
 .article-card:hover { transform: translateY(-4px); border-color: rgba(38,94,154,.35); box-shadow: 0 18px 45px rgba(24,55,91,.1); }
 .article-card:focus-visible { outline: 3px solid var(--journal-accent); outline-offset: 3px; }
-.article-card__cover { aspect-ratio: 16 / 10; overflow: hidden; background: linear-gradient(135deg, #dce7f2, #eef3f8); }
-.article-card__cover img { width: 100%; height: 100%; object-fit: cover; transition: transform .45s ease; }
-.article-card:hover img { transform: scale(1.04); }
+.article-card__cover { position: relative; isolation: isolate; aspect-ratio: 16 / 10; overflow: hidden; background: linear-gradient(135deg, #dce7f2, #eef3f8); }
+.article-card__cover .story-cover__image { transition-duration: .45s; }
+.article-card:hover .story-cover__image { transform: scale(1.018); }
 .article-card__body { padding: 1.15rem; }
 .article-card h3 { min-height: 2.8em; margin: .8rem 0 0; font-size: 1.08rem; line-height: 1.4; letter-spacing: -.02em; }
 .article-card p { min-height: 4.8em; margin: .7rem 0 0; color: var(--brand-ink-soft); font-size: .82rem; line-height: 1.6; }
@@ -208,5 +220,5 @@ watch(() => route.params.slug, bootstrap)
 @keyframes shimmer { to { background-position-x: -200%; } }
 @media (max-width: 900px) { .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .featured-story { grid-template-columns: 1fr; } .featured-story__cover { aspect-ratio: 16 / 8; min-height: 0; } }
 @media (max-width: 640px) { .blog-hero { grid-template-columns: 1fr; gap: 2rem; width: calc(100vw - .75rem); padding: 2.75rem 1.35rem; border-radius: 0 0 var(--brand-radius-lg) var(--brand-radius-lg); } .blog-hero h1 { display: block; max-width: 10ch; font-size: clamp(2.45rem, 12vw, 3.5rem); line-height: 1.06; } .blog-hero h1 span { display: block; } .blog-hero__intro { margin-top: 1.1rem; font-size: .9rem; line-height: 1.7; } .blog-hero__stats { display: grid; grid-template-columns: auto 1fr; column-gap: 1rem; align-items: end; min-width: 0; padding: 1.15rem 0 0; border-top: 1px solid rgba(255,255,255,.2); border-left: 0; } .blog-hero__stats strong { font-size: 2.8rem; } .blog-hero__stats small { grid-column: 2; } .topic-nav-shell { width: 100vw; } .topic-nav { flex-wrap: nowrap; justify-content: flex-start; gap: .5rem; width: 100%; padding: 1rem .75rem; overflow-x: auto; overscroll-behavior-inline: contain; scroll-padding-inline: .75rem; scroll-snap-type: x proximity; scrollbar-width: none; } .topic-nav::-webkit-scrollbar { display: none; } .topic-nav a { min-height: 2.6rem; padding: .62rem .88rem; font-size: .9rem; scroll-snap-align: start; } .article-grid, .blog-skeleton { grid-template-columns: 1fr; } .section-heading { align-items: flex-start; flex-direction: column; } .featured-story__cover { aspect-ratio: 16 / 10; } .article-card h3, .article-card p { min-height: auto; } }
-@media (prefers-reduced-motion: reduce) { .featured-story__cover img, .article-card, .article-card__cover img { transition: none; } .blog-skeleton div { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .story-cover__image, .article-card { transition: none; } .blog-skeleton div { animation: none; } }
 </style>
