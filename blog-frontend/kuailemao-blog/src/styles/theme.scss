@@ -1,24 +1,24 @@
 // 亮色模式下的主题色
 :root {
   color-scheme: light;
-  --brand-canvas: #f3f5f8;
-  --brand-canvas-soft: #e9edf3;
-  --brand-surface: rgba(252, 252, 253, .88);
-  --brand-surface-solid: #fcfcfd;
+  --brand-canvas: #f5f8fc;
+  --brand-canvas-soft: #eaf0f8;
+  --brand-surface: rgba(255, 255, 255, .88);
+  --brand-surface-solid: #ffffff;
   --brand-surface-raised: #ffffff;
-  --brand-ink: #18202b;
-  --brand-ink-soft: #536071;
-  --brand-ink-faint: #7d8998;
-  --brand-line: rgba(24, 32, 43, .11);
-  --brand-accent: #d35f45;
-  --brand-accent-strong: #ad432e;
-  --brand-accent-soft: rgba(211, 95, 69, .11);
-  --brand-focus: rgba(211, 95, 69, .36);
+  --brand-ink: #10243e;
+  --brand-ink-soft: #52657a;
+  --brand-ink-faint: #7c8da1;
+  --brand-line: rgba(16, 36, 62, .12);
+  --brand-accent: #155eef;
+  --brand-accent-strong: #0b47c9;
+  --brand-accent-soft: rgba(21, 94, 239, .1);
+  --brand-focus: rgba(21, 94, 239, .3);
   --brand-radius-sm: .65rem;
-  --brand-radius-md: 1rem;
-  --brand-radius-lg: 1.45rem;
-  --brand-shadow-sm: 0 12px 34px rgba(35, 43, 54, .08);
-  --brand-shadow-lg: 0 26px 80px rgba(26, 35, 48, .13);
+  --brand-radius-md: .9rem;
+  --brand-radius-lg: 1.2rem;
+  --brand-shadow-sm: 0 12px 32px rgba(27, 58, 95, .07);
+  --brand-shadow-lg: 0 28px 80px rgba(24, 55, 92, .12);
   --brand-content: 88rem;
   --mao-background-color: aliceblue;
   // 留言板说明背景
@@ -78,7 +78,7 @@
 
 // 暗色模式下的主题色
 html.dark {
-  color-scheme: dark;
+  color-scheme: light;
   --brand-canvas: #10151d;
   --brand-canvas-soft: #171e28;
   --brand-surface: rgba(23, 30, 40, .9);
@@ -134,6 +134,10 @@ body {
   min-width: 320px;
   overflow-x: clip;
   background: var(--brand-canvas);
+  background-image:
+    linear-gradient(rgba(21, 94, 239, .025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(21, 94, 239, .025) 1px, transparent 1px);
+  background-size: 32px 32px;
   color: var(--brand-ink);
   line-height: 1.65;
   text-rendering: optimizeLegibility;

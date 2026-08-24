@@ -20,6 +20,50 @@
 .gallery-item { border-radius: var(--brand-radius-md) !important; box-shadow: var(--brand-shadow-sm) !important; }
 .page .row li::before { content: '+' !important; color: var(--brand-accent) !important; }
 .el-drawer, .el-dialog { --el-drawer-bg-color: var(--brand-surface-solid); border-color: var(--brand-line) !important; background: var(--brand-surface-solid) !important; }
+
+/* 固定明亮风格的公共顶部导航。 */
+nav:has(#menu-left) {
+  border-bottom: 1px solid var(--brand-line) !important;
+  background: rgba(255, 255, 255, .9) !important;
+  box-shadow: 0 10px 30px rgba(29, 56, 91, .055) !important;
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+nav:has(#menu-left) #blog-info a,
+nav:has(#menu-left) .menus_item > span {
+  color: var(--brand-ink) !important;
+  text-shadow: none !important;
+}
+
+nav:has(#menu-left) #blog-info a {
+  font-weight: 800 !important;
+  letter-spacing: -.025em;
+}
+
+nav:has(#menu-left) .menus_item:hover > span {
+  color: var(--brand-accent) !important;
+}
+
+nav:has(#menu-left) .menus_item_child {
+  border: 1px solid var(--brand-line) !important;
+  background: rgba(255, 255, 255, .97) !important;
+  box-shadow: var(--brand-shadow-lg) !important;
+}
+
+nav:has(#menu-left) .menus_item_child li {
+  color: var(--brand-ink-soft) !important;
+}
+
+nav:has(#menu-left) .menus_item_child li:hover {
+  color: var(--brand-accent) !important;
+  background: var(--brand-accent-soft) !important;
+}
+
+nav:has(#menu-left) .el-avatar {
+  border: 1px solid var(--brand-line);
+  background: var(--brand-accent-soft);
+  color: var(--brand-accent-strong);
+}
 @media (max-width: 767px) {
   :where(.writing-page) { width: calc(100% - .5rem) !important; padding: 1rem !important; }
   .head_title { min-height: 23rem !important; border-radius: 0 !important; }
