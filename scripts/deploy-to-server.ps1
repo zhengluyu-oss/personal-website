@@ -101,6 +101,8 @@ function Invoke-Ssh([string]$RemoteCommand) {
         "-p", "$Port",
         "-o", "IdentitiesOnly=yes",
         "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "ServerAliveInterval=15",
+        "-o", "ServerAliveCountMax=20",
         "${User}@${ServerHost}",
         $RemoteCommand
     )
@@ -113,6 +115,8 @@ function Invoke-Scp([string]$LocalFile, [string]$RemoteTarget) {
         "-P", "$Port",
         "-o", "IdentitiesOnly=yes",
         "-o", "StrictHostKeyChecking=accept-new",
+        "-o", "ServerAliveInterval=15",
+        "-o", "ServerAliveCountMax=20",
         $LocalFile,
         "${User}@${ServerHost}:${RemoteTarget}"
     )
