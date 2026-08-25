@@ -23,6 +23,12 @@ public interface ArticleService extends IService<Article> {
      * 查询所有文章列表
      */
     PageVO<List<ArticleVO>> listAllArticle(Integer pageNum, Integer pageSize);
+
+    /** 博客聚合页或分类页的显式主推荐与普通文章列表。 */
+    BlogFeedVO listBlogFeed(Long categoryId, Integer pageNum, Integer pageSize);
+
+    /** 后台主推荐文章候选项。 */
+    List<ArticleOptionVO> listPublishedArticleOptions(Long categoryId, String keyword);
     /**
      * 查询推荐文章
      */

@@ -49,6 +49,17 @@ export function whereArticleList(type: Number, typeId: String) {
     });
 }
 
+// 博客聚合页/分类页：显式主推荐 + 去重后的普通文章列表
+export function getBlogFeed(categoryId?: number, pageNum = 1, pageSize = 100) {
+    return http.get('/article/blog-feed', {
+        params: {
+            categoryId,
+            pageNum,
+            pageSize
+        }
+    });
+}
+
 // 文章访问量+1
 export function addArticleVisit(id: String) {
     return http.get(`/article/visit/${id}`, {

@@ -2,12 +2,12 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { categoryList } from '@/apis/category'
-import { whereArticleList } from '@/apis/article'
-import { getArticleList } from '@/apis/home'
+import { getBlogFeed } from '@/apis/article'
 import type { WritingArticleItem } from '@/components/Writing/WritingArticleList.vue'
 import NotFound from '@/views/NotFound/index.vue'
 import { buildCategorySlugEntries, resolveCategorySlug } from '@/utils/category-slug'
 import { setSeoMeta } from '@/utils/seo'
+import { normalizeBlogFeed } from '@/utils/blog-feed'
 
 interface CategoryItem { id: number; categoryName: string; articleCount?: number }
 type BlogArticle = WritingArticleItem
@@ -16,6 +16,8 @@ const route = useRoute()
 const router = useRouter()
 const categories = ref<CategoryItem[]>([])
 const articles = ref<BlogArticle[]>([])
+const featuredArticle = ref<BlogArticle>()
+const feedTotal = ref(0)
 const loading = ref(true)
 const loadError = ref(false)
 const notFound = ref(false)
@@ -25,8 +27,7 @@ const activeSlug = computed(() => String(route.params.slug || ''))
 const categoryEntries = computed(() => buildCategorySlugEntries(categories.value))
 const activeCategoryEntry = computed(() => categoryEntries.value.find(entry => entry.slug === activeSlug.value))
 const activeCategory = computed(() => activeCategoryEntry.value?.category)
-const featuredArticle = computed(() => articles.value[0])
-const remainingArticles = computed(() => articles.value.slice(1))
+const remainingArticles = computed(() => articles.value)
 const totalArticles = computed(() => categories.value.reduce((sum, item) => sum + Number(item.articleCount || 0), 0))
 const activeCategories = computed(() => categories.value.filter(item => Number(item.articleCount) > 0))
 
@@ -53,6 +54,9 @@ async function bootstrap() {
   loading.value = true
   loadError.value = false
   notFound.value = false
+  featuredArticle.value = undefined
+  articles.value = []
+  feedTotal.value = 0
   try {
     if (!categories.value.length) {
       const categoryRes = await categoryList()
@@ -70,13 +74,19 @@ async function bootstrap() {
         description: `浏览“${entry.category.categoryName}”主题下的技术记录、实践经验与项目复盘。`,
         keywords: `${entry.category.categoryName},技术博客,项目实践,郑陆宇`,
       })
-      const res = await whereArticleList(1, String(entry.categoryId))
+      const res = await getBlogFeed(entry.categoryId)
       if (version !== requestVersion) return
-      articles.value = res.code === 200 && Array.isArray(res.data) ? res.data.map(normalizeArticle) : []
+      const feed = normalizeBlogFeed(res.code === 200 ? res.data : undefined)
+      featuredArticle.value = feed.featuredArticle ? normalizeArticle(feed.featuredArticle) : undefined
+      articles.value = feed.articles.map(normalizeArticle)
+      feedTotal.value = feed.total
     } else {
-      const res = await getArticleList(1, 100)
+      const res = await getBlogFeed()
       if (version !== requestVersion) return
-      articles.value = (res?.data?.page || []).map(normalizeArticle)
+      const feed = normalizeBlogFeed(res.code === 200 ? res.data : undefined)
+      featuredArticle.value = feed.featuredArticle ? normalizeArticle(feed.featuredArticle) : undefined
+      articles.value = feed.articles.map(normalizeArticle)
+      feedTotal.value = feed.total
     }
   } catch {
     if (version !== requestVersion) return
@@ -102,7 +112,7 @@ watch(() => route.params.slug, bootstrap)
               <p class="blog-hero__intro">技术实践、工具研究与项目复盘。这里收录我在构建产品、解决问题和持续学习过程中留下的完整记录。</p>
             </div>
             <div class="blog-hero__stats" aria-label="博客数据">
-              <strong>{{ totalArticles }}</strong><span>篇公开文章</span><small>{{ activeCategories.length }} 个持续更新的主题</small>
+              <strong>{{ activeSlug ? feedTotal : totalArticles }}</strong><span>篇公开文章</span><small>{{ activeCategories.length }} 个持续更新的主题</small>
             </div>
           </header>
 
@@ -126,6 +136,7 @@ watch(() => route.params.slug, bootstrap)
                   <img class="story-cover__backdrop" :src="featuredArticle.articleCover" alt="" aria-hidden="true">
                   <img class="story-cover__image" :src="featuredArticle.articleCover" :alt="featuredArticle.articleTitle">
                 </template>
+                <div v-else class="story-cover__fallback" aria-hidden="true"><span>NOTE</span></div>
               </div>
               <div class="featured-story__content">
                 <div class="story-meta"><span>{{ featuredArticle.categoryName || '近期写作' }}</span><time>{{ displayDate(featuredArticle.createTime) }}</time></div>
@@ -144,6 +155,7 @@ watch(() => route.params.slug, bootstrap)
                     <img class="story-cover__backdrop" :src="article.articleCover" alt="" aria-hidden="true" loading="lazy">
                     <img class="story-cover__image" :src="article.articleCover" :alt="article.articleTitle" loading="lazy">
                   </template>
+                  <div v-else class="story-cover__fallback" aria-hidden="true"><span>NOTE</span></div>
                 </div>
                 <div class="article-card__body">
                   <div class="story-meta"><span>{{ article.categoryName || '技术笔记' }}</span><time>{{ displayDate(article.createTime) }}</time></div>
@@ -186,6 +198,7 @@ watch(() => route.params.slug, bootstrap)
 .story-cover__backdrop, .story-cover__image { position: absolute; inset: 0; width: 100%; height: 100%; }
 .story-cover__backdrop { z-index: 0; object-fit: cover; opacity: .28; filter: blur(18px) saturate(.8); transform: scale(1.1); }
 .story-cover__image { z-index: 1; object-fit: contain; transition: transform .6s cubic-bezier(.2,.65,.3,1); }
+.story-cover__fallback { display: grid; width: 100%; height: 100%; min-height: inherit; place-items: center; background: radial-gradient(circle at 72% 28%, rgba(75,139,255,.22), transparent 32%), linear-gradient(135deg, #0d2441, #173f6d); color: rgba(255,255,255,.72); font-family: "Share TechMono", monospace; font-size: .8rem; letter-spacing: .38em; }
 .featured-story:hover .story-cover__image { transform: scale(1.018); }
 .featured-story__content { display: flex; flex-direction: column; justify-content: center; padding: clamp(1.5rem, 4vw, 3.25rem); }
 .featured-story h2 { margin: 1rem 0 0; font-size: clamp(1.8rem, 3.5vw, 3rem); line-height: 1.16; letter-spacing: -.045em; }

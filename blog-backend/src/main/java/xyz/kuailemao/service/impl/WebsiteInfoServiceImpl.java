@@ -1,6 +1,7 @@
 package xyz.kuailemao.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ import xyz.kuailemao.utils.FileUploadUtils;
 import xyz.kuailemao.utils.StringUtils;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -84,6 +86,12 @@ public class WebsiteInfoServiceImpl extends ServiceImpl<WebsiteInfoMapper, Websi
         WebsiteInfoVO websiteInfoVO = this.getById(WebsiteInfoConst.WEBSITE_INFO_ID).asViewObject(WebsiteInfoVO.class);
         // 运行时长
         if (StringUtils.isNotNull(websiteInfoVO)) {
+            if (websiteInfoVO.getBlogFeaturedArticleId() != null) {
+                Article featured = articleMapper.selectById(websiteInfoVO.getBlogFeaturedArticleId());
+                if (featured != null && Objects.equals(featured.getStatus(), SQLConst.PUBLIC_ARTICLE)) {
+                    websiteInfoVO.setBlogFeaturedArticleTitle(featured.getArticleTitle());
+                }
+            }
             if (articleMapper.selectCount(null) <= 0)  return websiteInfoVO;
             LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
             wrapper.select(Article::getUpdateTime).orderByDesc(Article::getUpdateTime).last(SQLConst.LIMIT_ONE_SQL);
@@ -117,9 +125,18 @@ public class WebsiteInfoServiceImpl extends ServiceImpl<WebsiteInfoMapper, Websi
     @Transactional
     @Override
     public ResponseResult<Void> updateWebsiteInfo(WebsiteInfoDTO websiteInfoDTO) {
+        if (websiteInfoDTO.getBlogFeaturedArticleId() != null) {
+            Article featured = articleMapper.selectById(websiteInfoDTO.getBlogFeaturedArticleId());
+            if (featured == null || !Objects.equals(featured.getStatus(), SQLConst.PUBLIC_ARTICLE)) {
+                return ResponseResult.failure("聚合页主推荐只能选择已发布文章");
+            }
+        }
         WebsiteInfo websiteInfo = websiteInfoDTO.asViewObject(WebsiteInfo.class, v -> v.setId(WebsiteInfoConst.WEBSITE_INFO_ID));
         if (StringUtils.isNotNull(websiteInfo)) {
             this.saveOrUpdate(websiteInfo);
+            this.update(new LambdaUpdateWrapper<WebsiteInfo>()
+                    .eq(WebsiteInfo::getId, WebsiteInfoConst.WEBSITE_INFO_ID)
+                    .set(WebsiteInfo::getBlogFeaturedArticleId, websiteInfoDTO.getBlogFeaturedArticleId()));
             return ResponseResult.success();
         }
         return ResponseResult.failure();

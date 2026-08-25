@@ -94,6 +94,17 @@ public class ArticleController {
         return ControllerUtils.messageHandler((() -> articleService.listAllArticle(pageNum, pageSize)));
     }
 
+    @Operation(summary = "获取博客聚合展示数据")
+    @AccessLimit(seconds = 60, maxCount = 30)
+    @GetMapping("/blog-feed")
+    public ResponseResult<BlogFeedVO> blogFeed(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "100") Integer pageSize
+    ) {
+        return ControllerUtils.messageHandler(() -> articleService.listBlogFeed(categoryId, pageNum, pageSize));
+    }
+
     @Operation(summary = "获取推荐的文章信息")
     @AccessLimit(seconds = 60, maxCount = 60)
     @GetMapping("/recommend")
@@ -212,6 +223,16 @@ public class ArticleController {
     @GetMapping("/back/list")
     public ResponseResult<List<ArticleListVO>> listArticle() {
         return ControllerUtils.messageHandler(() -> articleService.listArticle());
+    }
+
+    @PreAuthorize("hasAnyAuthority('blog:article:list')")
+    @Operation(summary = "获取已发布文章候选项")
+    @GetMapping("/back/options")
+    public ResponseResult<List<ArticleOptionVO>> publishedArticleOptions(
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String keyword
+    ) {
+        return ControllerUtils.messageHandler(() -> articleService.listPublishedArticleOptions(categoryId, keyword));
     }
 
     @PreAuthorize("hasAnyAuthority('blog:article:search')")

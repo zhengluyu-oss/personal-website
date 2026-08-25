@@ -39,6 +39,8 @@ public class WebsiteInfo implements BaseData {
     private String githubLink;
     //网站名称
     private String websiteName;
+    //博客聚合页主推荐文章
+    private Long blogFeaturedArticleId;
     //首页眉题
     private String heroKicker;
     //首页主标题

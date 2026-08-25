@@ -21,6 +21,10 @@ public class CategoryVO {
     //分类名
     @Schema(description = "分类名")
     private String categoryName;
+    @Schema(description = "分类页主推荐文章id")
+    private Long featuredArticleId;
+    @Schema(description = "分类页主推荐文章标题")
+    private String featuredArticleTitle;
     // 分类下的文章数量
     @Schema(description = "分类下的文章数量")
     private Long articleCount;

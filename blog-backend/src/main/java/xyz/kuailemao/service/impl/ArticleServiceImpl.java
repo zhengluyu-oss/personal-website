@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import xyz.kuailemao.constants.RedisConst;
 import xyz.kuailemao.constants.SQLConst;
+import xyz.kuailemao.constants.WebsiteInfoConst;
 import xyz.kuailemao.domain.dto.ArticleDTO;
 import xyz.kuailemao.domain.dto.SearchArticleDTO;
 import xyz.kuailemao.domain.entity.*;
@@ -76,6 +77,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Resource
     private CommentMapper commentMapper;
 
+    @Resource
+    private WebsiteInfoMapper websiteInfoMapper;
+
 
     @Override
     public PageVO<List<ArticleVO>> listAllArticle(Integer pageNum, Integer pageSize) {
@@ -117,6 +121,89 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         }
 
         return new PageVO<>(articleVOS, page.getTotal());
+    }
+
+    @Override
+    public BlogFeedVO listBlogFeed(Long categoryId, Integer pageNum, Integer pageSize) {
+        LambdaQueryWrapper<Article> scope = new LambdaQueryWrapper<Article>()
+                .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                .eq(categoryId != null, Article::getCategoryId, categoryId)
+                .orderByDesc(Article::getCreateTime)
+                .orderByDesc(Article::getId);
+
+        Long total = articleMapper.selectCount(new LambdaQueryWrapper<Article>()
+                .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                .eq(categoryId != null, Article::getCategoryId, categoryId));
+        Article featured = resolveFeaturedArticle(categoryId);
+
+        Page<Article> page = new Page<>(pageNum, pageSize);
+        if (featured != null) scope.ne(Article::getId, featured.getId());
+        articleMapper.selectPage(page, scope);
+
+        ArticleVO featuredVO = featured == null ? null : toArticleVOs(List.of(featured)).get(0);
+        return new BlogFeedVO(featuredVO, toArticleVOs(page.getRecords()), total);
+    }
+
+    private Article resolveFeaturedArticle(Long categoryId) {
+        Long configuredId = null;
+        if (categoryId == null) {
+            WebsiteInfo websiteInfo = websiteInfoMapper.selectById(WebsiteInfoConst.WEBSITE_INFO_ID);
+            if (websiteInfo != null) configuredId = websiteInfo.getBlogFeaturedArticleId();
+        } else {
+            Category category = categoryMapper.selectById(categoryId);
+            if (category != null) configuredId = category.getFeaturedArticleId();
+        }
+
+        if (configuredId != null) {
+            Article configured = articleMapper.selectById(configuredId);
+            if (configured != null
+                    && Objects.equals(configured.getStatus(), SQLConst.PUBLIC_ARTICLE)
+                    && (categoryId == null || Objects.equals(configured.getCategoryId(), categoryId))) {
+                return configured;
+            }
+        }
+
+        return articleMapper.selectOne(new LambdaQueryWrapper<Article>()
+                .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                .eq(categoryId != null, Article::getCategoryId, categoryId)
+                .orderByDesc(Article::getCreateTime)
+                .orderByDesc(Article::getId)
+                .last(SQLConst.LIMIT_ONE_SQL));
+    }
+
+    @Override
+    public List<ArticleOptionVO> listPublishedArticleOptions(Long categoryId, String keyword) {
+        List<Article> articles = articleMapper.selectList(new LambdaQueryWrapper<Article>()
+                .select(Article::getId, Article::getArticleTitle, Article::getCategoryId)
+                .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                .eq(categoryId != null, Article::getCategoryId, categoryId)
+                .like(StringUtils.isNotEmpty(keyword), Article::getArticleTitle, keyword)
+                .orderByDesc(Article::getCreateTime)
+                .last("LIMIT 50"));
+        if (articles.isEmpty()) return List.of();
+        Map<Long, String> categories = categoryMapper.selectBatchIds(articles.stream().map(Article::getCategoryId).distinct().toList())
+                .stream().collect(Collectors.toMap(Category::getId, Category::getCategoryName));
+        return articles.stream().map(article -> article.asViewObject(ArticleOptionVO.class,
+                option -> option.setCategoryName(categories.get(article.getCategoryId())))).toList();
+    }
+
+    private List<ArticleVO> toArticleVOs(List<Article> articles) {
+        if (articles.isEmpty()) return List.of();
+        Map<Long, String> categoryMap = categoryMapper.selectBatchIds(articles.stream().map(Article::getCategoryId).distinct().toList())
+                .stream().collect(Collectors.toMap(Category::getId, Category::getCategoryName));
+        List<Long> articleIds = articles.stream().map(Article::getId).toList();
+        List<ArticleTag> articleTags = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getArticleId, articleIds));
+        List<Long> tagIds = articleTags.stream().map(ArticleTag::getTagId).distinct().toList();
+        Map<Long, String> tagMap = tagIds.isEmpty() ? Map.of() : tagMapper.selectBatchIds(tagIds).stream()
+                .collect(Collectors.toMap(Tag::getId, Tag::getTagName));
+        return articles.stream().map(article -> article.asViewObject(ArticleVO.class, vo -> {
+            vo.setCategoryName(categoryMap.get(article.getCategoryId()));
+            vo.setTags(articleTags.stream()
+                    .filter(relation -> Objects.equals(relation.getArticleId(), article.getId()))
+                    .map(relation -> tagMap.get(relation.getTagId()))
+                    .filter(Objects::nonNull)
+                    .toList());
+        })).toList();
     }
 
     private void setArticleCount(ArticleVO articleVO, String redisKey, CountTypeEnum articleFieldName) {
@@ -210,15 +297,24 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public List<CategoryArticleVO> listCategoryArticle(Integer type, Long typeId) {
         List<Article> articles;
         if (type == 1)
-            articles = articleMapper.selectList(new LambdaQueryWrapper<Article>().eq(Article::getCategoryId, typeId));
+            articles = articleMapper.selectList(new LambdaQueryWrapper<Article>()
+                    .eq(Article::getCategoryId, typeId)
+                    .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                    .orderByDesc(Article::getCreateTime)
+                    .orderByDesc(Article::getId));
         else if (type == 2) {
             List<Long> articleIds = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getTagId, typeId)).stream().map(ArticleTag::getArticleId).toList();
-            if (!articleIds.isEmpty()) articles = articleMapper.selectBatchIds(articleIds);
+            if (!articleIds.isEmpty()) articles = articleMapper.selectList(new LambdaQueryWrapper<Article>()
+                    .in(Article::getId, articleIds)
+                    .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                    .orderByDesc(Article::getCreateTime)
+                    .orderByDesc(Article::getId));
             else articles = List.of();
         } else articles = List.of();
 
-        if (Objects.isNull(articles) || articles.isEmpty()) return null;
-        List<ArticleTag> articleTags = articleTagMapper.selectBatchIds(articles.stream().map(Article::getId).toList());
+        if (Objects.isNull(articles) || articles.isEmpty()) return List.of();
+        List<ArticleTag> articleTags = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>()
+                .in(ArticleTag::getArticleId, articles.stream().map(Article::getId).toList()));
         List<Tag> tags = tagMapper.selectBatchIds(articleTags.stream().map(ArticleTag::getTagId).toList());
 
         return articles.stream().map(article -> article.asViewObject(CategoryArticleVO.class, item -> {
