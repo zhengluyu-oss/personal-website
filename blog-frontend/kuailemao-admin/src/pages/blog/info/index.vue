@@ -44,9 +44,8 @@ function resetWebInfo() {
   info.value.recordInfo = undefined
 }
 
-// 是否黑夜模式
+// 管理后台固定浅色
 const isDark = ref(false)
-isDark.value = useDark().value
 </script>
 
 <template>
