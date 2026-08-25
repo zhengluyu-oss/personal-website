@@ -25,6 +25,8 @@ public class WebsiteInfoVO {
     private String githubLink;
     //网站名称
     private String websiteName;
+    private Long blogFeaturedArticleId;
+    private String blogFeaturedArticleTitle;
     //首页首屏文案
     private String heroKicker;
     private String heroTitle;

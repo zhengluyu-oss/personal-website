@@ -1,6 +1,7 @@
 package xyz.kuailemao.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ import xyz.kuailemao.service.CategoryService;
 import xyz.kuailemao.utils.StringUtils;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * (Category)表服务实现类
@@ -38,9 +40,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     public List<CategoryVO> listAllCategory() {
         List<Category> categories = this.query().list();
 
-        return categories.stream().map(category -> category.asViewObject(CategoryVO.class, item -> {
-            item.setArticleCount(articleMapper.selectCount(new LambdaQueryWrapper<Article>().eq(Article::getCategoryId, category.getId())));
-        })).toList();
+        return categories.stream().map(this::toCategoryVO).toList();
     }
 
     @Override
@@ -57,25 +57,56 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         if (StringUtils.isNotNull(searchCategoryDTO.getStartTime()) && StringUtils.isNotNull(searchCategoryDTO.getEndTime()))
             queryWrapper.between(Category::getCreateTime, searchCategoryDTO.getStartTime(), searchCategoryDTO.getEndTime());
 
-        return categoryMapper.selectList(queryWrapper)
-                .stream()
-                .map(category ->
-                        category.asViewObject(CategoryVO.class, item ->
-                                item.setArticleCount(articleMapper.selectCount(new LambdaQueryWrapper<Article>()
-                                        .eq(Article::getCategoryId, category.getId())))))
-                .toList();
+        return categoryMapper.selectList(queryWrapper).stream().map(this::toCategoryVO).toList();
     }
 
     @Override
     public CategoryVO getCategoryById(Long id) {
-        return categoryMapper.selectById(id).asViewObject(CategoryVO.class);
+        Category category = categoryMapper.selectById(id);
+        return category == null ? null : toCategoryVO(category);
     }
 
     @Transactional
     @Override
     public ResponseResult<Void> addOrUpdateCategory(CategoryDTO categoryDTO) {
-        if (this.saveOrUpdate(categoryDTO.asViewObject(Category.class))) return ResponseResult.success();
+        ResponseResult<Void> validation = validateFeaturedArticle(categoryDTO);
+        if (validation != null) return validation;
+        if (this.saveOrUpdate(categoryDTO.asViewObject(Category.class))) {
+            if (categoryDTO.getId() != null) {
+                this.update(new LambdaUpdateWrapper<Category>()
+                        .eq(Category::getId, categoryDTO.getId())
+                        .set(Category::getFeaturedArticleId, categoryDTO.getFeaturedArticleId()));
+            }
+            return ResponseResult.success();
+        }
         return ResponseResult.failure();
+    }
+
+    private ResponseResult<Void> validateFeaturedArticle(CategoryDTO categoryDTO) {
+        if (categoryDTO.getFeaturedArticleId() == null) return null;
+        Article article = articleMapper.selectById(categoryDTO.getFeaturedArticleId());
+        if (article == null || !Objects.equals(article.getStatus(), xyz.kuailemao.constants.SQLConst.PUBLIC_ARTICLE)) {
+            return ResponseResult.failure("分类主推荐只能选择已发布文章");
+        }
+        if (categoryDTO.getId() == null || !Objects.equals(article.getCategoryId(), categoryDTO.getId())) {
+            return ResponseResult.failure("主推荐文章必须属于当前分类");
+        }
+        return null;
+    }
+
+    private CategoryVO toCategoryVO(Category category) {
+        return category.asViewObject(CategoryVO.class, item -> {
+            item.setArticleCount(articleMapper.selectCount(new LambdaQueryWrapper<Article>()
+                    .eq(Article::getCategoryId, category.getId())
+                    .eq(Article::getStatus, xyz.kuailemao.constants.SQLConst.PUBLIC_ARTICLE)));
+            if (category.getFeaturedArticleId() != null) {
+                Article featured = articleMapper.selectById(category.getFeaturedArticleId());
+                if (featured != null && Objects.equals(featured.getStatus(), xyz.kuailemao.constants.SQLConst.PUBLIC_ARTICLE)
+                        && Objects.equals(featured.getCategoryId(), category.getId())) {
+                    item.setFeaturedArticleTitle(featured.getArticleTitle());
+                }
+            }
+        });
     }
 
     @Transactional

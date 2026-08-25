@@ -28,6 +28,8 @@ public class Category implements BaseData {
     private Long id;
     //分类名
     private String categoryName;
+    //分类页主推荐文章
+    private Long featuredArticleId;
     //创建时间
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;

@@ -20,4 +20,6 @@ public class CategoryDTO implements BaseData {
     @NotBlank(message = "分类名称不能为空")
     @Length(max = 20, message = "分类名称长度不能超过20")
     private String categoryName;
+    //分类页主推荐文章，留空时自动使用该分类最新公开文章
+    private Long featuredArticleId;
 }

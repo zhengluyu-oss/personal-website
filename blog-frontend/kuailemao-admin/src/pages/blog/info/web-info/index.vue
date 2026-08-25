@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import Banners from './banners/index.vue'
 import { updateWebInfo } from '~/api/blog/webInfo'
+import { publishedArticleOptions } from '~/api/blog/article'
 
 const props = defineProps({
   info: {
@@ -15,6 +16,8 @@ const emit = defineEmits(['reset:web:info'])
 
 interface WebsiteInfoType {
   websiteName: string
+  blogFeaturedArticleId?: number
+  blogFeaturedArticleTitle?: string
   heroKicker: string
   heroTitle: string
   heroSubtitle: string
@@ -38,6 +41,29 @@ interface WebsiteInfoType {
 
 const formData: Partial<WebsiteInfoType> = reactive(props.info as object)
 const runTime = ref(formData.runTime)
+const articleOptions = ref<any[]>([])
+const articleOptionsLoading = ref(false)
+
+async function loadArticleOptions(keyword = '') {
+  articleOptionsLoading.value = true
+  try {
+    const res = await publishedArticleOptions({ keyword })
+    articleOptions.value = res?.data || []
+    if (formData.blogFeaturedArticleId && formData.blogFeaturedArticleTitle
+      && !articleOptions.value.some(item => item.id === formData.blogFeaturedArticleId)) {
+      articleOptions.value.unshift({
+        id: formData.blogFeaturedArticleId,
+        articleTitle: formData.blogFeaturedArticleTitle,
+        categoryName: '当前配置',
+      })
+    }
+  }
+  finally {
+    articleOptionsLoading.value = false
+  }
+}
+
+onMounted(() => loadArticleOptions())
 
 // 每秒
 setInterval(() => {
@@ -90,6 +116,26 @@ function updateWebsiteInfo() {
       </a-form-item>
       <a-form-item label="侧面公告">
         <a-textarea v-model:value="formData.sidebarAnnouncement" show-count :maxlength="1000" />
+      </a-form-item>
+      <a-divider>博客聚合页</a-divider>
+      <p class="section-tip">
+        选择一篇已发布文章作为博客聚合页的大卡片主推荐；清空后自动展示最新发布的文章。
+      </p>
+      <a-form-item label="聚合页主推荐文章">
+        <a-select
+          v-model:value="formData.blogFeaturedArticleId"
+          allow-clear
+          show-search
+          :filter-option="false"
+          :loading="articleOptionsLoading"
+          placeholder="留空则自动使用最新文章"
+          not-found-content="没有匹配的已发布文章"
+          @search="loadArticleOptions"
+        >
+          <a-select-option v-for="item in articleOptions" :key="item.id" :value="item.id">
+            {{ item.articleTitle }} · {{ item.categoryName || '未分类' }}
+          </a-select-option>
+        </a-select>
       </a-form-item>
       <a-divider>首页首屏文案</a-divider>
       <p class="section-tip">
