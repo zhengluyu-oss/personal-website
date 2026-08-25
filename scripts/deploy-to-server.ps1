@@ -123,6 +123,37 @@ function Invoke-Scp([string]$LocalFile, [string]$RemoteTarget) {
     Invoke-Native "scp" $scpArgs
 }
 
+function Invoke-SftpResumable([string]$LocalFile, [string]$RemoteTarget) {
+    $batchFile = Join-Path $env:TEMP ("zhengluyu-sftp-{0}.txt" -f ([Guid]::NewGuid().ToString("N")))
+    [System.IO.File]::WriteAllText($batchFile, ("reput `"{0}`" `"{1}`"`n" -f $LocalFile, $RemoteTarget))
+    try {
+        $sftpArgs = @(
+            "-b", $batchFile,
+            "-i", $IdentityFile,
+            "-P", "$Port",
+            "-o", "IdentitiesOnly=yes",
+            "-o", "StrictHostKeyChecking=accept-new",
+            "-o", "ServerAliveInterval=15",
+            "-o", "ServerAliveCountMax=20",
+            "${User}@${ServerHost}"
+        )
+        for ($attempt = 1; $attempt -le 8; $attempt++) {
+            Write-Host "  resumable upload attempt $attempt/8"
+            try {
+                Invoke-Native "sftp" $sftpArgs
+                return
+            }
+            catch {
+                if ($attempt -eq 8) { throw }
+                Start-Sleep -Seconds 2
+            }
+        }
+    }
+    finally {
+        Remove-Item $batchFile -Force -ErrorAction SilentlyContinue
+    }
+}
+
 # --- resolve paths ---
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LocalRoot = Resolve-Path (Join-Path $ScriptDir "..")
@@ -147,6 +178,7 @@ try {
     Write-Step "Check local tools"
     Assert-Command "ssh"
     Assert-Command "scp"
+    Assert-Command "sftp"
     Assert-Command "tar"
     if (-not (Test-Path $IdentityFile)) {
         throw "SSH private key not found: $IdentityFile"
@@ -247,7 +279,7 @@ try {
     Invoke-Native "tar" @("-czf", $archivePath, "-C", $stageRoot, ".")
 
     Write-Step "Upload archive"
-    Invoke-Scp $archivePath $remoteArchive
+    Invoke-SftpResumable $archivePath $remoteArchive
 
     Write-Step "Remote extract & place files"
     # Upload a real bash script — joining "then/else" with "; " breaks bash ("then;").
