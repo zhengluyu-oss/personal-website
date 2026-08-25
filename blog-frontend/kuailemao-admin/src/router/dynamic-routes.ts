@@ -1,6 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 
-export const ROOT_ROUTE_REDIRECT_PATH = '/site/info'
+export const ROOT_ROUTE_REDIRECT_PATH = '/articles'
 
 const Layout = () => import('~/layouts/index.vue')
 

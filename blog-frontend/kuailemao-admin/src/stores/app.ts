@@ -32,34 +32,38 @@ export interface LayoutSetting {
   animationName?: AnimationNameValueType
 }
 
+const ACCENT = '#d35f45'
+const ACCENT_SOFT = 'rgba(211, 95, 69, 0.12)'
+const ACCENT_HOVER = 'rgba(211, 95, 69, 0.08)'
+
 export const useAppStore = defineStore('app', () => {
-  const layoutSetting = reactive<LayoutSetting>(defaultSetting)
+  const layoutSetting = reactive<LayoutSetting>({ ...defaultSetting, theme: 'light' })
   const themeConfig = reactive<ThemeConfig>({
     algorithm: antdTheme.defaultAlgorithm,
     token: {
-      colorBgBase: '#f7f9fc',
+      colorBgBase: '#f3f5f8',
       colorBgContainer: '#ffffff',
       colorBorderSecondary: '#e5eaf2',
       colorText: '#162033',
       colorTextSecondary: '#647089',
-      colorPrimary: layoutSetting.colorPrimary,
-      borderRadius: 10,
-      borderRadiusLG: 14,
-      boxShadowSecondary: '0 18px 45px rgba(23, 43, 77, 0.08)',
+      colorPrimary: layoutSetting.colorPrimary || ACCENT,
+      borderRadius: 8,
+      borderRadiusLG: 10,
+      boxShadowSecondary: '0 8px 24px rgba(23, 43, 77, 0.06)',
     },
     components: {
       Layout: {
-        bodyBg: '#f4f7fb',
-        headerBg: 'rgba(255, 255, 255, 0.88)',
+        bodyBg: '#f3f5f8',
+        headerBg: '#ffffff',
         siderBg: '#ffffff',
       },
       Menu: {
         itemBg: 'transparent',
         itemColor: '#526079',
-        itemHoverBg: '#eef4ff',
-        itemHoverColor: '#155eef',
-        itemSelectedBg: '#e8f0ff',
-        itemSelectedColor: '#155eef',
+        itemHoverBg: ACCENT_HOVER,
+        itemHoverColor: ACCENT,
+        itemSelectedBg: ACCENT_SOFT,
+        itemSelectedColor: ACCENT,
         subMenuItemBg: 'transparent',
       },
     },
@@ -68,36 +72,15 @@ export const useAppStore = defineStore('app', () => {
   const toggleLocale = (locale: string) => {
     lsLocaleState.value = locale
   }
+
+  /** 管理后台仅支持浅色；dark 请求会被降级为 light */
   const toggleTheme = (theme: ThemeType) => {
-    if (layoutSetting.theme === theme)
-      return
-    layoutSetting.theme = theme
-    if (theme === 'light' || theme === 'inverted') {
-      if (themeConfig.token)
-        themeConfig.token.colorBgContainer = '#fff'
-      if (themeConfig.components?.Menu)
-        delete themeConfig.components.Menu
-
-      themeConfig.algorithm = antdTheme.defaultAlgorithm
-
-      toggleDark(false)
-    }
-    else if (theme === 'dark') {
-      toggleDark(true)
-      if (themeConfig.token)
-        themeConfig.token.colorBgContainer = 'rgb(36, 37, 37)'
-      if (themeConfig.components) {
-        themeConfig.components = {
-          ...themeConfig.components,
-          Menu: {
-            colorItemBg: 'rgb(36, 37, 37)',
-            colorSubItemBg: 'rgb(36, 37, 37)',
-            menuSubMenuBg: 'rgb(36, 37, 37)',
-          } as any,
-        }
-      }
-      themeConfig.algorithm = antdTheme.darkAlgorithm
-    }
+    const next: ThemeType = theme === 'dark' ? 'light' : theme
+    layoutSetting.theme = next
+    if (themeConfig.token)
+      themeConfig.token.colorBgContainer = '#fff'
+    themeConfig.algorithm = antdTheme.defaultAlgorithm
+    toggleDark(false)
   }
 
   const toggleDrawerVisible = (visible: boolean) => {
@@ -110,10 +93,10 @@ export const useAppStore = defineStore('app', () => {
       themeConfig.token.colorPrimary = color
   }
 
-  // 管理工作台采用固定浅色主题，避免跟随系统主题退回黑灰界面。
+  // 启动即钉死浅色，避免 vueuse-color-scheme=auto 跟随系统
   toggleDark(false)
+  toggleTheme('light')
 
-  // 监听isDark的变化
   watch(preferredLanguages, () => {
     toggleLocale(preferredLanguages.value[0])
   })
