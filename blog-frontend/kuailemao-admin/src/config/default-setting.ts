@@ -5,11 +5,11 @@ export default {
   'theme': 'light',
   'logo': '/blog-icon.svg',
   'collapsed': false,
-  'drawerVisible': true,
-  'colorPrimary': '#155EEF',
+  'drawerVisible': false,
+  'colorPrimary': '#d35f45',
   'layout': 'side',
   'contentWidth': 'Fluid',
-  'fixedHeader': false,
+  'fixedHeader': true,
   'fixedSider': true,
   'splitMenus': false,
   'header': true,
@@ -23,9 +23,9 @@ export default {
   'keepAlive': true,
   'accordionMode': false,
   'leftCollapsed': true,
-  'headerHeight': 48,
-  'copyright': 'ruyu-blog 2024',
-  'animationName': 'fadein',
+  'headerHeight': 44,
+  'copyright': 'zhengluyu blog',
+  'animationName': 'none',
 } as LayoutSetting
 
 export const animationNameList = [
