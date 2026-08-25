@@ -29,6 +29,7 @@ FROM information_schema.COLUMNS
 WHERE TABLE_SCHEMA = DATABASE()
   AND ((TABLE_NAME = 'sys_website_info' AND COLUMN_NAME = 'blog_featured_article_id')
     OR (TABLE_NAME = 't_category' AND COLUMN_NAME = 'featured_article_id'));"
+)
 
 if [[ "$FIELD_COUNT" == "0" ]]; then
   mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" --single-transaction \
@@ -47,6 +48,7 @@ FROM information_schema.COLUMNS
 WHERE TABLE_SCHEMA = DATABASE()
   AND ((TABLE_NAME = 'sys_website_info' AND COLUMN_NAME = 'blog_featured_article_id')
     OR (TABLE_NAME = 't_category' AND COLUMN_NAME = 'featured_article_id'));"
+)
 
 unset MYSQL_PWD
 test "$VERIFIED_COUNT" = "2"
