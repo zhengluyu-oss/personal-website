@@ -2,7 +2,6 @@
 import 'md-editor-v3/lib/style.css'
 import { MdEditor } from 'md-editor-v3'
 import type { Ref, UnwrapRef } from 'vue'
-import type { BasicColorMode, UseColorModeReturn } from '@vueuse/core'
 import { Modal, message } from 'ant-design-vue'
 import { createVNode } from 'vue'
 import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
@@ -35,7 +34,6 @@ interface DataType {
   status: number
 }
 
-const mode: UseColorModeReturn<BasicColorMode> = useColorMode()
 const loading = ref(false)
 const tabData: Ref<UnwrapRef<DataType[]>> = ref([])
 const state = reactive<{ selectedRowKeys: Array<string | number> }>({
@@ -311,7 +309,7 @@ function formatPeriod(record: DataType) {
         <a-form-item label="详情正文（Markdown，可插图）">
           <MdEditor
             v-model="formData.content"
-            :theme="mode"
+            theme="light"
             style="height: 360px"
             :toolbars="toolbars as []"
             @onUploadImg="onUploadImg"
