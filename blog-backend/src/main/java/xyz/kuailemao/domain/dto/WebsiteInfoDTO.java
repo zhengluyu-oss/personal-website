@@ -16,6 +16,8 @@ public class WebsiteInfoDTO implements BaseData {
     //网站名称
     @Length(max = 30, message = "网站名称字数不能超过30")
     private String websiteName;
+    //博客聚合页主推荐文章，留空时自动使用最新公开文章
+    private Long blogFeaturedArticleId;
     @Length(max = 40, message = "首页眉题字数不能超过40")
     private String heroKicker;
     @Length(max = 60, message = "首页主标题字数不能超过60")
