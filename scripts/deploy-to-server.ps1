@@ -124,6 +124,7 @@ function Invoke-Scp([string]$LocalFile, [string]$RemoteTarget) {
 }
 
 function Invoke-SftpResumable([string]$LocalFile, [string]$RemoteTarget) {
+    Invoke-Ssh "touch '$RemoteTarget'"
     $batchFile = Join-Path $env:TEMP ("zhengluyu-sftp-{0}.txt" -f ([Guid]::NewGuid().ToString("N")))
     [System.IO.File]::WriteAllText($batchFile, ("reput `"{0}`" `"{1}`"`n" -f $LocalFile, $RemoteTarget))
     try {
