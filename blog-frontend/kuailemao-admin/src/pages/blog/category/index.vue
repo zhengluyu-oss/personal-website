@@ -13,6 +13,7 @@ import {
   updateCategory,
 } from '~/api/blog/category'
 import { addCategory } from '~/api/blog/article'
+import { publishedArticleOptions } from '~/api/blog/article'
 
 const formState = reactive({
   categoryName: undefined,
@@ -130,6 +131,23 @@ const modalInfo = reactive({
 
 const treeData = ref()
 const formData = ref()
+const featuredOptions = ref<any[]>([])
+const featuredOptionsLoading = ref(false)
+
+async function loadFeaturedOptions(keyword = '') {
+  if (!formData.value?.id) {
+    featuredOptions.value = []
+    return
+  }
+  featuredOptionsLoading.value = true
+  try {
+    const res = await publishedArticleOptions({ categoryId: formData.value.id, keyword })
+    featuredOptions.value = res?.data || []
+  }
+  finally {
+    featuredOptionsLoading.value = false
+  }
+}
 
 function deleteCategory(ids: string[], type?: number) {
   if (type === 0) {
@@ -166,6 +184,7 @@ async function updateOrInsertCategory(id?: string) {
   if (id) {
     const { data: categoryInfo } = await searchCategoryById(id)
     formData.value = categoryInfo
+    await loadFeaturedOptions()
     modalInfo.open = true
     modalInfo.title = '修改分类'
   }
@@ -254,6 +273,23 @@ async function modelOk() {
         >
           <a-input v-model:value="formData.categoryName" placeholder="请输入分类名称" show-count :maxlength="20" />
         </a-form-item>
+        <a-form-item v-if="formData.id" label="分类主推荐" name="featuredArticleId">
+          <a-select
+            v-model:value="formData.featuredArticleId"
+            allow-clear
+            show-search
+            :filter-option="false"
+            :loading="featuredOptionsLoading"
+            placeholder="留空则自动使用该分类最新文章"
+            not-found-content="该分类没有匹配的已发布文章"
+            @search="loadFeaturedOptions"
+          >
+            <a-select-option v-for="item in featuredOptions" :key="item.id" :value="item.id">
+              {{ item.articleTitle }}
+            </a-select-option>
+          </a-select>
+          <div class="featured-help">只显示当前分类下已发布的文章。</div>
+        </a-form-item>
       </a-modal>
       <a-table
         :columns="columns"
@@ -306,5 +342,5 @@ async function modelOk() {
 </template>
 
 <style scoped lang="scss">
-
+.featured-help { margin-top: 6px; color: rgba(0, 0, 0, .45); font-size: 12px; }
 </style>

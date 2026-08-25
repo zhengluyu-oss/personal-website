@@ -53,6 +53,11 @@ export async function articleList() {
   return useGet('/article/back/list').catch(msg => message.warn(msg))
 }
 
+// 已发布文章候选项（用于页面主推荐配置）
+export async function publishedArticleOptions(params: { categoryId?: string | number, keyword?: string } = {}) {
+  return useGet('/article/back/options', params).catch(msg => message.warn(msg))
+}
+
 // 文章搜索
 export async function articleSearch(data: any) {
   return usePost('/article/back/search', data).catch(msg => message.warn(msg))
