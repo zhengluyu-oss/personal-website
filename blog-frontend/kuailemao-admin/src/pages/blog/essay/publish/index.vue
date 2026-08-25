@@ -4,7 +4,6 @@ import { MdEditor } from 'md-editor-v3'
 import type { UploadProps } from 'ant-design-vue'
 import { message } from 'ant-design-vue'
 import type { Ref, UnwrapRef } from 'vue'
-import type { BasicColorMode, UseColorModeReturn } from '@vueuse/core'
 import {
   addCategory,
   addTag,
@@ -22,8 +21,6 @@ import {compressImage} from "~/utils/CompressedImage.ts";
 
 const route = useRoute()
 const multiTab = useMultiTab()
-// 日夜切换
-const mode: UseColorModeReturn<BasicColorMode> = useColorMode()
 
 const fileList = ref<UploadProps['fileList']>([])
 // 预览Base64
@@ -452,7 +449,7 @@ function close() {
     </template>
     <template #table-content>
       <div style="height: 80vh;width: 100%">
-        <MdEditor v-model="formData.articleContent" :theme="mode" style="height: 80vh" :toolbars="toolbars as []" @onUploadImg="onUploadArticleImg" />
+        <MdEditor v-model="formData.articleContent" theme="light" style="height: 80vh" :toolbars="toolbars as []" @onUploadImg="onUploadArticleImg" />
       </div>
     </template>
   </layout>
