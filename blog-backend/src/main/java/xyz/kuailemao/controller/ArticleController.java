@@ -8,6 +8,8 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -88,8 +90,9 @@ public class ArticleController {
     })
     @GetMapping("/list")
     public ResponseResult<PageVO<List<ArticleVO>>> list(
-            @NotNull Integer pageNum,
-            @NotNull Integer pageSize
+            @NotNull @Min(value = 1, message = "页码不能小于1") Integer pageNum,
+            @NotNull @Min(value = 1, message = "每页数量不能小于1")
+            @Max(value = 100, message = "每页数量不能超过100") Integer pageSize
     ) {
         return ControllerUtils.messageHandler((() -> articleService.listAllArticle(pageNum, pageSize)));
     }
@@ -99,8 +102,9 @@ public class ArticleController {
     @GetMapping("/blog-feed")
     public ResponseResult<BlogFeedVO> blogFeed(
             @RequestParam(required = false) Long categoryId,
-            @RequestParam(defaultValue = "1") Integer pageNum,
-            @RequestParam(defaultValue = "100") Integer pageSize
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码不能小于1") Integer pageNum,
+            @RequestParam(defaultValue = "9") @Min(value = 1, message = "每页数量不能小于1")
+            @Max(value = 100, message = "每页数量不能超过100") Integer pageSize
     ) {
         return ControllerUtils.messageHandler(() -> articleService.listBlogFeed(categoryId, pageNum, pageSize));
     }
@@ -221,8 +225,12 @@ public class ArticleController {
     @LogAnnotation(module = "文章管理", operation = LogConst.GET)
     @AccessLimit(seconds = 60, maxCount = 30)
     @GetMapping("/back/list")
-    public ResponseResult<List<ArticleListVO>> listArticle() {
-        return ControllerUtils.messageHandler(() -> articleService.listArticle());
+    public ResponseResult<PageVO<List<ArticleListVO>>> listArticle(
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码不能小于1") Integer pageNum,
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "每页数量不能小于1")
+            @Max(value = 100, message = "每页数量不能超过100") Integer pageSize
+    ) {
+        return ControllerUtils.messageHandler(() -> articleService.listArticle(pageNum, pageSize));
     }
 
     @PreAuthorize("hasAnyAuthority('blog:article:list')")
@@ -243,7 +251,7 @@ public class ArticleController {
     @LogAnnotation(module = "文章管理", operation = LogConst.SEARCH)
     @AccessLimit(seconds = 60, maxCount = 30)
     @PostMapping("/back/search")
-    public ResponseResult<List<ArticleListVO>> searchArticle(@RequestBody SearchArticleDTO searchArticleDTO) {
+    public ResponseResult<PageVO<List<ArticleListVO>>> searchArticle(@RequestBody @Valid SearchArticleDTO searchArticleDTO) {
         return ControllerUtils.messageHandler(() -> articleService.searchArticle(searchArticleDTO));
     }
 

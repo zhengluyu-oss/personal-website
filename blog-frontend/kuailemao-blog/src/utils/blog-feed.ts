@@ -2,6 +2,7 @@ export interface BlogFeedPayload<T extends { id: number | string }> {
   featuredArticle?: T | null
   articles?: T[] | null
   total?: number | string | null
+  listTotal?: number | string | null
 }
 
 export function normalizeBlogFeed<T extends { id: number | string }>(payload?: BlogFeedPayload<T> | null) {
@@ -13,5 +14,6 @@ export function normalizeBlogFeed<T extends { id: number | string }>(payload?: B
     featuredArticle,
     articles,
     total: Number(payload?.total || 0),
+    listTotal: Number(payload?.listTotal || 0),
   }
 }

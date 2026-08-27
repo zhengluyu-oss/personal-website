@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build && node scripts/compress-dist.mjs && node scripts/check-performance-budget.mjs",
     "build:app": "vite build",
-    "test": "node --experimental-strip-types --test src/utils/request-tracker.test.ts src/utils/category-slug.test.ts src/utils/chunk-recovery.test.ts src/utils/blog-feed.test.ts",
+    "test": "node --experimental-strip-types --test src/utils/request-tracker.test.ts src/utils/category-slug.test.ts src/utils/chunk-recovery.test.ts src/utils/blog-feed.test.ts src/utils/category-hero.test.ts src/utils/blog-pagination.test.ts",
     "check:performance": "node scripts/check-performance-budget.mjs",
     "check:routes": "node ../../scripts/check-page-routes.mjs",
     "preview": "vite preview"
