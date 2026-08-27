@@ -8,8 +8,18 @@ import NotFound from '@/views/NotFound/index.vue'
 import { buildCategorySlugEntries, resolveCategorySlug } from '@/utils/category-slug'
 import { setSeoMeta } from '@/utils/seo'
 import { normalizeBlogFeed } from '@/utils/blog-feed'
+import { resolveCategoryHero } from '@/utils/category-hero'
+import { BLOG_PAGE_SIZE, blogPageCount, blogPageQuery, clampBlogPage, isCanonicalBlogPage, parseBlogPage } from '@/utils/blog-pagination'
 
-interface CategoryItem { id: number; categoryName: string; articleCount?: number }
+interface CategoryItem {
+  id: number
+  categoryName: string
+  articleCount?: number
+  heroEyebrow?: string | null
+  heroTitleAccent?: string | null
+  heroTitle?: string | null
+  heroDescription?: string | null
+}
 type BlogArticle = WritingArticleItem
 
 const route = useRoute()
@@ -18,6 +28,7 @@ const categories = ref<CategoryItem[]>([])
 const articles = ref<BlogArticle[]>([])
 const featuredArticle = ref<BlogArticle>()
 const feedTotal = ref(0)
+const listTotal = ref(0)
 const loading = ref(true)
 const loadError = ref(false)
 const notFound = ref(false)
@@ -27,9 +38,12 @@ const activeSlug = computed(() => String(route.params.slug || ''))
 const categoryEntries = computed(() => buildCategorySlugEntries(categories.value))
 const activeCategoryEntry = computed(() => categoryEntries.value.find(entry => entry.slug === activeSlug.value))
 const activeCategory = computed(() => activeCategoryEntry.value?.category)
+const heroCopy = computed(() => resolveCategoryHero(activeCategory.value))
 const remainingArticles = computed(() => articles.value)
 const totalArticles = computed(() => categories.value.reduce((sum, item) => sum + Number(item.articleCount || 0), 0))
 const activeCategories = computed(() => categories.value.filter(item => Number(item.articleCount) > 0))
+const currentPage = computed(() => parseBlogPage(route.query.page))
+const totalPages = computed(() => blogPageCount(listTotal.value))
 
 function normalizeArticle(item: any): BlogArticle {
   return {
@@ -50,6 +64,11 @@ const displayDate = (value?: string) => value?.slice(0, 10).replace(/-/g, '.') |
 const openArticle = (id: number | string) => router.push(`/blog/articles/${id}`)
 
 async function bootstrap() {
+  if (!isCanonicalBlogPage(route.query.page)) {
+    await router.replace({ query: { ...route.query, page: undefined } })
+    return
+  }
+  const requestedPage = currentPage.value
   const version = ++requestVersion
   loading.value = true
   loadError.value = false
@@ -57,6 +76,7 @@ async function bootstrap() {
   featuredArticle.value = undefined
   articles.value = []
   feedTotal.value = 0
+  listTotal.value = 0
   try {
     if (!categories.value.length) {
       const categoryRes = await categoryList()
@@ -74,19 +94,26 @@ async function bootstrap() {
         description: `浏览“${entry.category.categoryName}”主题下的技术记录、实践经验与项目复盘。`,
         keywords: `${entry.category.categoryName},技术博客,项目实践,郑陆宇`,
       })
-      const res = await getBlogFeed(entry.categoryId)
+      const res = await getBlogFeed(entry.categoryId, requestedPage, BLOG_PAGE_SIZE)
       if (version !== requestVersion) return
       const feed = normalizeBlogFeed(res.code === 200 ? res.data : undefined)
       featuredArticle.value = feed.featuredArticle ? normalizeArticle(feed.featuredArticle) : undefined
       articles.value = feed.articles.map(normalizeArticle)
       feedTotal.value = feed.total
+      listTotal.value = feed.listTotal
     } else {
-      const res = await getBlogFeed()
+      const res = await getBlogFeed(undefined, requestedPage, BLOG_PAGE_SIZE)
       if (version !== requestVersion) return
       const feed = normalizeBlogFeed(res.code === 200 ? res.data : undefined)
       featuredArticle.value = feed.featuredArticle ? normalizeArticle(feed.featuredArticle) : undefined
       articles.value = feed.articles.map(normalizeArticle)
       feedTotal.value = feed.total
+      listTotal.value = feed.listTotal
+    }
+    const validPage = clampBlogPage(requestedPage, listTotal.value)
+    if (validPage !== requestedPage) {
+      await router.replace({ query: { ...route.query, page: blogPageQuery(validPage) } })
+      return
     }
   } catch {
     if (version !== requestVersion) return
@@ -97,7 +124,12 @@ async function bootstrap() {
 }
 
 onMounted(bootstrap)
-watch(() => route.params.slug, bootstrap)
+watch(() => [route.params.slug, route.query.page], bootstrap)
+
+function changePage(page: number) {
+  if (page === currentPage.value) return
+  router.push({ query: { ...route.query, page: blogPageQuery(page) } })
+}
 </script>
 
 <template>
@@ -107,9 +139,9 @@ watch(() => route.params.slug, bootstrap)
       <main class="blog-journal">
           <header class="blog-hero">
             <div class="blog-hero__copy">
-              <p class="blog-hero__eyebrow">CODE · NOTES · PRACTICE</p>
-              <h1><span>在代码之外，</span>记录思考发生的地方。</h1>
-              <p class="blog-hero__intro">技术实践、工具研究与项目复盘。这里收录我在构建产品、解决问题和持续学习过程中留下的完整记录。</p>
+              <p class="blog-hero__eyebrow">{{ heroCopy.eyebrow }}</p>
+              <h1><span>{{ heroCopy.titleAccent }}</span>{{ heroCopy.title }}</h1>
+              <p class="blog-hero__intro">{{ heroCopy.description }}</p>
             </div>
             <div class="blog-hero__stats" aria-label="博客数据">
               <strong>{{ activeSlug ? feedTotal : totalArticles }}</strong><span>篇公开文章</span><small>{{ activeCategories.length }} 个持续更新的主题</small>
@@ -164,6 +196,18 @@ watch(() => route.params.slug, bootstrap)
                 </div>
               </article>
             </div>
+            <nav v-if="totalPages > 1" class="article-pagination" aria-label="文章分页">
+              <el-pagination
+                background
+                :current-page="currentPage"
+                :page-size="BLOG_PAGE_SIZE"
+                :total="listTotal"
+                :pager-count="5"
+                layout="prev, pager, next"
+                @current-change="changePage"
+              />
+              <span class="article-pagination__status">第 {{ currentPage }} / {{ totalPages }} 页</span>
+            </nav>
           </section>
           <section v-else class="blog-state"><strong>{{ activeCategory ? `“${activeCategory.categoryName}”下暂时没有文章` : '第一篇文章正在路上' }}</strong><p>{{ activeCategory ? '可以浏览其他主题，或稍后再回来看看。' : '这里将用于记录技术实践、项目复盘与持续学习。' }}</p></section>
       </main>
@@ -175,10 +219,10 @@ watch(() => route.params.slug, bootstrap)
 .blog-journal { --journal-blue: #112a4a; --journal-accent: var(--brand-accent); min-height: 72vh; color: var(--brand-ink); }
 .blog-hero { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: clamp(2.5rem, 7vw, 7.5rem); align-items: center; width: min(calc(100vw - 2rem), 112rem); margin-inline: 50%; padding: clamp(3rem, 5vw, 4.75rem) clamp(2rem, 7vw, 8rem); overflow: hidden; border-radius: 0 0 var(--brand-radius-lg) var(--brand-radius-lg); background: radial-gradient(circle at 86% 8%, rgba(79,135,195,.2), transparent 25rem), linear-gradient(122deg, #0b1c35 0%, #112a4a 72%, #17375d 100%); color: #fff; transform: translateX(-50%); }
 .blog-hero::after { content: ""; position: absolute; right: clamp(1.5rem, 5vw, 5rem); bottom: -5rem; z-index: -1; width: 20rem; aspect-ratio: 1; border: 1px solid rgba(255,255,255,.09); border-radius: 50%; box-shadow: 0 0 0 4rem rgba(255,255,255,.018), 0 0 0 8rem rgba(255,255,255,.012); }
-.blog-hero__eyebrow { margin: 0 0 1rem; color: #a9bed8; font-family: "Share TechMono", monospace; font-size: .68rem; letter-spacing: .18em; }
-.blog-hero h1 { display: flex; flex-wrap: wrap; gap: 0 .22em; margin: 0; max-width: 18ch; color: #c9d8e9; font-size: clamp(2.7rem, 4.35vw, 4.8rem); font-weight: 780; line-height: 1.04; letter-spacing: -.06em; }
+.blog-hero__eyebrow { margin: 0 0 1rem; overflow-wrap: anywhere; color: #a9bed8; font-family: "Share TechMono", monospace; font-size: .68rem; letter-spacing: .18em; }
+.blog-hero h1 { display: flex; flex-wrap: wrap; gap: 0 .22em; margin: 0; max-width: 18ch; overflow-wrap: anywhere; word-break: break-word; color: #c9d8e9; font-size: clamp(2.7rem, 4.35vw, 4.8rem); font-weight: 780; line-height: 1.04; letter-spacing: -.06em; }
 .blog-hero h1 span { color: #fff; }
-.blog-hero__intro { max-width: 47rem; margin: 1.35rem 0 0; color: #b8c8dc; font-size: clamp(.9rem, 1.15vw, 1.02rem); line-height: 1.75; }
+.blog-hero__intro { max-width: 47rem; margin: 1.35rem 0 0; overflow-wrap: anywhere; color: #b8c8dc; font-size: clamp(.9rem, 1.15vw, 1.02rem); line-height: 1.75; }
 .blog-hero__stats { min-width: 11rem; padding: .4rem 0 .4rem 1.75rem; border-left: 1px solid rgba(255,255,255,.24); }
 .blog-hero__stats strong { display: block; font-family: "Share TechMono", monospace; font-size: clamp(3rem, 4.5vw, 4.5rem); font-weight: 500; line-height: .9; }
 .blog-hero__stats span, .blog-hero__stats small { display: block; }
@@ -224,6 +268,10 @@ watch(() => route.params.slug, bootstrap)
 .article-card p { min-height: 4.8em; margin: .7rem 0 0; color: var(--brand-ink-soft); font-size: .82rem; line-height: 1.6; }
 .article-card footer { display: flex; justify-content: space-between; margin-top: 1.1rem; color: var(--brand-ink-faint); font-size: .72rem; }
 .article-card footer b { color: var(--journal-accent); }
+.article-pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: clamp(2rem, 4vw, 3.5rem); }
+.article-pagination__status { color: var(--brand-ink-faint); font-family: "Share TechMono", monospace; font-size: .72rem; white-space: nowrap; }
+.article-pagination :deep(.el-pager li), .article-pagination :deep(button) { border: 1px solid var(--brand-line); background: var(--brand-surface) !important; color: var(--brand-ink-soft); }
+.article-pagination :deep(.el-pager li.is-active) { border-color: var(--journal-accent); background: var(--journal-accent) !important; color: #fff; }
 .blog-state { margin-block: 4rem; padding: 4rem 1.5rem; text-align: center; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-lg); background: var(--brand-surface); }
 .blog-state strong { font-size: 1.3rem; }
 .blog-state p { color: var(--brand-ink-soft); }
@@ -232,6 +280,6 @@ watch(() => route.params.slug, bootstrap)
 .blog-skeleton div { height: 20rem; border-radius: var(--brand-radius-lg); background: linear-gradient(100deg, var(--brand-canvas-soft) 30%, var(--brand-surface) 50%, var(--brand-canvas-soft) 70%); background-size: 300% 100%; animation: shimmer 1.3s infinite; }
 @keyframes shimmer { to { background-position-x: -200%; } }
 @media (max-width: 900px) { .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .featured-story { grid-template-columns: 1fr; } .featured-story__cover { aspect-ratio: 16 / 8; min-height: 0; } }
-@media (max-width: 640px) { .blog-hero { grid-template-columns: 1fr; gap: 2rem; width: calc(100vw - .75rem); padding: 2.75rem 1.35rem; border-radius: 0 0 var(--brand-radius-lg) var(--brand-radius-lg); } .blog-hero h1 { display: block; max-width: 10ch; font-size: clamp(2.45rem, 12vw, 3.5rem); line-height: 1.06; } .blog-hero h1 span { display: block; } .blog-hero__intro { margin-top: 1.1rem; font-size: .9rem; line-height: 1.7; } .blog-hero__stats { display: grid; grid-template-columns: auto 1fr; column-gap: 1rem; align-items: end; min-width: 0; padding: 1.15rem 0 0; border-top: 1px solid rgba(255,255,255,.2); border-left: 0; } .blog-hero__stats strong { font-size: 2.8rem; } .blog-hero__stats small { grid-column: 2; } .topic-nav-shell { width: 100vw; } .topic-nav { flex-wrap: nowrap; justify-content: flex-start; gap: .5rem; width: 100%; padding: 1rem .75rem; overflow-x: auto; overscroll-behavior-inline: contain; scroll-padding-inline: .75rem; scroll-snap-type: x proximity; scrollbar-width: none; } .topic-nav::-webkit-scrollbar { display: none; } .topic-nav a { min-height: 2.6rem; padding: .62rem .88rem; font-size: .9rem; scroll-snap-align: start; } .article-grid, .blog-skeleton { grid-template-columns: 1fr; } .section-heading { align-items: flex-start; flex-direction: column; } .featured-story__cover { aspect-ratio: 16 / 10; } .article-card h3, .article-card p { min-height: auto; } }
+@media (max-width: 640px) { .blog-hero { grid-template-columns: 1fr; gap: 2rem; width: calc(100vw - .75rem); padding: 2.75rem 1.35rem; border-radius: 0 0 var(--brand-radius-lg) var(--brand-radius-lg); } .blog-hero h1 { display: block; max-width: 10ch; font-size: clamp(2.45rem, 12vw, 3.5rem); line-height: 1.06; } .blog-hero h1 span { display: block; } .blog-hero__intro { margin-top: 1.1rem; font-size: .9rem; line-height: 1.7; } .blog-hero__stats { display: grid; grid-template-columns: auto 1fr; column-gap: 1rem; align-items: end; min-width: 0; padding: 1.15rem 0 0; border-top: 1px solid rgba(255,255,255,.2); border-left: 0; } .blog-hero__stats strong { font-size: 2.8rem; } .blog-hero__stats small { grid-column: 2; } .topic-nav-shell { width: 100vw; } .topic-nav { flex-wrap: nowrap; justify-content: flex-start; gap: .5rem; width: 100%; padding: 1rem .75rem; overflow-x: auto; overscroll-behavior-inline: contain; scroll-padding-inline: .75rem; scroll-snap-type: x proximity; scrollbar-width: none; } .topic-nav::-webkit-scrollbar { display: none; } .topic-nav a { min-height: 2.6rem; padding: .62rem .88rem; font-size: .9rem; scroll-snap-align: start; } .article-grid, .blog-skeleton { grid-template-columns: 1fr; } .section-heading { align-items: flex-start; flex-direction: column; } .featured-story__cover { aspect-ratio: 16 / 10; } .article-card h3, .article-card p { min-height: auto; } .article-pagination { flex-direction: column; gap: .65rem; width: 100%; overflow: hidden; } .article-pagination :deep(.el-pagination) { max-width: 100%; } .article-pagination :deep(.el-pager li:nth-child(n+5):not(:last-child)) { display: none; } }
 @media (prefers-reduced-motion: reduce) { .story-cover__image, .article-card { transition: none; } .blog-skeleton div { animation: none; } }
 </style>

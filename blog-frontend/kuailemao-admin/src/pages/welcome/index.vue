@@ -34,7 +34,7 @@ onMounted(async () => {
       experienceList().catch(() => null),
     ])
     stats.value = {
-      articles: Array.isArray(articles?.data) ? articles.data.length : 0,
+      articles: Number(articles?.data?.total || 0),
       comments: Array.isArray(comments?.data) ? comments.data.length : 0,
       messages: Array.isArray(messages?.data) ? messages.data.length : 0,
       experiences: Array.isArray(experiences?.data) ? experiences.data.length : 0,

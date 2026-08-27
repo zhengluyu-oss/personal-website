@@ -16,6 +16,7 @@ import {
   uploadCover,
 } from '~/api/blog/article'
 import type { CategoryType, TagType } from '~/pages/blog/essay/publish/type.ts'
+import { ARTICLE_COVER_LABEL, ARTICLE_COVER_SPEC_EXTRA } from '~/pages/blog/essay/publish/article-cover-spec.ts'
 import { useMultiTab } from '~/stores/multi-tab.ts'
 import {compressImage} from "~/utils/CompressedImage.ts";
 
@@ -399,7 +400,7 @@ function close() {
           </a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item>
+      <a-form-item :label="ARTICLE_COVER_LABEL" :extra="ARTICLE_COVER_SPEC_EXTRA" style="margin-right: 1rem">
         <a-space>
           <template v-if="previewBase64 || formData.articleCover">
             <a-popover title="预览">
@@ -435,6 +436,10 @@ function close() {
               </a-button>
             </a-upload>
           </template>
+        </a-space>
+      </a-form-item>
+      <a-form-item>
+        <a-space>
           <a-button type="primary" @click="onFinish">
             发布
           </a-button>
