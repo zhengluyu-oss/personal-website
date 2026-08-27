@@ -25,6 +25,14 @@ public class CategoryVO {
     private Long featuredArticleId;
     @Schema(description = "分类页主推荐文章标题")
     private String featuredArticleTitle;
+    @Schema(description = "分类页 Hero 眉题")
+    private String heroEyebrow;
+    @Schema(description = "分类页 Hero 主标题强调段")
+    private String heroTitleAccent;
+    @Schema(description = "分类页 Hero 主标题后半段")
+    private String heroTitle;
+    @Schema(description = "分类页 Hero 简介")
+    private String heroDescription;
     // 分类下的文章数量
     @Schema(description = "分类下的文章数量")
     private Long articleCount;

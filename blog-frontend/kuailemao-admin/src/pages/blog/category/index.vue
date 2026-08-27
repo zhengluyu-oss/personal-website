@@ -130,7 +130,7 @@ const modalInfo = reactive({
 })
 
 const treeData = ref()
-const formData = ref()
+const formData = ref<Record<string, any>>({})
 const featuredOptions = ref<any[]>([])
 const featuredOptionsLoading = ref(false)
 
@@ -198,24 +198,32 @@ async function updateOrInsertCategory(id?: string) {
 // 确定
 async function modelOk() {
   modalInfo.loading = true
+  const submitData = normalizeHeroFields(formData.value)
+  let res: any
   if (formData.value.id) {
-    await updateCategory(formData.value).then((res) => {
-      if (res.code === 200) {
-        modalInfo.loading = false
-        message.success('修改成功')
-      }
-    })
+    res = await updateCategory(submitData)
   }
   else {
-    await addCategory(formData.value).then((res) => {
-      if (res.code === 200) {
-        modalInfo.loading = false
-        message.success('添加成功')
-      }
-    })
+    res = await addCategory(submitData)
   }
+  modalInfo.loading = false
+  if (!res || res.code !== 200) {
+    return
+  }
+  message.success(formData.value.id ? '修改成功' : '添加成功')
   modalInfo.open = false
   await refreshFunc()
+}
+
+const heroFields = ['heroEyebrow', 'heroTitleAccent', 'heroTitle', 'heroDescription'] as const
+
+function normalizeHeroFields(data: Record<string, any>) {
+  const normalized = { ...data }
+  heroFields.forEach((field) => {
+    const value = typeof normalized[field] === 'string' ? normalized[field].trim() : normalized[field]
+    normalized[field] = value || null
+  })
+  return normalized
 }
 </script>
 
@@ -266,7 +274,7 @@ async function modelOk() {
       </a-button>
     </template>
     <template #table-content>
-      <a-modal v-model:open="modalInfo.open" :title="modalInfo.title" :confirm-loading="modalInfo.loading" width="400px" @ok="modelOk">
+      <a-modal v-model:open="modalInfo.open" :title="modalInfo.title" :confirm-loading="modalInfo.loading" width="min(760px, calc(100vw - 32px))" @ok="modelOk">
         <a-form-item
           label="分类名称"
           name="categoryName"
@@ -290,6 +298,22 @@ async function modelOk() {
           </a-select>
           <div class="featured-help">只显示当前分类下已发布的文章。</div>
         </a-form-item>
+        <a-divider orientation="left">分类展示文案</a-divider>
+        <p class="hero-copy-help">用于博客分类页顶部介绍。所有字段均可留空，留空时使用博客默认文案。</p>
+        <div class="hero-copy-grid">
+          <a-form-item label="Hero 眉题" name="heroEyebrow">
+            <a-input v-model:value="formData.heroEyebrow" allow-clear show-count :maxlength="60" placeholder="例如：AI · TOOLS · PRACTICE" />
+          </a-form-item>
+          <a-form-item label="标题强调段" name="heroTitleAccent">
+            <a-input v-model:value="formData.heroTitleAccent" allow-clear show-count :maxlength="60" placeholder="例如：与智能协作，" />
+          </a-form-item>
+          <a-form-item label="标题后半段" name="heroTitle">
+            <a-input v-model:value="formData.heroTitle" allow-clear show-count :maxlength="60" placeholder="例如：把想法变成可交付的作品。" />
+          </a-form-item>
+          <a-form-item class="hero-description-field" label="Hero 简介" name="heroDescription">
+            <a-textarea v-model:value="formData.heroDescription" allow-clear show-count :maxlength="240" :auto-size="{ minRows: 3, maxRows: 5 }" placeholder="概括这个分类主要记录的内容和价值。" />
+          </a-form-item>
+        </div>
       </a-modal>
       <a-table
         :columns="columns"
@@ -343,4 +367,8 @@ async function modelOk() {
 
 <style scoped lang="scss">
 .featured-help { margin-top: 6px; color: rgba(0, 0, 0, .45); font-size: 12px; }
+.hero-copy-help { margin: -4px 0 18px; color: rgba(0, 0, 0, .55); font-size: 13px; line-height: 1.6; }
+.hero-copy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; }
+.hero-description-field { grid-column: 1 / -1; }
+@media (max-width: 640px) { .hero-copy-grid { grid-template-columns: 1fr; } .hero-description-field { grid-column: auto; } }
 </style>

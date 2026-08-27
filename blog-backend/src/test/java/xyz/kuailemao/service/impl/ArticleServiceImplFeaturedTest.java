@@ -64,6 +64,7 @@ class ArticleServiceImplFeaturedTest {
         assertEquals(2L, result.getFeaturedArticle().getId());
         assertEquals(List.of(3L), result.getArticles().stream().map(item -> item.getId()).toList());
         assertEquals(2L, result.getTotal());
+        assertEquals(1L, result.getListTotal());
     }
 
     @Test
@@ -80,6 +81,7 @@ class ArticleServiceImplFeaturedTest {
 
         assertEquals(4L, result.getFeaturedArticle().getId());
         assertEquals(1L, result.getTotal());
+        assertEquals(0L, result.getListTotal());
     }
 
     @Test
@@ -100,6 +102,7 @@ class ArticleServiceImplFeaturedTest {
 
         assertEquals(5L, result.getFeaturedArticle().getId());
         assertEquals(1L, result.getTotal());
+        assertEquals(0L, result.getListTotal());
         assertEquals(List.of(), result.getArticles());
     }
 
@@ -148,6 +151,7 @@ class ArticleServiceImplFeaturedTest {
         assertNull(result.getFeaturedArticle());
         assertEquals(List.of(), result.getArticles());
         assertEquals(0L, result.getTotal());
+        assertEquals(0L, result.getListTotal());
     }
 
     private void stubFeedQueries(Article ordinary, long total) {

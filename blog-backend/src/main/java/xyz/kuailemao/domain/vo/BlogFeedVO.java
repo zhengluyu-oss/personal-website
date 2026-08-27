@@ -15,4 +15,6 @@ public class BlogFeedVO {
     private ArticleVO featuredArticle;
     private List<ArticleVO> articles;
     private Long total;
+    @Schema(description = "排除主推荐文章后的普通文章总数")
+    private Long listTotal;
 }

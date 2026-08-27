@@ -22,4 +22,12 @@ public class CategoryDTO implements BaseData {
     private String categoryName;
     //分类页主推荐文章，留空时自动使用该分类最新公开文章
     private Long featuredArticleId;
+    @Length(max = 60, message = "Hero眉题长度不能超过60")
+    private String heroEyebrow;
+    @Length(max = 60, message = "Hero主标题强调段长度不能超过60")
+    private String heroTitleAccent;
+    @Length(max = 60, message = "Hero主标题后半段长度不能超过60")
+    private String heroTitle;
+    @Length(max = 240, message = "Hero简介长度不能超过240")
+    private String heroDescription;
 }

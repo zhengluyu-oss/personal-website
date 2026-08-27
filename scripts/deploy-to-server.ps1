@@ -349,9 +349,22 @@ rollback() {
   nginx -t && nginx -s reload
 }
 trap rollback ERR
-if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q "^`${UNIT}\.service"; then
+if command -v systemctl >/dev/null 2>&1 && systemctl cat "`${UNIT}.service" >/dev/null 2>&1; then
   systemctl restart "`$UNIT"
-  echo SYSTEMD_RESTARTED
+  # Wait until the new jar process is healthy enough to answer blog-feed.
+  for i in `$(seq 1 30); do
+    code=`$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 --max-time 4 'http://127.0.0.1:8001/article/blog-feed?pageNum=1&pageSize=1' || true)
+    if [ "`$code" = "200" ]; then
+      echo SYSTEMD_RESTARTED
+      break
+    fi
+    sleep 2
+    if [ "`$i" -eq 30 ]; then
+      echo SYSTEMD_RESTART_TIMEOUT
+      systemctl --no-pager --full status "`$UNIT" || true
+      exit 1
+    fi
+  done
 else
   echo SYSTEMD_SKIPPED
 fi
