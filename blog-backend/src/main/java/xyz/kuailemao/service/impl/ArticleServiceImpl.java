@@ -86,7 +86,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         boolean hasKey = redisCache.isHasKey(RedisConst.ARTICLE_COMMENT_COUNT) && redisCache.isHasKey(RedisConst.ARTICLE_FAVORITE_COUNT) && redisCache.isHasKey(RedisConst.ARTICLE_LIKE_COUNT);
         // 文章
         Page<Article> page = new Page<>(pageNum, pageSize);
-        this.page(page, new LambdaQueryWrapper<Article>().eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE).orderByDesc(Article::getCreateTime));
+        this.page(page, new LambdaQueryWrapper<Article>().eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                .orderByDesc(Article::getCreateTime)
+                .orderByDesc(Article::getId));
         List<Article> list = page.getRecords();
         // 无文章时跳过 IN 批量查询，避免生成非法 SQL：id IN ()
         if (list.isEmpty()) {
@@ -141,7 +143,8 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         articleMapper.selectPage(page, scope);
 
         ArticleVO featuredVO = featured == null ? null : toArticleVOs(List.of(featured)).get(0);
-        return new BlogFeedVO(featuredVO, toArticleVOs(page.getRecords()), total);
+        long listTotal = Math.max(0L, total - (featured == null ? 0L : 1L));
+        return new BlogFeedVO(featuredVO, toArticleVOs(page.getRecords()), total, listTotal);
     }
 
     private Article resolveFeaturedArticle(Long categoryId) {
@@ -403,41 +406,54 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
-    public List<ArticleListVO> listArticle() {
-        List<ArticleListVO> articleListVOS = articleMapper.selectList(new LambdaQueryWrapper<Article>()
-                .orderByDesc(Article::getCreateTime)).stream().map(article -> article.asViewObject(ArticleListVO.class)).toList();
-        if (!articleListVOS.isEmpty()) {
-            articleListVOS.forEach(articleListVO -> {
-                articleListVO.setCategoryName(categoryMapper.selectById(articleListVO.getCategoryId()).getCategoryName());
-                articleListVO.setUserName(userMapper.selectById(articleListVO.getUserId()).getUsername());
-                // 查询文章标签
-                List<Long> tagIds = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, articleListVO.getId())).stream().map(ArticleTag::getTagId).toList();
-                articleListVO.setTagsName(tagMapper.selectBatchIds(tagIds).stream().map(Tag::getTagName).toList());
-            });
-            return articleListVOS;
-        }
-        return null;
+    public PageVO<List<ArticleListVO>> listArticle(Integer pageNum, Integer pageSize) {
+        SearchArticleDTO search = new SearchArticleDTO();
+        search.setPageNum(pageNum);
+        search.setPageSize(pageSize);
+        return searchArticle(search);
     }
 
     @Override
-    public List<ArticleListVO> searchArticle(SearchArticleDTO searchArticleDTO) {
+    public PageVO<List<ArticleListVO>> searchArticle(SearchArticleDTO searchArticleDTO) {
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(StringUtils.isNotNull(searchArticleDTO.getArticleTitle()), Article::getArticleTitle, searchArticleDTO.getArticleTitle())
                 .eq(StringUtils.isNotNull(searchArticleDTO.getCategoryId()), Article::getCategoryId, searchArticleDTO.getCategoryId())
                 .eq(StringUtils.isNotNull(searchArticleDTO.getStatus()), Article::getStatus, searchArticleDTO.getStatus())
-                .eq(StringUtils.isNotNull(searchArticleDTO.getIsTop()), Article::getIsTop, searchArticleDTO.getIsTop());
-        List<ArticleListVO> articleListVOS = articleMapper.selectList(wrapper).stream().map(article -> article.asViewObject(ArticleListVO.class)).toList();
-        if (!articleListVOS.isEmpty()) {
-            articleListVOS.forEach(articleListVO -> {
-                articleListVO.setCategoryName(categoryMapper.selectById(articleListVO.getCategoryId()).getCategoryName());
-                articleListVO.setUserName(userMapper.selectById(articleListVO.getUserId()).getUsername());
-                // 查询文章标签
-                List<Long> tagIds = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, articleListVO.getId())).stream().map(ArticleTag::getTagId).toList();
-                articleListVO.setTagsName(tagMapper.selectBatchIds(tagIds).stream().map(Tag::getTagName).toList());
-            });
-            return articleListVOS;
-        }
-        return null;
+                .eq(StringUtils.isNotNull(searchArticleDTO.getIsTop()), Article::getIsTop, searchArticleDTO.getIsTop())
+                .orderByDesc(Article::getCreateTime)
+                .orderByDesc(Article::getId);
+        Page<Article> page = new Page<>(searchArticleDTO.getPageNum(), searchArticleDTO.getPageSize());
+        articleMapper.selectPage(page, wrapper);
+        return new PageVO<>(toArticleListVOs(page.getRecords()), page.getTotal());
+    }
+
+    private List<ArticleListVO> toArticleListVOs(List<Article> articles) {
+        if (articles.isEmpty()) return Collections.emptyList();
+
+        Set<Long> categoryIds = articles.stream().map(Article::getCategoryId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<Long> userIds = articles.stream().map(Article::getUserId).filter(Objects::nonNull).collect(Collectors.toSet());
+        List<Long> articleIds = articles.stream().map(Article::getId).toList();
+
+        Map<Long, String> categoryNames = categoryIds.isEmpty() ? Collections.emptyMap() : categoryMapper.selectBatchIds(categoryIds)
+                .stream().collect(Collectors.toMap(Category::getId, Category::getCategoryName));
+        Map<Long, String> userNames = userIds.isEmpty() ? Collections.emptyMap() : userMapper.selectBatchIds(userIds)
+                .stream().collect(Collectors.toMap(User::getId, User::getUsername));
+        List<ArticleTag> relations = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getArticleId, articleIds));
+        Set<Long> tagIds = relations.stream().map(ArticleTag::getTagId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, String> tagNames = tagIds.isEmpty() ? Collections.emptyMap() : tagMapper.selectBatchIds(tagIds)
+                .stream().collect(Collectors.toMap(Tag::getId, Tag::getTagName));
+        Map<Long, List<String>> articleTags = relations.stream().collect(Collectors.groupingBy(
+                ArticleTag::getArticleId,
+                Collectors.mapping(relation -> tagNames.get(relation.getTagId()),
+                        Collectors.filtering(Objects::nonNull, Collectors.toList()))));
+
+        return articles.stream().map(article -> {
+            ArticleListVO vo = article.asViewObject(ArticleListVO.class);
+            vo.setCategoryName(categoryNames.get(article.getCategoryId()));
+            vo.setUserName(userNames.get(article.getUserId()));
+            vo.setTagsName(articleTags.getOrDefault(article.getId(), Collections.emptyList()));
+            return vo;
+        }).toList();
     }
 
     @Override

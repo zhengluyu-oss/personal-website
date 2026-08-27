@@ -49,8 +49,18 @@ export async function uploadArticleImage(data: any) {
 }
 
 // 文章列表
-export async function articleList() {
-  return useGet('/article/back/list').catch(msg => message.warn(msg))
+export interface ArticlePageParams {
+  pageNum: number
+  pageSize: number
+}
+
+export interface ArticlePageData<T = any> {
+  page: T[]
+  total: number
+}
+
+export async function articleList(params: ArticlePageParams = { pageNum: 1, pageSize: 10 }) {
+  return useGet('/article/back/list', params).catch(msg => message.warn(msg))
 }
 
 // 已发布文章候选项（用于页面主推荐配置）
@@ -59,7 +69,7 @@ export async function publishedArticleOptions(params: { categoryId?: string | nu
 }
 
 // 文章搜索
-export async function articleSearch(data: any) {
+export async function articleSearch(data: any & ArticlePageParams) {
   return usePost('/article/back/search', data).catch(msg => message.warn(msg))
 }
 

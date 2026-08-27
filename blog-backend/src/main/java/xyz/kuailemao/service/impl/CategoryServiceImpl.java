@@ -20,6 +20,7 @@ import xyz.kuailemao.utils.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Date;
 
 /**
  * (Category)表服务实现类
@@ -45,9 +46,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
     @Override
     public ResponseResult<Void> addCategory(CategoryDTO categoryDTO) {
-        categoryDTO.setId(null);
-        if (this.save(categoryDTO.asViewObject(Category.class))) return ResponseResult.success();
-        return ResponseResult.failure();
+        return addOrUpdateCategory(categoryDTO.setId(null));
     }
 
     @Override
@@ -69,17 +68,36 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     @Transactional
     @Override
     public ResponseResult<Void> addOrUpdateCategory(CategoryDTO categoryDTO) {
+        normalizeHeroCopy(categoryDTO);
         ResponseResult<Void> validation = validateFeaturedArticle(categoryDTO);
         if (validation != null) return validation;
-        if (this.saveOrUpdate(categoryDTO.asViewObject(Category.class))) {
-            if (categoryDTO.getId() != null) {
-                this.update(new LambdaUpdateWrapper<Category>()
-                        .eq(Category::getId, categoryDTO.getId())
-                        .set(Category::getFeaturedArticleId, categoryDTO.getFeaturedArticleId()));
-            }
-            return ResponseResult.success();
+        Category category = categoryDTO.asViewObject(Category.class);
+        if (categoryDTO.getId() == null) {
+            return categoryMapper.insert(category) > 0 ? ResponseResult.success() : ResponseResult.failure();
         }
-        return ResponseResult.failure();
+        LambdaUpdateWrapper<Category> update = new LambdaUpdateWrapper<Category>()
+                .eq(Category::getId, categoryDTO.getId())
+                .set(Category::getCategoryName, categoryDTO.getCategoryName())
+                .set(Category::getFeaturedArticleId, categoryDTO.getFeaturedArticleId())
+                .set(Category::getHeroEyebrow, categoryDTO.getHeroEyebrow())
+                .set(Category::getHeroTitleAccent, categoryDTO.getHeroTitleAccent())
+                .set(Category::getHeroTitle, categoryDTO.getHeroTitle())
+                .set(Category::getHeroDescription, categoryDTO.getHeroDescription())
+                .set(Category::getUpdateTime, new Date());
+        return categoryMapper.update(null, update) > 0 ? ResponseResult.success() : ResponseResult.failure();
+    }
+
+    static void normalizeHeroCopy(CategoryDTO categoryDTO) {
+        categoryDTO.setHeroEyebrow(normalizeNullableText(categoryDTO.getHeroEyebrow()));
+        categoryDTO.setHeroTitleAccent(normalizeNullableText(categoryDTO.getHeroTitleAccent()));
+        categoryDTO.setHeroTitle(normalizeNullableText(categoryDTO.getHeroTitle()));
+        categoryDTO.setHeroDescription(normalizeNullableText(categoryDTO.getHeroDescription()));
+    }
+
+    private static String normalizeNullableText(String value) {
+        if (value == null) return null;
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private ResponseResult<Void> validateFeaturedArticle(CategoryDTO categoryDTO) {

@@ -7,10 +7,12 @@ test('保留显式主推荐并从普通列表中去重', () => {
     featuredArticle: { id: 2, title: '推荐' },
     articles: [{ id: 3, title: '普通' }, { id: 2, title: '重复项' }],
     total: 2,
+    listTotal: 1,
   })
   assert.equal(result.featuredArticle?.id, 2)
   assert.deepEqual(result.articles.map(article => article.id), [3])
   assert.equal(result.total, 2)
+  assert.equal(result.listTotal, 1)
 })
 
 test('空响应产生稳定空状态', () => {
@@ -18,6 +20,7 @@ test('空响应产生稳定空状态', () => {
     featuredArticle: undefined,
     articles: [],
     total: 0,
+    listTotal: 0,
   })
 })
 

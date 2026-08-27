@@ -109,14 +109,14 @@ public interface ArticleService extends IService<Article> {
      * 后台文章列表
      * @return 文章列表
      */
-    List<ArticleListVO> listArticle();
+    PageVO<List<ArticleListVO>> listArticle(Integer pageNum, Integer pageSize);
 
     /**
      * 搜索文章列表
      * @param searchArticleDTO 搜索条件
      * @return 结果
      */
-    List<ArticleListVO> searchArticle(SearchArticleDTO searchArticleDTO);
+    PageVO<List<ArticleListVO>> searchArticle(SearchArticleDTO searchArticleDTO);
 
     /**
      * 修改文章状态

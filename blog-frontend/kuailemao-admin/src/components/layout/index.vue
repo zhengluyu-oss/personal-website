@@ -10,7 +10,7 @@ defineProps({
   },
 })
 
-const emit = defineEmits(['update:refreshFunc', 'update:onFinish', 'update:onFinishFailed'])
+const emit = defineEmits(['update:refreshFunc', 'update:onFinish', 'update:onFinishFailed', 'update:reset'])
 
 // 是否显示搜索
 const isShowForm = ref<boolean>(true)
@@ -22,6 +22,7 @@ const formRef = ref()
  */
 function resetForm() {
   formRef.value.resetFields()
+  emit('update:reset')
 }
 
 /**

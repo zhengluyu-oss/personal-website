@@ -6,13 +6,13 @@ import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
 import type { CategoryType, TagType } from '~/pages/blog/essay/publish/type.ts'
 import {
   articleCategory,
-  articleList,
   articleSearch,
   articleTag,
   deleteArticle,
   updateArticleStatus,
   updateArticleTop,
 } from '~/api/blog/article'
+import { ARTICLE_PAGE_SIZE_OPTIONS, validArticlePage } from './pagination'
 
 const formData = reactive({
   categoryId: undefined,
@@ -64,6 +64,11 @@ interface DataType {
 
 const loading = ref(false)
 const tabData: Ref<UnwrapRef<DataType[]>> = ref([])
+const pagination = reactive({
+  current: 1,
+  pageSize: 10,
+  total: 0,
+})
 
 /**
  * 选中表格
@@ -135,33 +140,54 @@ const columns: any = [
   },
 ]
 
-async function refreshFunc() {
-  loading.value = true
-  const { data } = await articleList()
-  if (data && data.length > 0) {
-    tabData.value = data.map((item: any) => {
-      item.isTop = item.isTop === 1
-      return item
-    })
-  }
-  loading.value = false
+function normalizeRows(rows: any[] = []) {
+  return rows.map(item => ({ ...item, isTop: item.isTop === 1 }))
 }
 
-async function onFinish(values: any) {
+async function loadArticles() {
   loading.value = true
-  const { data } = await articleSearch(values)
-  if (data && data.length > 0) {
-    tabData.value = data.map((item: any) => {
-      item.isTop = item.isTop === 1
-      return item
+  state.selectedRowKeys = []
+  try {
+    const response = await articleSearch({
+      ...formData,
+      pageNum: pagination.current,
+      pageSize: pagination.pageSize,
     })
+    const data = response?.data
+    tabData.value = normalizeRows(data?.page)
+    pagination.total = Number(data?.total || 0)
+    const validPage = validArticlePage(pagination.current, pagination.total, pagination.pageSize)
+    if (validPage !== pagination.current) {
+      pagination.current = validPage
+      await loadArticles()
+    }
   }
-  else {
-    message.warn('没有查询到相关文章')
-    tabData.value = []
+  finally {
+    loading.value = false
   }
+}
 
-  loading.value = false
+async function refreshFunc() {
+  await loadArticles()
+}
+
+async function onFinish() {
+  pagination.current = 1
+  await loadArticles()
+  if (!pagination.total) message.warn('没有查询到相关文章')
+}
+
+async function resetSearch() {
+  await nextTick()
+  pagination.current = 1
+  await loadArticles()
+}
+
+async function handleTableChange(page: { current?: number, pageSize?: number }) {
+  const sizeChanged = page.pageSize !== undefined && page.pageSize !== pagination.pageSize
+  pagination.pageSize = page.pageSize || pagination.pageSize
+  pagination.current = sizeChanged ? 1 : (page.current || 1)
+  await loadArticles()
 }
 
 // 修改状态
@@ -192,7 +218,7 @@ function onDelete(ids?: string[]) {
     deleteArticle(ids).then((res) => {
       if (res.code === 200) {
         message.success('删除成功')
-        refreshFunc()
+        loadArticles()
       }
     })
   }
@@ -209,7 +235,7 @@ function onDelete(ids?: string[]) {
         deleteArticle(ids as string[]).then((res) => {
           if (res.code === 200) {
             message.success('删除成功')
-            refreshFunc()
+            loadArticles()
           }
         })
       },
@@ -226,6 +252,7 @@ const domain = import.meta.env.VITE_APP_DOMAIN_NAME_FRONT
     :form-state="formData"
     @update:refresh-func="refreshFunc"
     @update:on-finish="onFinish"
+    @update:reset="resetSearch"
   >
     <template #form-items>
       <a-form-item label="标题" name="articleTitle" style="margin-right: 1rem">
@@ -309,6 +336,16 @@ const domain = import.meta.env.VITE_APP_DOMAIN_NAME_FRONT
         :row-selection="{ selectedRowKeys: state.selectedRowKeys, onChange: onSelectChange }"
         :row-key="record => record.id"
         size="small"
+        :pagination="{
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+          total: pagination.total,
+          showSizeChanger: true,
+          pageSizeOptions: ARTICLE_PAGE_SIZE_OPTIONS,
+          showTotal: (total: number) => `共 ${total} 篇文章`,
+          showQuickJumper: true,
+        }"
+        @change="handleTableChange"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'articleCover'">

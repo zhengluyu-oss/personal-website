@@ -30,6 +30,14 @@ public class Category implements BaseData {
     private String categoryName;
     //分类页主推荐文章
     private Long featuredArticleId;
+    //分类页 Hero 眉题
+    private String heroEyebrow;
+    //分类页 Hero 主标题强调段
+    private String heroTitleAccent;
+    //分类页 Hero 主标题后半段
+    private String heroTitle;
+    //分类页 Hero 简介
+    private String heroDescription;
     //创建时间
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;
