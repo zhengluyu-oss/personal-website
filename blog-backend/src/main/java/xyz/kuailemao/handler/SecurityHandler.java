@@ -8,21 +8,21 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
-import xyz.kuailemao.constants.Const;
 import xyz.kuailemao.constants.RespConst;
+import xyz.kuailemao.constants.SecurityConst;
 import xyz.kuailemao.domain.entity.LoginUser;
 import xyz.kuailemao.domain.response.ResponseResult;
 import xyz.kuailemao.domain.vo.AuthorizeVO;
+import xyz.kuailemao.service.AdminLoginChallengeService;
+import xyz.kuailemao.utils.IpUtils;
 import xyz.kuailemao.enums.RespEnum;
 import xyz.kuailemao.service.LoginLogService;
 import xyz.kuailemao.service.UserService;
 import xyz.kuailemao.utils.JwtUtils;
 import xyz.kuailemao.utils.RedisCache;
-import xyz.kuailemao.utils.StringUtils;
 import xyz.kuailemao.utils.WebUtil;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -44,6 +44,9 @@ public class SecurityHandler {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private AdminLoginChallengeService adminLoginChallengeService;
 
     public static final String USER_NAME = "username";
 
@@ -68,10 +71,17 @@ public class SecurityHandler {
             HttpServletResponse response,
             LoginUser user
     ) {
-        String typeHeader = request.getHeader(Const.TYPE_HEADER);
-        if ((!StringUtils.matches(typeHeader, List.of(Const.BACKEND_REQUEST, Const.FRONTEND_REQUEST)) && user.getUser().getRegisterType() == 1)) {
-            throw new BadCredentialsException("非法请求");
+        boolean administrator = user.getAuthorities().stream()
+                .anyMatch(authority -> (SecurityConst.ROLE_PREFIX + SecurityConst.ROLE_ADMIN).equals(authority.getAuthority()));
+        if (administrator) {
+            var challenge = adminLoginChallengeService.create(user, IpUtils.getIpAddr(request));
+            WebUtil.renderString(response, ResponseResult.success(challenge, "请完成邮箱验证").asJsonString());
+            return;
         }
+        issueToken(request, response, user);
+    }
+
+    public void issueToken(HttpServletRequest request, HttpServletResponse response, LoginUser user) {
         Long id = user.getUser().getId();
         String name = user.getUser().getUsername();
         // UUID做jwt的id
@@ -82,7 +92,7 @@ public class SecurityHandler {
         // 转换VO
         AuthorizeVO authorizeVO = user.getUser().asViewObject(AuthorizeVO.class, v -> {
             v.setToken(token);
-            v.setExpire(jwtUtils.expireTime());
+            v.setExpire(jwtUtils.expireTime(user));
         });
         userService.userLoginStatus(user.getUser().getId(), user.getUser().getRegisterType());
         loginLogService.loginLog(request, request.getParameter(USER_NAME), 0, RespConst.SUCCESS_LOGIN_MSG);
@@ -98,8 +108,8 @@ public class SecurityHandler {
             HttpServletResponse response,
             AuthenticationException exception
     ) throws IOException {
-        loginLogService.loginLog(request, request.getParameter(USER_NAME), 1, exception.getMessage());
-        WebUtil.renderString(response, ResponseResult.failure(RespEnum.USERNAME_OR_PASSWORD_ERROR.getCode(), exception.getMessage()).asJsonString());
+        loginLogService.loginLog(request, request.getParameter(USER_NAME), 1, "登录验证失败");
+        WebUtil.renderString(response, ResponseResult.failure(RespEnum.USERNAME_OR_PASSWORD_ERROR.getCode(), RespConst.USERNAME_OR_PASSWORD_ERROR_MSG).asJsonString());
     }
 
     /**

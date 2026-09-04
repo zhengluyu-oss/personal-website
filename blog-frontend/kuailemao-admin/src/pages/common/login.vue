@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import {
   LockOutlined,
+  MailOutlined,
   UserOutlined,
 } from '@ant-design/icons-vue'
 import { delayTimer } from '@v-c/utils'
 import { AxiosError } from 'axios'
-import { loginApi } from '~/api/common/login'
+import { loginApi, resendAdminLoginApi, verifyAdminLoginApi } from '~/api/common/login'
 import { getQueryParam } from '~/utils/tools'
 import type { LoginMobileParams, LoginParams } from '~@/api/common/login'
 import pageBubble from '@/utils/page-bubble'
@@ -29,8 +30,11 @@ const formRef = shallowRef()
 const resetCounter = 60
 const submitLoading = shallowRef(false)
 const errorAlert = shallowRef(false)
+const challenge = reactive({ id: '', maskedEmail: '', code: '', expiresIn: 0, resendAfter: 0 })
+const awaitingSecondFactor = computed(() => Boolean(challenge.id))
+let challengeTimer: ReturnType<typeof setInterval> | undefined
 const bubbleCanvas = ref<HTMLCanvasElement>()
-const { pause, reset } = useInterval(1000, {
+const { pause } = useInterval(1000, {
   controls: true,
   immediate: false,
   callback(count) {
@@ -61,7 +65,78 @@ async function submit() {
       } as unknown as LoginMobileParams
     }
     const { data } = await loginApi(params)
-    token.value = JSON.stringify({ token: data?.token, expires: data?.expire })
+    if (data?.secondFactorRequired && data.challengeId) {
+      challenge.id = data.challengeId
+      challenge.maskedEmail = data.maskedEmail || ''
+      challenge.expiresIn = data.expiresIn || 300
+      challenge.resendAfter = data.resendAfter || 60
+      startChallengeTimer()
+      loginModel.password = undefined
+      submitLoading.value = false
+      notification.info({ message: '需要邮箱验证', description: `验证码已发送至 ${challenge.maskedEmail}` })
+      return
+    }
+    await finishLogin(data?.token, data?.expire)
+  }
+  catch (e) {
+    handleLoginError(e)
+  }
+}
+
+function startChallengeTimer() {
+  if (challengeTimer) clearInterval(challengeTimer)
+  challengeTimer = setInterval(() => {
+    if (challenge.resendAfter > 0) challenge.resendAfter--
+    if (challenge.expiresIn > 0) challenge.expiresIn--
+    if (challenge.expiresIn === 0) {
+      clearChallenge()
+      message.warning('验证码已过期，请重新登录')
+    }
+  }, 1000)
+}
+
+async function resendSecondFactor() {
+  if (!challenge.id || challenge.resendAfter > 0) return
+  submitLoading.value = true
+  try {
+    const { data } = await resendAdminLoginApi({ challengeId: challenge.id })
+    if (!data?.challengeId) throw new Error('服务器未返回有效验证请求')
+    challenge.id = data.challengeId
+    challenge.maskedEmail = data.maskedEmail || challenge.maskedEmail
+    challenge.expiresIn = data.expiresIn || 300
+    challenge.resendAfter = data.resendAfter || 60
+    challenge.code = ''
+    startChallengeTimer()
+    message.success('验证码已重新发送')
+  }
+  catch (e) {
+    handleLoginError(e)
+  }
+  finally {
+    submitLoading.value = false
+  }
+}
+
+async function verifySecondFactor() {
+  if (!/^\d{6}$/.test(challenge.code)) {
+    message.warning('请输入 6 位邮箱验证码')
+    return
+  }
+  submitLoading.value = true
+  try {
+    const { data } = await verifyAdminLoginApi({ challengeId: challenge.id, code: challenge.code })
+    await finishLogin(data?.token, data?.expire)
+    clearChallenge()
+  }
+  catch (e) {
+    challenge.code = ''
+    handleLoginError(e)
+  }
+}
+
+async function finishLogin(loginToken?: string, expire?: string) {
+    if (!loginToken || !expire) throw new Error('服务器未返回有效登录凭证')
+    token.value = JSON.stringify({ token: loginToken, expires: expire })
     notification.success({
       message: '登录成功',
       description: '欢迎回来！',
@@ -78,8 +153,10 @@ async function submit() {
       path: redirect,
       replace: true,
     })
-  }
-  catch (e) {
+    submitLoading.value = false
+}
+
+function handleLoginError(e: unknown) {
     notification.error({
       message: `登录失败${e}`,
       description: e instanceof Error ? e.message : '请联系管理员',
@@ -88,8 +165,19 @@ async function submit() {
     if (e instanceof AxiosError)
       errorAlert.value = true
 
-    submitLoading.value = false
+  submitLoading.value = false
+}
+
+function clearChallenge() {
+  if (challengeTimer) {
+    clearInterval(challengeTimer)
+    challengeTimer = undefined
   }
+  challenge.id = ''
+  challenge.maskedEmail = ''
+  challenge.code = ''
+  challenge.expiresIn = 0
+  challenge.resendAfter = 0
 }
 
 onMounted(async () => {
@@ -98,6 +186,7 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  clearChallenge()
   pageBubble.removeListeners()
 })
 </script>
@@ -147,7 +236,7 @@ onBeforeUnmount(() => {
           <!-- 登录框右侧 -->
           <div class="ant-pro-form-login-main-right px-5 w-[335px] flex-center flex-col relative z-11">
             <div class="text-center py-6 text-2xl">
-              欢迎登录后台系统
+              {{ awaitingSecondFactor ? '验证管理员邮箱' : '欢迎登录后台系统' }}
             </div>
             <a-form ref="formRef" :model="loginModel">
               <a-tabs v-model:activeKey="loginModel.type" centered>
@@ -158,7 +247,7 @@ onBeforeUnmount(() => {
                 v-if="errorAlert && loginModel.type === 'account'" mb-24px
                 :message="t('pages.login.accountLogin.errorMessage')" type="error" show-icon
               />
-              <template v-if="loginModel.type === 'account'">
+              <template v-if="loginModel.type === 'account' && !awaitingSecondFactor">
                 <a-form-item name="username" :rules="[{ required: true, message: t('pages.login.username.required') }]">
                   <a-input
                     v-model:value="loginModel.username" allow-clear
@@ -182,9 +271,27 @@ onBeforeUnmount(() => {
                   </a-input-password>
                 </a-form-item>
               </template>
-              <a-button type="primary" block :loading="submitLoading" size="large" @click="submit">
-                {{ t('pages.login.submit') }}
+              <template v-else-if="awaitingSecondFactor">
+                <a-alert class="mb-4" type="info" show-icon :message="`验证码已发送至 ${challenge.maskedEmail}`" />
+                <a-form-item>
+                  <a-input
+                    v-model:value="challenge.code" inputmode="numeric" :maxlength="6" autocomplete="one-time-code"
+                    placeholder="请输入 6 位邮箱验证码" size="large" aria-label="邮箱验证码" @press-enter="verifySecondFactor"
+                  >
+                    <template #prefix><MailOutlined /></template>
+                  </a-input>
+                </a-form-item>
+                <div class="mb-4 flex items-center justify-between text-sm text-[var(--text-color-2)]">
+                  <span>{{ Math.ceil(challenge.expiresIn / 60) }} 分钟内有效</span>
+                  <a-button type="link" size="small" :disabled="challenge.resendAfter > 0" @click="resendSecondFactor">
+                    {{ challenge.resendAfter > 0 ? `${challenge.resendAfter} 秒后重发` : '重新发送' }}
+                  </a-button>
+                </div>
+              </template>
+              <a-button type="primary" block :loading="submitLoading" size="large" @click="awaitingSecondFactor ? verifySecondFactor() : submit()">
+                {{ awaitingSecondFactor ? '验证并登录' : t('pages.login.submit') }}
               </a-button>
+              <a-button v-if="awaitingSecondFactor" class="mt-3" type="link" block @click="clearChallenge">返回重新登录</a-button>
             </a-form>
           </div>
         </div>

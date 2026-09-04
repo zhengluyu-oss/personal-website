@@ -18,6 +18,7 @@ import { ossUrl } from '@/config/site'
 import { setSeoMeta } from '@/utils/seo'
 import { categoryRoute } from '@/utils/category-slug'
 import { useBlogCategories } from '@/composables/useBlogCategories'
+import { sanitizeRenderedHtml } from '@/utils/sanitize-html'
 
 const payQrUrl = ossUrl('blog/pay/支付宝支付二维码_.png')
 const env = import.meta.env;
@@ -260,7 +261,7 @@ const readingMinutes = computed(() => {
         </aside>
 
         <article class="article-reading">
-          <MdPreview :editorId="id" :theme="mode" :modelValue="articleDetail.articleContent" :on-html-changed="mdHtml"/>
+          <MdPreview :editorId="id" :theme="mode" :modelValue="articleDetail.articleContent" :sanitize="sanitizeRenderedHtml" :on-html-changed="mdHtml"/>
 
           <section class="article-license" aria-labelledby="license-title">
             <p id="license-title">关于本文</p>

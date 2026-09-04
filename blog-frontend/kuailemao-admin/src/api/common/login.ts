@@ -11,9 +11,23 @@ export interface LoginMobileParams {
 }
 
 export interface LoginResultModel {
-  token: string
-  expire: string
+  token?: string
+  expire?: string
   code: number
+  challengeId?: string
+  maskedEmail?: string
+  expiresIn?: number
+  resendAfter?: number
+  secondFactorRequired?: boolean
+}
+
+export interface AdminLoginVerifyParams {
+  challengeId: string
+  code: string
+}
+
+export interface AdminLoginResendParams {
+  challengeId: string
 }
 
 export function loginApi(params: LoginParams | LoginMobileParams) {
@@ -24,10 +38,21 @@ export function loginApi(params: LoginParams | LoginMobileParams) {
     // customDev: true,
     // 是否开启全局请求loading
     loading: true,
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-Client-Type': 'Backend',
-    },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  })
+}
+
+export function verifyAdminLoginApi(params: AdminLoginVerifyParams) {
+  return usePost<LoginResultModel, AdminLoginVerifyParams>('/user/admin-login/verify', params, {
+    token: false,
+    loading: true,
+  })
+}
+
+export function resendAdminLoginApi(params: AdminLoginResendParams) {
+  return usePost<LoginResultModel, AdminLoginResendParams>('/user/admin-login/resend', params, {
+    token: false,
+    loading: true,
   })
 }
 

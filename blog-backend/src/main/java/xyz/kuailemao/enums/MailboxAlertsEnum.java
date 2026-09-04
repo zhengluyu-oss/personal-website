@@ -23,6 +23,7 @@ public enum MailboxAlertsEnum {
      * 重置邮箱的邮箱
      */
     RESET_EMAIL("resetEmail","Ruyu-Blog重置电子邮箱", "reset-email-template","重置邮箱的邮箱"),
+    ADMIN_LOGIN("adminLogin", "Ruyu-Blog 管理员登录验证", "register-email-template", "管理员登录二次验证"),
     /**
      * 友链申请邮箱
      */
