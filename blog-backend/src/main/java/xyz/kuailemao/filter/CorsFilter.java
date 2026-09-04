@@ -29,6 +29,6 @@ public class CorsFilter extends HttpFilter {
     private void addCorsHeader(HttpServletRequest request, HttpServletResponse response){
         response.addHeader("Access-Control-Allow-Origin", request.getHeader("Origin"));
         response.addHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-        response.addHeader("Access-Control-Allow-Headers", "Authorization,Content-Type,X-Client-Type,x-requested-with");
+        response.addHeader("Access-Control-Allow-Headers", "Authorization,Content-Type,x-requested-with");
     }
 }

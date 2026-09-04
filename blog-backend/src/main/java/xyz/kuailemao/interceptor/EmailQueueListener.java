@@ -157,6 +157,13 @@ public class EmailQueueListener {
                     "toUrl", webIndexPath,
                     "openSourceAddress", "https://gitee.com/kuailemao/ruyu-blog"
             ));
+        } else if (MailboxAlertsEnum.ADMIN_LOGIN.getCodeStr().equals(type)) {
+            mimeMessage = sendHtmlMail(email, MailboxAlertsEnum.ADMIN_LOGIN.getSubject(), MailboxAlertsEnum.ADMIN_LOGIN.getTemplateName(), Map.of(
+                    "expirationTime", "5分钟",
+                    "code", code,
+                    "toUrl", webIndexPath,
+                    "openSourceAddress", "https://github.com/zhengluyu-oss/personal-website"
+            ));
         } else if (MailboxAlertsEnum.RESET.getCodeStr().equals(type)) {
             mimeMessage = sendHtmlMail(email, MailboxAlertsEnum.RESET.getSubject(), MailboxAlertsEnum.RESET.getTemplateName(), Map.of(
                     "expirationTime", "5分钟",

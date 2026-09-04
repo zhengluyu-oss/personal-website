@@ -2,7 +2,6 @@
 import type { Ref, UnwrapRef } from 'vue'
 import { createVNode } from 'vue'
 import 'md-editor-v3/lib/style.css'
-import { MdPreview } from 'md-editor-v3'
 import { Modal, message } from 'ant-design-vue'
 import { ExclamationCircleOutlined, MessageOutlined } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
@@ -227,7 +226,7 @@ function viewFunc(id?: string) {
             关闭
           </a-button>
         </template>
-        <MdPreview v-model="contentModel.content" />
+        <div class="whitespace-pre-wrap break-words">{{ contentModel.content }}</div>
       </a-modal>
     </template>
     <template #table-content>

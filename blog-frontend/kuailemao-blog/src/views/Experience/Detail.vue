@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MdPreview } from 'md-editor-v3'
+import { sanitizeRenderedHtml } from '@/utils/sanitize-html'
 import { getExperience, type WorkExperienceItem } from '@/apis/experience'
 
 const route=useRoute(); const router=useRouter(); const item=ref<WorkExperienceItem>(); const loading=ref(true); const notFound=ref(false); const mode='light'
@@ -30,7 +31,7 @@ onMounted(async()=>{try{const response:any=await getExperience(String(route.para
         <div class="narrative">
           <section v-if="responsibilities.length" class="work"><h2>Selected Work</h2><ol><li v-for="(line,index) in responsibilities" :key="line"><span>{{ String(index+1).padStart(2,'0') }}</span><p>{{ line }}</p></li></ol></section>
           <section v-if="metrics.length" class="outcomes"><h2>Impact</h2><div><p v-for="metric in metrics" :key="metric">{{ metric }}</p></div></section>
-          <article class="story"><h2>经历详情</h2><MdPreview v-if="item.content?.trim()" :model-value="item.content" :theme="mode"/><p v-else>详细内容正在整理，可先查看上方公开的职责与成果。</p></article>
+          <article class="story"><h2>经历详情</h2><MdPreview v-if="item.content?.trim()" :model-value="item.content" :theme="mode" :sanitize="sanitizeRenderedHtml"/><p v-else>详细内容正在整理，可先查看上方公开的职责与成果。</p></article>
         </div>
       </section>
       <footer class="next page-shell"><p>继续了解</p><h2>真实经历之外，<br>还有持续写下的思考。</h2><nav><router-link to="/blog">阅读技术文章</router-link><router-link to="/about">关于我</router-link></nav></footer>
