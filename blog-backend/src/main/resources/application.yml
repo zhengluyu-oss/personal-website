@@ -175,3 +175,30 @@ spring:
 #  bucket-name:
 #  # 可选。填写后返回 URL 使用该域名，例如 https://image.example.com
 #  domain:
+
+# Development/default profile documentation. application-prod.yml overrides these to false.
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+knife4j:
+  enable: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+knife4j:
+  enable: false

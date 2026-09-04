@@ -8,12 +8,14 @@ import {useLocalStorage} from "@vueuse/core";
 import {getHotRecommend, searchArticleContent} from "@/apis/article";
 import {getRandomArticle} from "@/apis/home";
 import {ElMessage} from "element-plus";
+import { highlightTextSegments } from '@/utils/safe-highlight.ts'
 
 const emit = defineEmits(['isShowSearch'])
 
 const websiteStore = useWebsiteStore()
 
 const searchValue = ref('')
+
 
 function handleSearch(_: any, isAutoFocus: boolean = false) {
   if (searchValue.value && optionsValue.value === '内容') {
@@ -28,11 +30,10 @@ function handleSearch(_: any, isAutoFocus: boolean = false) {
       }
       articleSearchList.value = res.data
       articleSearchList.value = articleSearchList.value?.map(item => {
-        const regex = new RegExp(`(${searchValue.value})`, 'gi');
-        const articleContent = item.articleContent.replace(regex, '<span class="highlight">$1</span>');
         return {
           ...item,
-          articleContent
+          titleSegments: highlightTextSegments(item.articleTitle, searchValue.value),
+          contentSegments: highlightTextSegments(item.articleContent, searchValue.value),
         };
       });
     })
@@ -82,11 +83,9 @@ watchEffect(async () => {
     articleSearchList.value = websiteStore.searchTitle?.filter(item =>
         item.articleTitle.toLowerCase().includes(query)
     ).map(item => {
-      const regex = new RegExp(`(${query})`, 'gi');
-      const highlightedTitle = item.articleTitle.replace(regex, '<span class="highlight">$1</span>');
       return {
         ...item,
-        highlightedTitle
+        titleSegments: highlightTextSegments(item.articleTitle, query),
       };
     });
   }
@@ -223,7 +222,7 @@ function changeToggle() {
           <div v-for="item in articleSearchList" :key="item.id" @mousedown="clickSearchResult(item.id)">
             <div class="search_result_item">
               <div>
-                <div v-html="item.highlightedTitle"></div>
+                <div><span v-for="(segment, index) in item.titleSegments" :key="index" :class="{ highlight: segment.matched }">{{ segment.text }}</span></div>
                 <div class="text-xs mt-1 dark:text-[#A3A3A3] p-1">
                   <el-tag size="small" class="mr-2">
                     {{ item.categoryName }}
@@ -241,15 +240,14 @@ function changeToggle() {
           <div v-for="item in articleSearchList" :key="item.id" @mousedown="clickSearchResult(item.id)">
             <div class="search_result_item">
               <div>
-                <div v-html="item.articleTitle"></div>
+                <div><span v-for="(segment, index) in item.titleSegments" :key="index" :class="{ highlight: segment.matched }">{{ segment.text }}</span></div>
                 <div class="text-xs mt-1 dark:text-[#A3A3A3] p-1 flex">
                   <div>
                     <el-tag size="small" class="mr-2">
                       {{ item.categoryName }}
                     </el-tag>
                   </div>
-                  <div v-html="item.articleContent">
-                  </div>
+                  <div><span v-for="(segment, index) in item.contentSegments" :key="index" :class="{ highlight: segment.matched }">{{ segment.text }}</span></div>
                 </div>
               </div>
               <div class="flex space-x-2 text-xs text-[#475569] items-center justify-center">
@@ -268,7 +266,7 @@ function changeToggle() {
 @import "@/styles/mixin.scss";
 
 // 搜索关键字高亮
-:deep(.highlight) {
+.highlight {
   background-color: yellow;
   border-radius: 5px;
 }

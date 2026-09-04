@@ -100,11 +100,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
         HttpServletRequest request = SecurityUtils.getCurrentHttpRequest();
-        String equipmentHeader = null;
         String typeHeader = null;
         String accessToken = null;
         if (request != null) {
-            equipmentHeader = request.getHeader(Const.TYPE_HEADER);
             typeHeader = request.getHeader(Const.FRONTEND_LOGIN_TYPE);
             accessToken = request.getHeader(Const.FRONTEND_THIRD_LOGIN_TOKEN);
         }
@@ -150,30 +148,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             // 不存在，抛出异常
             throw new UsernameNotFoundException(RespConst.USERNAME_OR_PASSWORD_ERROR_MSG);
         }
-        return handlerLogin(user, equipmentHeader);
+        return handlerLogin(user);
     }
 
-    public LoginUser handlerLogin(User user, String equipmentHeader) {
-        HttpServletRequest request = SecurityUtils.getCurrentHttpRequest();
-        String header = null;
-        if (request != null) {
-            header = request.getHeader(Const.TYPE_HEADER);
-        }
+    public LoginUser handlerLogin(User user) {
         // 查询用户角色
         List<UserRole> userRoles = userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, user.getId()));
         List<Role> roles = userRoles.stream().map(role -> roleMapper.selectById(role.getRoleId())).filter(role -> Objects.equals(role.getStatus(), RoleEnum.Role_STATUS_ARTICLE.getStatus())).toList();
         // 用户是否被禁用
         if (user.getIsDisable() == 1) {
             throw new BadCredentialsException(RespConst.ACCOUNT_DISABLED_MSG);
-        }
-        // 是否测试账号前台
-        if (header == null || (roles.stream().anyMatch(role -> role.getRoleKey().equals(SecurityConst.ROLE_TESTER)) && !header.equals(Const.BACKEND_REQUEST))) {
-            throw new BadCredentialsException(RespConst.TEST_ACCOUNT_MSG);
-        }
-
-        // 判断用户是否具备任何权限,
-        if ((equipmentHeader != null && equipmentHeader.equals(Const.BACKEND_REQUEST) && ObjectUtils.isEmpty(roles))) {
-            throw new BadCredentialsException(RespConst.NO_PERMISSION_MSG);
         }
         if (!roles.isEmpty()) {
             // 查询权限关系表

@@ -17,6 +17,13 @@ public class RedisConst {
      */
     public static final String VERIFY_CODE = "verifyCode:";
 
+    public static final String ADMIN_LOGIN_CHALLENGE = "auth:admin:challenge:";
+    public static final String ADMIN_LOGIN_RESEND = "auth:admin:resend:";
+    public static final String ADMIN_LOGIN_RATE = "auth:admin:rate:";
+    public static final int ADMIN_LOGIN_CHALLENGE_MINUTES = 5;
+    public static final int ADMIN_LOGIN_MAX_ATTEMPTS = 5;
+    public static final int ADMIN_LOGIN_RESEND_SECONDS = 60;
+
     /**
      * 邮箱验证码过期时间
      */

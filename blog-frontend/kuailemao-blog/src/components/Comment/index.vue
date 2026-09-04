@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import {MdPreview} from 'md-editor-v3';
-import 'md-editor-v3/lib/preview.css';
 import EmojiPicker from './EmojiPicker.vue';
 import {heo} from "@/utils/O.o/heo.ts";
 
@@ -357,7 +355,7 @@ function addParentComment() {
         </div>
         <!-- 预览 -->
         <div class="preview" v-if="isPreview">
-          <MdPreview :modelValue="preview" :theme="mode"/>
+          <div class="safe-user-content">{{ preview }}</div>
         </div>
       </div>
     </div>
@@ -389,7 +387,7 @@ function addParentComment() {
           <!-- 父评论 -->
           <div class="comment_content_body">
             <div>
-              <MdPreview :modelValue="comment.commentContent"/>
+              <div class="safe-user-content">{{ comment.commentContent }}</div>
             </div>
           </div>
           <!-- TODO 评论信息 -->

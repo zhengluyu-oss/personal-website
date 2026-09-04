@@ -104,4 +104,6 @@ public class SecurityConst {
      * 测试账号
      */
     public static final String ROLE_TESTER = "Test";
+
+    public static final String ROLE_ADMIN = "ADMIN";
 }

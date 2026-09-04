@@ -24,30 +24,15 @@ public class IpUtils
         {
             return "unknown";
         }
-        String ip = request.getHeader("x-forwarded-for");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip))
-        {
-            ip = request.getHeader("Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip))
-        {
-            ip = request.getHeader("X-Forwarded-For");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip))
-        {
-            ip = request.getHeader("WL-Proxy-Client-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip))
-        {
-            ip = request.getHeader("X-Real-IP");
+        String remote = request.getRemoteAddr();
+        String ip = remote;
+        // Only the local reverse proxy is trusted to provide the canonical client address.
+        if ("127.0.0.1".equals(remote) || "0:0:0:0:0:0:0:1".equals(remote)) {
+            String proxyAddress = request.getHeader("X-Real-IP");
+            if (!isUnknown(proxyAddress) && !proxyAddress.contains(",")) ip = proxyAddress.trim();
         }
 
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip))
-        {
-            ip = request.getRemoteAddr();
-        }
-
-        return "0:0:0:0:0:0:0:1".equals(ip) ? "127.0.0.1" : getMultistageReverseProxyIp(ip);
+        return "0:0:0:0:0:0:0:1".equals(ip) ? "127.0.0.1" : ip;
     }
 
     /**

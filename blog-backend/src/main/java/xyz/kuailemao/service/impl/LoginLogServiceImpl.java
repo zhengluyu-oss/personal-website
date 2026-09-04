@@ -9,7 +9,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import xyz.kuailemao.constants.Const;
 import xyz.kuailemao.domain.dto.LoginLogDeleteDTO;
 import xyz.kuailemao.domain.dto.LoginLogDTO;
 import xyz.kuailemao.domain.entity.LoginLog;
@@ -52,15 +51,6 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
         String browserName = BrowserUtil.browserName(request);
         String ipAddress = IpUtils.getIpAddr(request);
         String os = BrowserUtil.osName(request);
-        int requestType;
-        String typeHeader = request.getHeader(Const.TYPE_HEADER);
-        if (StringUtils.isNotEmpty(typeHeader) && typeHeader.equals(Const.FRONTEND_REQUEST)) {
-            requestType = 0;
-        } else if (StringUtils.isNotEmpty(typeHeader) && typeHeader.equals(Const.BACKEND_REQUEST)) {
-            requestType = 1;
-        } else {
-            requestType = 2;
-        }
         if (userName == null) {
             userName = "未知用户";
         }
@@ -69,7 +59,7 @@ public class LoginLogServiceImpl extends ServiceImpl<LoginLogMapper, LoginLog> i
                 .ip(ipAddress)
                 .browser(browserName)
                 .os(os)
-                .type(requestType)
+                .type(2)
                 .state(state)
                 .message(message)
                 .build();

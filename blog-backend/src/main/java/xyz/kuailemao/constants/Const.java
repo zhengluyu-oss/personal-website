@@ -33,21 +33,6 @@ public class Const {
     public static final String HTTPS = "https://";
 
     /**
-     * 前台请求
-     */
-    public static final String FRONTEND_REQUEST = "Frontend";
-
-    /**
-     * 后台请求
-     */
-    public static final String BACKEND_REQUEST = "Backend";
-
-    /**
-     * 前/后 请求头
-     */
-    public static final String TYPE_HEADER = "X-Client-Type";
-
-    /**
      * 前台登录类型
      */
     public static final String FRONTEND_LOGIN_TYPE = "Login-Type";

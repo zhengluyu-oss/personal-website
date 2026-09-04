@@ -13,11 +13,17 @@ import xyz.kuailemao.annotation.AccessLimit;
 import xyz.kuailemao.annotation.LogAnnotation;
 import xyz.kuailemao.constants.LogConst;
 import xyz.kuailemao.domain.dto.*;
+import xyz.kuailemao.domain.entity.LoginUser;
 import xyz.kuailemao.domain.response.ResponseResult;
 import xyz.kuailemao.domain.vo.UserAccountVO;
 import xyz.kuailemao.domain.vo.UserDetailsVO;
 import xyz.kuailemao.domain.vo.UserListVO;
 import xyz.kuailemao.service.UserService;
+import xyz.kuailemao.service.AdminLoginChallengeService;
+import xyz.kuailemao.handler.SecurityHandler;
+import xyz.kuailemao.utils.IpUtils;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import xyz.kuailemao.utils.ControllerUtils;
 import xyz.kuailemao.utils.SecurityUtils;
 
@@ -34,6 +40,28 @@ import java.util.List;
 @Tag(name = "用户相关接口")
 @RequestMapping("/user")
 public class UserController {
+
+    @Resource
+    private AdminLoginChallengeService adminLoginChallengeService;
+
+    @Resource
+    private SecurityHandler securityHandler;
+
+    @PostMapping("/admin-login/verify")
+    @AccessLimit(seconds = 60, maxCount = 10)
+    public void verifyAdminLogin(@Valid @RequestBody AdminLoginVerifyDTO dto,
+                                 HttpServletRequest request,
+                                 HttpServletResponse response) {
+        LoginUser user = adminLoginChallengeService.verify(dto.getChallengeId(), dto.getCode(), IpUtils.getIpAddr(request));
+        securityHandler.issueToken(request, response, user);
+    }
+
+    @PostMapping("/admin-login/resend")
+    @AccessLimit(seconds = 60, maxCount = 5)
+    public ResponseResult<?> resendAdminLogin(@Valid @RequestBody AdminLoginResendDTO dto,
+                                              HttpServletRequest request) {
+        return ResponseResult.success(adminLoginChallengeService.resend(dto.getChallengeId(), IpUtils.getIpAddr(request)), "验证码已重新发送");
+    }
 
     @Resource
     private UserService userService;

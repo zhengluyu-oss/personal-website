@@ -39,6 +39,9 @@ public class JwtUtils {
     @Value("${spring.security.jwt.expire}")
     private int expire;
 
+    @Value("${spring.security.jwt.admin-expire-minutes:30}")
+    private int adminExpireMinutes;
+
     @Resource
     private RedisCache redisCache;
 
@@ -128,7 +131,7 @@ public class JwtUtils {
      */
     public String createJwt(String uuid, UserDetails details, Long id, String username) {
         Algorithm algorithm = Algorithm.HMAC256(key);
-        Date expire = expireTime();
+        Date expire = expireTime(details);
         // 当前时间
         Date now = new Date();
         String jwt = JWT.create()
@@ -152,6 +155,15 @@ public class JwtUtils {
     public Date expireTime() {
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.HOUR, expire * 24);
+        return calendar.getTime();
+    }
+
+    public Date expireTime(UserDetails details) {
+        boolean administrator = details.getAuthorities().stream()
+                .anyMatch(authority -> (SecurityConst.ROLE_PREFIX + SecurityConst.ROLE_ADMIN).equals(authority.getAuthority()));
+        if (!administrator) return expireTime();
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.MINUTE, adminExpireMinutes);
         return calendar.getTime();
     }
 
