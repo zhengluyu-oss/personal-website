@@ -1,6 +1,5 @@
 <script setup lang="ts">
 
-import {MdPreview} from "md-editor-v3";
 
 defineProps({
   comment: {
@@ -80,7 +79,7 @@ defineProps({
               <span class="replyUserNickname"> @{{ child.replyUserNickname }}</span>：
             </div>
             <div>
-              <MdPreview :modelValue="child.commentContent"/>
+              <div class="safe-user-content">{{ child.commentContent }}</div>
             </div>
           </div>
           <!-- TODO 评论信息 -->

@@ -37,7 +37,6 @@ http.interceptors.request.use((config: TrackedRequestConfig) => {
   const blocksPage = REQUEST_LOADING_PATH.some(path => url.startsWith(path))
   if (!isYiYan || blocksPage) config.__requestToken = tracker.begin(blocksPage)
 
-  config.headers['X-Client-Type'] = 'Frontend'
   const token = GET_TOKEN()
   if (token) config.headers.Authorization = Jwt_Prefix + token
   return config

@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import {ArrowLeftBold} from "@element-plus/icons-vue";
 import {getLeaveWordList} from "@/apis/leaveWord";
-import {MdPreview} from "md-editor-v3";
 import {cancelLike, isLike, userLike} from "@/apis/like";
 import {ElMessage} from "element-plus";
 import {cancelFavorite, isFavorite, userFavorite} from "@/apis/favorite";
-const mode = 'light'
 const leaveWord = ref([]);
 const route = useRoute()
 const loadingComment = ref(false)
@@ -130,7 +128,7 @@ function cancelFavoriteFunc() {
       </div>
     </div>
     <div class="content">
-      <MdPreview :modelValue="leaveWord.content" :theme="mode"/>
+      <div class="safe-message-content">{{ leaveWord.content }}</div>
     </div>
     <div class="container">
       <div class="count">
@@ -157,6 +155,13 @@ function cancelFavoriteFunc() {
   </div>
 
 </template>
+
+<style scoped>
+.safe-message-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+</style>
 
 <style scoped lang="scss">
 

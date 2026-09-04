@@ -10,6 +10,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import xyz.kuailemao.constants.SecurityConst;
 import xyz.kuailemao.filter.JwtAuthorizeFilter;
+import xyz.kuailemao.filter.AuthenticationRateLimitFilter;
 import xyz.kuailemao.handler.SecurityHandler;
 
 /**
@@ -25,6 +26,9 @@ public class SecurityConfiguration {
 
     @Resource
     private JwtAuthorizeFilter jwtAuthorizeFilter;
+
+    @Resource
+    private AuthenticationRateLimitFilter authenticationRateLimitFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -62,6 +66,7 @@ public class SecurityConfiguration {
                 .sessionManagement(conf -> conf.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // token 校验添加过滤器
                 .addFilterBefore(jwtAuthorizeFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(authenticationRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
