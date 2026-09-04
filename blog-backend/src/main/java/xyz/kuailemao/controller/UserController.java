@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,6 +27,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import xyz.kuailemao.utils.ControllerUtils;
 import xyz.kuailemao.utils.SecurityUtils;
+import xyz.kuailemao.utils.WebUtil;
+import xyz.kuailemao.enums.RespEnum;
 
 import java.util.List;
 
@@ -41,6 +44,8 @@ import java.util.List;
 @RequestMapping("/user")
 public class UserController {
 
+    private static final String ADMIN_LOGIN_VERIFY_ERROR = "登录验证失败，请重新登录";
+
     @Resource
     private AdminLoginChallengeService adminLoginChallengeService;
 
@@ -52,15 +57,25 @@ public class UserController {
     public void verifyAdminLogin(@Valid @RequestBody AdminLoginVerifyDTO dto,
                                  HttpServletRequest request,
                                  HttpServletResponse response) {
-        LoginUser user = adminLoginChallengeService.verify(dto.getChallengeId(), dto.getCode(), IpUtils.getIpAddr(request));
-        securityHandler.issueToken(request, response, user);
+        try {
+            LoginUser user = adminLoginChallengeService.verify(dto.getChallengeId(), dto.getCode(), IpUtils.getIpAddr(request));
+            securityHandler.issueToken(request, response, user);
+        } catch (BadCredentialsException exception) {
+            WebUtil.renderString(response, ResponseResult.failure(
+                    RespEnum.VERIFY_CODE_ERROR.getCode(), ADMIN_LOGIN_VERIFY_ERROR).asJsonString());
+        }
     }
 
     @PostMapping("/admin-login/resend")
     @AccessLimit(seconds = 60, maxCount = 5)
     public ResponseResult<?> resendAdminLogin(@Valid @RequestBody AdminLoginResendDTO dto,
                                               HttpServletRequest request) {
-        return ResponseResult.success(adminLoginChallengeService.resend(dto.getChallengeId(), IpUtils.getIpAddr(request)), "验证码已重新发送");
+        try {
+            return ResponseResult.success(adminLoginChallengeService.resend(
+                    dto.getChallengeId(), IpUtils.getIpAddr(request)), "验证码已重新发送");
+        } catch (BadCredentialsException exception) {
+            return ResponseResult.failure(RespEnum.VERIFY_CODE_ERROR.getCode(), ADMIN_LOGIN_VERIFY_ERROR);
+        }
     }
 
     @Resource
