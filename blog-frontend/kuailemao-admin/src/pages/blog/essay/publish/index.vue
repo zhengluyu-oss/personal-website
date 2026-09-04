@@ -17,11 +17,14 @@ import {
 } from '~/api/blog/article'
 import type { CategoryType, TagType } from '~/pages/blog/essay/publish/type.ts'
 import { ARTICLE_COVER_LABEL, ARTICLE_COVER_SPEC_EXTRA } from '~/pages/blog/essay/publish/article-cover-spec.ts'
+import { ADMIN_PATHS } from '~/router/paths'
 import { useMultiTab } from '~/stores/multi-tab.ts'
 import {compressImage} from "~/utils/CompressedImage.ts";
 
 const route = useRoute()
+const router = useRouter()
 const multiTab = useMultiTab()
+const publishing = ref(false)
 
 const fileList = ref<UploadProps['fileList']>([])
 // 预览Base64
@@ -158,7 +161,17 @@ async function beforeUpload(file: UploadProps['fileList'][number]) {
   return false
 }
 
-function onFinish() {
+async function goToArticleListAfterPublish() {
+  message.success('发布成功')
+  const editingPath = route.fullPath
+  await router.push(ADMIN_PATHS.articles)
+  multiTab.close(editingPath)
+}
+
+async function onFinish() {
+  if (publishing.value)
+    return
+
   if (!formData.value.articleTitle || !formData.value.categoryId || !formData.value.tagId || !formData.value.articleContent) {
     message.warn('请检查是否填写完整')
     return
@@ -169,16 +182,17 @@ function onFinish() {
     return
   }
 
-  if (!fileList.value[0] && formData.value.articleCover) {
-    publishArticle(formData.value).then((res) => {
-      if (res.code === 200)
-        message.success('发布成功')
-
+  publishing.value = true
+  try {
+    if (!fileList.value[0] && formData.value.articleCover) {
+      const res = await publishArticle(formData.value)
+      if (res && res.code === 200)
+        await goToArticleListAfterPublish()
       else
-        message.error(`发布失败`)
-    })
-  }
-  else {
+        message.error('发布失败')
+      return
+    }
+
     const coverOrigin = fileList.value[0]?.originFileObj
     if (!coverOrigin) {
       message.warn('请重新选择文章封面')
@@ -186,38 +200,31 @@ function onFinish() {
     }
     const articleCover = new FormData()
     articleCover.append('articleCover', coverOrigin, coverOrigin.name)
-    uploadCover(articleCover).then((res) => {
-      if (res && res.code === 200) {
-        const uploadedCoverUrl = res.data
-        formData.value.articleCover = res.data
-        publishArticle(formData.value).then((pubRes) => {
-          if (pubRes && pubRes.code === 200) {
-            message.success('发布成功')
-            formData.value.categoryId = undefined
-            formData.value.tagId = undefined
-            formData.value.articleCover = undefined
-            formData.value.articleTitle = undefined
-            formData.value.articleContent = undefined
-            formData.value.articleType = 1
-            formData.value.isTop = 0
-            formData.value.status = 1
-            fileList.value = []
-            previewBase64.value = ''
-          }
-          else {
-            message.error(`发布失败`)
-            deleteCover(uploadedCoverUrl)
-          }
-        }).catch(() => {
-          deleteCover(uploadedCoverUrl)
-        })
-      }
-      else {
-        message.error(`上传文章封面失败`)
-      }
-    }).catch(() => {
+    const res = await uploadCover(articleCover)
+    if (!res || res.code !== 200) {
       message.error('上传文章封面失败')
-    })
+      return
+    }
+    const uploadedCoverUrl = res.data
+    formData.value.articleCover = uploadedCoverUrl
+    try {
+      const pubRes = await publishArticle(formData.value)
+      if (pubRes && pubRes.code === 200)
+        await goToArticleListAfterPublish()
+      else {
+        message.error('发布失败')
+        deleteCover(uploadedCoverUrl)
+      }
+    }
+    catch {
+      deleteCover(uploadedCoverUrl)
+    }
+  }
+  catch {
+    message.error('发布失败')
+  }
+  finally {
+    publishing.value = false
   }
 }
 
@@ -440,7 +447,7 @@ function close() {
       </a-form-item>
       <a-form-item>
         <a-space>
-          <a-button type="primary" @click="onFinish">
+          <a-button type="primary" :loading="publishing" :disabled="publishing" @click="onFinish">
             发布
           </a-button>
           <a-button class="orange" style="margin-right: 10px" @click="close">
