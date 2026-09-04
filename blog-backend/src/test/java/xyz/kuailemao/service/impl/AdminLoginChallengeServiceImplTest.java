@@ -7,7 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.HashOperations;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -26,15 +26,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AdminLoginChallengeServiceImplTest {
-    @Mock private RedisTemplate<String, Object> redisTemplate;
-    @Mock private HashOperations<String, Object, Object> hashOperations;
-    @Mock private ValueOperations<String, Object> valueOperations;
+    @Mock private StringRedisTemplate stringRedisTemplate;
+    @Mock private HashOperations<String, String, String> hashOperations;
+    @Mock private ValueOperations<String, String> valueOperations;
     @Mock private RabbitTemplate rabbitTemplate;
     @Mock private UserService userService;
 
@@ -44,7 +46,7 @@ class AdminLoginChallengeServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new AdminLoginChallengeServiceImpl();
-        ReflectionTestUtils.setField(service, "redisTemplate", redisTemplate);
+        ReflectionTestUtils.setField(service, "stringRedisTemplate", stringRedisTemplate);
         ReflectionTestUtils.setField(service, "rabbitTemplate", rabbitTemplate);
         ReflectionTestUtils.setField(service, "userService", userService);
         ReflectionTestUtils.setField(service, "exchange", "email");
@@ -56,9 +58,9 @@ class AdminLoginChallengeServiceImplTest {
 
     @Test
     void createMasksDestinationStoresNoPasswordAndKeepsPasswordHashUnchanged() {
-        when(redisTemplate.opsForHash()).thenReturn(hashOperations);
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(redisTemplate.hasKey(anyString())).thenReturn(false);
+        when(stringRedisTemplate.<String, String>opsForHash()).thenReturn(hashOperations);
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
 
         var result = service.create(administrator, "203.0.113.2");
 
@@ -71,11 +73,11 @@ class AdminLoginChallengeServiceImplTest {
 
     @Test
     void expiredChallengeAndActiveResendCooldownAreRejected() {
-        when(redisTemplate.opsForHash()).thenReturn(hashOperations);
+        when(stringRedisTemplate.<String, String>opsForHash()).thenReturn(hashOperations);
         when(hashOperations.entries(anyString())).thenReturn(Map.of());
         assertThrows(BadCredentialsException.class, () -> service.verify("expired", "123456", "203.0.113.2"));
 
-        when(redisTemplate.hasKey(anyString())).thenReturn(true);
+        when(stringRedisTemplate.hasKey(anyString())).thenReturn(true);
         assertThrows(BadCredentialsException.class, () -> service.create(administrator, "203.0.113.2"));
         verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), any(Object.class));
     }
@@ -83,9 +85,9 @@ class AdminLoginChallengeServiceImplTest {
     @Test
     @SuppressWarnings("unchecked")
     void verificationUsesOneAtomicRedisScriptAndCannotReuseConsumedChallenge() {
-        when(redisTemplate.opsForHash()).thenReturn(hashOperations);
+        when(stringRedisTemplate.<String, String>opsForHash()).thenReturn(hashOperations);
         when(hashOperations.entries(anyString())).thenReturn(Map.of("username", "admin"));
-        when(redisTemplate.execute(any(RedisScript.class), anyList(), any(), any())).thenReturn(1L, -1L);
+        when(stringRedisTemplate.execute(any(RedisScript.class), anyList(), any(), any())).thenReturn(1L, -1L);
         when(userService.loadUserByUsername("admin")).thenReturn(administrator);
 
         assertEquals(administrator, service.verify("one-use", "123456", "203.0.113.2"));
@@ -96,12 +98,44 @@ class AdminLoginChallengeServiceImplTest {
     @Test
     @SuppressWarnings("unchecked")
     void incorrectCodeResultNeverLoadsAccountOrIssuesSession() {
-        when(redisTemplate.opsForHash()).thenReturn(hashOperations);
+        when(stringRedisTemplate.<String, String>opsForHash()).thenReturn(hashOperations);
         when(hashOperations.entries(anyString())).thenReturn(Map.of("username", "admin"));
-        when(redisTemplate.execute(any(RedisScript.class), anyList(), any(), any())).thenReturn(0L);
+        when(stringRedisTemplate.execute(any(RedisScript.class), anyList(), any(), any())).thenReturn(0L);
 
         assertThrows(BadCredentialsException.class, () -> service.verify("limited", "000000", "203.0.113.2"));
         verify(userService, never()).loadUserByUsername(anyString());
         assertTrue(administrator.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority())));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void verificationPassesPlainNumericLimitAndDigestToRedisScript() {
+        when(stringRedisTemplate.<String, String>opsForHash()).thenReturn(hashOperations);
+        when(hashOperations.entries(anyString())).thenReturn(Map.of("username", "admin"));
+        when(stringRedisTemplate.execute(any(RedisScript.class), anyList(), any(), any())).thenReturn(0L);
+
+        assertThrows(BadCredentialsException.class,
+                () -> service.verify("plain-strings", "123456", "203.0.113.2"));
+
+        verify(stringRedisTemplate).execute(
+                any(RedisScript.class),
+                anyList(),
+                argThat(value -> value instanceof String && ((String) value).matches("[0-9a-f]{64}")),
+                eq("5")
+        );
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void exhaustedAndMalformedChallengeStatesFailClosedWithoutLoadingAccount() {
+        when(stringRedisTemplate.<String, String>opsForHash()).thenReturn(hashOperations);
+        when(hashOperations.entries(anyString())).thenReturn(Map.of("username", "admin"));
+        when(stringRedisTemplate.execute(any(RedisScript.class), anyList(), any(), any())).thenReturn(-2L, -3L);
+
+        assertThrows(BadCredentialsException.class,
+                () -> service.verify("exhausted", "000000", "203.0.113.2"));
+        assertThrows(BadCredentialsException.class,
+                () -> service.verify("malformed", "000000", "203.0.113.2"));
+        verify(userService, never()).loadUserByUsername(anyString());
     }
 }
