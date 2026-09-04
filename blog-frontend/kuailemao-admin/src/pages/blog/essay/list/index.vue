@@ -28,10 +28,21 @@ const categoryList: Ref<UnwrapRef<CategoryType[]>> = ref([])
 // 标签
 const tagList: Ref<TagType[]> = ref([])
 
+const skipActivateRefresh = ref(true)
+
 onMounted(async () => {
   await refreshFunc()
   await getCategory()
   await getTag()
+  skipActivateRefresh.value = true
+})
+
+onActivated(async () => {
+  if (skipActivateRefresh.value) {
+    skipActivateRefresh.value = false
+    return
+  }
+  await refreshFunc()
 })
 
 async function getCategory() {

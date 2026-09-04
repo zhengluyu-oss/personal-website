@@ -4,7 +4,8 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
@@ -29,9 +30,24 @@ import java.util.concurrent.TimeUnit;
 public class AdminLoginChallengeServiceImpl implements AdminLoginChallengeService {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final String GENERIC_ERROR = "登录验证失败，请重新登录";
+    private static final DefaultRedisScript<Long> VERIFY_SCRIPT = new DefaultRedisScript<>("""
+            if redis.call('EXISTS', KEYS[1]) == 0 then return -1 end
+            local attempts = tonumber(redis.call('HGET', KEYS[1], 'attempts'))
+            local maxAttempts = tonumber(ARGV[2])
+            if not attempts or not maxAttempts or maxAttempts <= 0 then
+              redis.call('DEL', KEYS[1]); return -3
+            end
+            if attempts >= maxAttempts then redis.call('DEL', KEYS[1]); return -2 end
+            if redis.call('HGET', KEYS[1], 'codeHash') ~= ARGV[1] then
+              attempts = redis.call('HINCRBY', KEYS[1], 'attempts', 1)
+              if attempts >= maxAttempts then redis.call('DEL', KEYS[1]) end
+              return 0
+            end
+            redis.call('DEL', KEYS[1]); return 1
+            """, Long.class);
 
     @Resource
-    private RedisTemplate<String, Object> redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
     @Resource
     private RabbitTemplate rabbitTemplate;
     @Resource
@@ -49,21 +65,21 @@ public class AdminLoginChallengeServiceImpl implements AdminLoginChallengeServic
             throw new BadCredentialsException(GENERIC_ERROR);
         }
         String resendKey = RedisConst.ADMIN_LOGIN_RESEND + loginUser.getUser().getId();
-        if (Boolean.TRUE.equals(redisTemplate.hasKey(resendKey))) {
+        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(resendKey))) {
             throw new BadCredentialsException("验证码发送过于频繁，请稍后重试");
         }
         String challengeId = UUID.randomUUID().toString();
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
         String key = RedisConst.ADMIN_LOGIN_CHALLENGE + challengeId;
-        redisTemplate.opsForHash().putAll(key, Map.of(
+        challengeHash().putAll(key, Map.of(
                 "userId", loginUser.getUser().getId().toString(),
                 "username", loginUser.getUsername(),
                 "codeHash", sha256(code),
                 "attempts", "0",
                 "client", clientAddress == null ? "unknown" : clientAddress
         ));
-        redisTemplate.expire(key, RedisConst.ADMIN_LOGIN_CHALLENGE_MINUTES, TimeUnit.MINUTES);
-        redisTemplate.opsForValue().set(resendKey, "1", RedisConst.ADMIN_LOGIN_RESEND_SECONDS, TimeUnit.SECONDS);
+        stringRedisTemplate.expire(key, RedisConst.ADMIN_LOGIN_CHALLENGE_MINUTES, TimeUnit.MINUTES);
+        stringRedisTemplate.opsForValue().set(resendKey, "1", RedisConst.ADMIN_LOGIN_RESEND_SECONDS, TimeUnit.SECONDS);
         rabbitTemplate.convertAndSend(exchange, routingKey, Map.of("email", email, "code", code, "type", "adminLogin"));
         log.info("Administrator second-factor challenge created: userId={}, client={}", loginUser.getUser().getId(), clientAddress);
         return new AdminLoginChallengeVO(challengeId, maskEmail(email),
@@ -74,23 +90,19 @@ public class AdminLoginChallengeServiceImpl implements AdminLoginChallengeServic
     @Override
     public LoginUser verify(String challengeId, String code, String clientAddress) {
         String key = RedisConst.ADMIN_LOGIN_CHALLENGE + challengeId;
-        Map<Object, Object> challenge = redisTemplate.opsForHash().entries(key);
+        Map<String, String> challenge = challengeHash().entries(key);
         if (challenge.isEmpty()) throw new BadCredentialsException(GENERIC_ERROR);
-        DefaultRedisScript<Long> consume = new DefaultRedisScript<>("""
-                if redis.call('EXISTS', KEYS[1]) == 0 then return -1 end
-                local attempts = tonumber(redis.call('HGET', KEYS[1], 'attempts') or '0')
-                if attempts >= tonumber(ARGV[2]) then redis.call('DEL', KEYS[1]); return -2 end
-                if redis.call('HGET', KEYS[1], 'codeHash') ~= ARGV[1] then
-                  attempts = redis.call('HINCRBY', KEYS[1], 'attempts', 1)
-                  if attempts >= tonumber(ARGV[2]) then redis.call('DEL', KEYS[1]) end
-                  return 0
-                end
-                redis.call('DEL', KEYS[1]); return 1
-                """, Long.class);
-        Long result = redisTemplate.execute(consume, List.of(key), sha256(code), String.valueOf(RedisConst.ADMIN_LOGIN_MAX_ATTEMPTS));
+        Long result = stringRedisTemplate.execute(
+                VERIFY_SCRIPT,
+                List.of(key),
+                sha256(code),
+                String.valueOf(RedisConst.ADMIN_LOGIN_MAX_ATTEMPTS)
+        );
         if (!Long.valueOf(1).equals(result)) {
             if (Long.valueOf(-2).equals(result)) {
                 log.warn("Administrator second-factor exhausted: challengeId={}, client={}", challengeId, clientAddress);
+            } else if (Long.valueOf(-3).equals(result)) {
+                log.warn("Administrator second-factor invalid challenge state: challengeId={}, client={}", challengeId, clientAddress);
             } else {
                 log.warn("Administrator second-factor rejected: challengeId={}, client={}", challengeId, clientAddress);
             }
@@ -106,13 +118,13 @@ public class AdminLoginChallengeServiceImpl implements AdminLoginChallengeServic
     @Override
     public AdminLoginChallengeVO resend(String challengeId, String clientAddress) {
         String oldKey = RedisConst.ADMIN_LOGIN_CHALLENGE + challengeId;
-        Map<Object, Object> challenge = redisTemplate.opsForHash().entries(oldKey);
+        Map<String, String> challenge = challengeHash().entries(oldKey);
         if (challenge.isEmpty()) throw new BadCredentialsException(GENERIC_ERROR);
         LoginUser user = (LoginUser) userService.loadUserByUsername(String.valueOf(challenge.get("username")));
         boolean admin = user.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
         if (!admin) throw new BadCredentialsException(GENERIC_ERROR);
         AdminLoginChallengeVO replacement = create(user, clientAddress);
-        redisTemplate.delete(oldKey);
+        stringRedisTemplate.delete(oldKey);
         log.info("Administrator second-factor challenge resent: userId={}, client={}", user.getUser().getId(), clientAddress);
         return replacement;
     }
@@ -123,6 +135,10 @@ public class AdminLoginChallengeServiceImpl implements AdminLoginChallengeServic
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    private HashOperations<String, String, String> challengeHash() {
+        return stringRedisTemplate.opsForHash();
     }
 
     private String maskEmail(String email) {
