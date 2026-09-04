@@ -30,6 +30,7 @@ const formRef = shallowRef()
 const resetCounter = 60
 const submitLoading = shallowRef(false)
 const errorAlert = shallowRef(false)
+const secondFactorError = shallowRef('')
 const challenge = reactive({ id: '', maskedEmail: '', code: '', expiresIn: 0, resendAfter: 0 })
 const awaitingSecondFactor = computed(() => Boolean(challenge.id))
 let challengeTimer: ReturnType<typeof setInterval> | undefined
@@ -47,6 +48,7 @@ const { pause } = useInterval(1000, {
 const userStore = useUserStore()
 async function submit() {
   submitLoading.value = true
+  errorAlert.value = false
   try {
     await formRef.value?.validate()
     let params: LoginParams | LoginMobileParams
@@ -70,6 +72,7 @@ async function submit() {
       challenge.maskedEmail = data.maskedEmail || ''
       challenge.expiresIn = data.expiresIn || 300
       challenge.resendAfter = data.resendAfter || 60
+      secondFactorError.value = ''
       startChallengeTimer()
       loginModel.password = undefined
       submitLoading.value = false
@@ -98,6 +101,7 @@ function startChallengeTimer() {
 async function resendSecondFactor() {
   if (!challenge.id || challenge.resendAfter > 0) return
   submitLoading.value = true
+  secondFactorError.value = ''
   try {
     const { data } = await resendAdminLoginApi({ challengeId: challenge.id })
     if (!data?.challengeId) throw new Error('服务器未返回有效验证请求')
@@ -110,7 +114,7 @@ async function resendSecondFactor() {
     message.success('验证码已重新发送')
   }
   catch (e) {
-    handleLoginError(e)
+    handleLoginError(e, 'secondFactor')
   }
   finally {
     submitLoading.value = false
@@ -123,6 +127,7 @@ async function verifySecondFactor() {
     return
   }
   submitLoading.value = true
+  secondFactorError.value = ''
   try {
     const { data } = await verifyAdminLoginApi({ challengeId: challenge.id, code: challenge.code })
     await finishLogin(data?.token, data?.expire)
@@ -130,7 +135,7 @@ async function verifySecondFactor() {
   }
   catch (e) {
     challenge.code = ''
-    handleLoginError(e)
+    handleLoginError(e, 'secondFactor')
   }
 }
 
@@ -156,16 +161,34 @@ async function finishLogin(loginToken?: string, expire?: string) {
     submitLoading.value = false
 }
 
-function handleLoginError(e: unknown) {
+function handleLoginError(e: unknown, stage: 'credentials' | 'secondFactor' = 'credentials') {
+    const serverMessage = getLoginErrorMessage(e)
+    if (stage === 'secondFactor') {
+      const status = e instanceof AxiosError ? e.response?.status : undefined
+      secondFactorError.value = status && status >= 500
+        ? '验证码验证服务暂时不可用，请稍后重试'
+        : '验证码无效或已过期，请重新获取'
+    }
+    else {
+      errorAlert.value = true
+    }
     notification.error({
-      message: `登录失败${e}`,
-      description: e instanceof Error ? e.message : '请联系管理员',
+      message: stage === 'secondFactor' ? '邮箱验证失败' : '登录失败',
+      description: serverMessage,
       duration: 3,
     })
-    if (e instanceof AxiosError)
-      errorAlert.value = true
 
   submitLoading.value = false
+}
+
+function getLoginErrorMessage(e: unknown) {
+  if (typeof e === 'string' && e.trim()) return e
+  if (e instanceof AxiosError) {
+    const response = e.response?.data as { msg?: string } | undefined
+    return response?.msg || e.message || '服务暂时不可用，请稍后重试'
+  }
+  if (e instanceof Error) return e.message
+  return '请稍后重试'
 }
 
 function clearChallenge() {
@@ -178,6 +201,7 @@ function clearChallenge() {
   challenge.code = ''
   challenge.expiresIn = 0
   challenge.resendAfter = 0
+  secondFactorError.value = ''
 }
 
 onMounted(async () => {
@@ -244,7 +268,7 @@ onBeforeUnmount(() => {
               </a-tabs>
               <!-- 判断是否存在error -->
               <a-alert
-                v-if="errorAlert && loginModel.type === 'account'" mb-24px
+                v-if="errorAlert && loginModel.type === 'account' && !awaitingSecondFactor" mb-24px
                 :message="t('pages.login.accountLogin.errorMessage')" type="error" show-icon
               />
               <template v-if="loginModel.type === 'account' && !awaitingSecondFactor">
@@ -273,6 +297,7 @@ onBeforeUnmount(() => {
               </template>
               <template v-else-if="awaitingSecondFactor">
                 <a-alert class="mb-4" type="info" show-icon :message="`验证码已发送至 ${challenge.maskedEmail}`" />
+                <a-alert v-if="secondFactorError" class="mb-4" type="error" show-icon :message="secondFactorError" />
                 <a-form-item>
                   <a-input
                     v-model:value="challenge.code" inputmode="numeric" :maxlength="6" autocomplete="one-time-code"
