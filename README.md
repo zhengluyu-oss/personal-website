@@ -1,213 +1,99 @@
-## 博客介绍
+# 郑陆宇的个人网站
 
-<p align="center">
-  <a href="https://www.kuailemao.xyz">
-    <img src="https://foruda.gitee.com/avatar/1667975309022664009/11937114_kuailemao_1667975308.png" alt="Ruyu的个人博客" style="border-radius: 50%;">
-  </a>
-</p>
+求职作品集、技术博客与工作经历，面向招聘者与长期访客。站点由我独立维护，线上地址是 [www.zhengluyu.com](https://www.zhengluyu.com/)。
 
-<p align="center">
-  基于 SpringBoot3 + Vue3 开发前后端分离个人博客系统
-</p>
+这里不是一份通用博客模板的演示站。公开页用来说明我是谁、做过什么、最近在写什么；后台用来发布真实内容。
 
-## 项目部分截图
+## 在线地址
 
-### 前台
-前台首页
-![前台首页](img/new/%E5%89%8D%E5%8F%B0%E9%A6%96%E9%A1%B5.png)
+| | |
+| --- | --- |
+| 公开站点 | [www.zhengluyu.com](https://www.zhengluyu.com/) |
+| 源码 | [github.com/zhengluyu-oss/personal-website](https://github.com/zhengluyu-oss/personal-website) |
+| 作者 | 郑陆宇 · 后端 / 全栈 |
 
-前台中心
-![前台中心](img/new/%E5%89%8D%E5%8F%B0%E4%B8%AD%E5%BF%83.png)
+## 站点在讲什么
 
-前台文章
-![前台文章](img/new/%E5%89%8D%E5%8F%B0%E6%96%87%E7%AB%A0.png)
+访客打开首页，应先认出身份与方向，再核验工作经历，再进入已发布的技术文章。
 
-前台评论表情包
-![前台评论表情包](img/new/%E5%89%8D%E5%8F%B0%E8%AF%84%E8%AE%BA%E8%A1%A8%E6%83%85%E5%8C%85.png)
+- **首页**：姓名、职业方向、行动入口，以及真实的文章与经历摘要
+- **工作经历**：公司、岗位、时间与可公开成果，支持列表与详情
+- **博客文章**：精选卡 + 最新列表，分类、标签、归档与文章详情
+- **关于**：个人介绍与可公开联系方式
 
-前台树洞
-![前台树洞](img/new/%E5%89%8D%E5%8F%B0%E6%A0%91%E6%B4%9E.png)
+管理端用于写文章、维护经历、处理评论与站点信息。后台不对访客开放测试账号。
 
-前台关于
-![前台关于](img/new/%E5%89%8D%E5%8F%B0%E5%85%B3%E4%BA%8E.png)
+## 我在这套站点上做了什么
 
-前台相册
-![前台相册](img/new/%E5%89%8D%E5%8F%B0%E7%9B%B8%E5%86%8C.png)
+仓库早期有一份开源博客作为起点。当前对外产品已经按个人站重写，重点不在堆功能，而在把真实内容讲清楚，并按生产环境把发布、安全与性能收住。
 
-### 后台
+**产品与信息架构**
 
-后台发布文章
-![后台发布文章](img/new/%E5%90%8E%E5%8F%B0%E5%8F%91%E5%B8%83%E6%96%87%E7%AB%A0.png)
+- 前台从模板化口号站，改成可识别的个人介绍与求职作品集
+- 新增工作经历模块（公开列表 / 详情，后台可维护）
+- 博客区按已发布内容组织：分类语义路由、分页、可配置精选与分类文案
+- 去掉打赏假数据、模板鼠标样式和明显演示向入口
 
-后台文章列表
-![后台文章列表](img/new/%E5%90%8E%E5%8F%B0%E6%96%87%E7%AB%A0%E5%88%97%E8%A1%A8.png)
+**工程与上线**
 
-后台相册管理
-![后台相册管理](img/new/%E5%90%8E%E5%8F%B0%E7%9B%B8%E5%86%8C%E7%AE%A1%E7%90%86.png)
+- 对象存储改为阿里云 OSS
+- 生产环境按模块发布（后端 / 前台 / 后台），带健康检查与上一版回滚目录
+- 首页首屏、静态资源体积与 gzip 有可执行的检查
 
-后台黑名单管理
-![后台黑名单管理](img/new/%E5%90%8E%E5%8F%B0%E9%BB%91%E5%90%8D%E5%8D%95%E7%AE%A1%E7%90%86.png)
+**安全与内容**
 
-后台操作日志
-![后台操作日志](img/new/%E5%90%8E%E5%8F%B0%E6%93%8D%E4%BD%9C%E6%97%A5%E5%BF%97.png)
+- 管理端登录增加邮箱二次校验
+- 评论、搜索与页面渲染按不可信内容处理
+- 接口限流与生产暴露面收敛
 
-后台服务监控
-![后台服务监控](img/new/%E5%90%8E%E5%8F%B0%E6%9C%8D%E5%8A%A1%E7%9B%91%E6%8E%A7.png)
+目录名里仍能看到历史仓库痕迹，那是改造范围选择，不代表对外品牌。对外名称、域名、文案和发布流程都以本站为准。
 
-以上只是该项目**部分**功能截图，更多功能待**自行探索**！！！
+## 技术栈
 
-## 在线体验地址
-**注意：在线预览地址可能与仓库代码不同步，以仓库为主**
-> 如无法访问可能就是我没钱续费服务器了，服务器配置不低，费用不低，望各位能理解，且看且珍惜
+| 部分 | 选型 |
+| --- | --- |
+| 公开前台 | Vue 3、TypeScript、Vite、Element Plus、Pinia |
+| 管理后台 | Vue 3、TypeScript、Ant Design Vue |
+| 后端 | JDK 17、Spring Boot 3、Spring Security、MyBatis-Plus |
+| 数据与中间件 | MySQL 8、Redis、RabbitMQ |
+| 存储 | 阿里云 OSS |
+| 线上 | Nginx、systemd，脚本发布到云主机 |
 
-**前台博客：** https://kuailemao.xyz
+## 仓库结构
 
-**后台管理：** https://blog.kuailemao.xyz
+```
+blog-frontend/kuailemao-blog    公开站点
+blog-frontend/kuailemao-admin   管理后台
+blog-backend                    API 与权限
+sql                             表结构与迁移
+scripts                         发布、校验与运维脚本
+deploy                          Nginx 等部署配置
+```
 
-**测试账号：** Test，**密码：** 123456
+## 本地开发
 
-**ps:** 测试账号功能不代表系统所有功能，有些权限过高模块不方便在线展示
+需要 JDK 17、MySQL 8、Redis、Node.js 18+、pnpm。RabbitMQ 在用到邮件和操作日志时再启动。
 
-**Gitee地址：** https://gitee.com/kuailemao/ruyu-blog
+```bash
+# 后端
+cd blog-backend
+# 按本地环境配置 application-dev，再启动 Spring Boot
 
-**Github地址：** https://github.com/kuailemao/Ruyu-Blog
+# 公开前台
+cd blog-frontend/kuailemao-blog
+pnpm install
+pnpm dev
 
-**B站视频介绍(最初版本预览，不代表最终品质)：** https://www.bilibili.com/video/BV181hNeiEDb/?vd_source=ff1e09f5473622b91dc0efc92418b537#reply112716668797561
+# 管理后台
+cd blog-frontend/kuailemao-admin
+pnpm install
+pnpm dev
+```
 
-**接口文档：** [API文档 (kuailemao.xyz)](http://kuailemao.xyz:8088/doc.html#/home)
+生产发布使用仓库内的发布脚本，按模块构建并上传静态资源或后端包。不要把开发默认账号直接用于线上。
 
-**欢迎各位提交 PR ，一起改进项目**
+## 许可
 
-**其他链接：**（第三方个人本项目部署链接，提供预览作用，其内容与本项目作者无关，感谢本同学提供）
+Apache License 2.0，全文见 [LICENSE](LICENSE)。
 
-前台：http://117.72.182.67:8080/ 
-
-后台：http://117.72.182.67:8081
-
-**测试账号：** Test，**密码：** 123456
-
-## 运行环境
-
-### 后端：
-
-|   名称   | 环境  |
-| :------: | :---: |
-|  MySQL   |  8.0  |
-|  Redis   | 7.2.3 |
-| RabbitMQ | 最新  |
-|  minio   | 最新  |
-|   JDK    |  17   |
-
-**前端：**
-
-| 名称 |  环境   |
-| :--: | :-----: |
-| pnpm | 8.12.0  |
-| node | 16.17.0 |
-
-## 项目部署
-**部署文档地址：** https://kuailemao.xyz/article/48 或项目**Wiki**
-
-## 项目特点
-
-* 前端参考了众多优秀博客大佬设计，页面美观，响应式布局
-* 后台管理基于 Antdv Pro 后台通用框架二次开发
-* 前后端分离，Docker Compose 一键部署
-* 采用 RABC 权限模型，使用 SpringSecurity 进行权限管理
-* 支持动态权限修改、动态菜单和路由
-* 文章、分类、标签、时间轴、树洞、留言板、聊天、友链等模块
-* 站长介绍、公告、电子时钟、随机文章、每日鸡汤、网站资讯
-* 支持代码高亮、图片预览、黑夜模式、点赞、收藏、评论等功能
-* 评论支持在线预览、Markdown、表情包
-* 发送友链申请、通过等自动发送邮件提醒
-* 接入第三方 gitee、github登录，减少注册成本
-* 文章编辑使用 Markdown 编辑器
-* 实现日志管理（操作、登录），服务监控、用户、菜单、角色、权限管理
-* 使用 自己搭建 minio 进行图片存储（避免了使用第三方对象存储被刷流量问题）
-* 使用 拦截器 + Redis 对接口进行了限流处理（每分钟）,后端使用 JSR 303 对参数校验，使用 Spring Aop + RabbitMQ 对后台操作日志处理
-* 采用 Restful 风格的 API，注释完善，后端代码使用了大量 stream 流编程方式，代码非常美观
-* ……
-
-## 技术介绍
-
-**前台前端（博客）：** Vue3 + Pinia +  Vue Router + TypeScript + Axios + Element Plus + Echarts……
-
-**后台启动（管理）：** Vue3 + Pinia +  Vue Router + TypeScript + Axios + Antdv Pro + Ant Design Vue……
-
-**后端：** JDK17 + SpringBoot3 + SpringSecurity + Mysql + Redis + Quartz  + RabbitMQ + Minio + Mybatis-Plus + Nginx + Docker……
-
-**其他：** Gitee、Github 第三方登录
-
-## 运行环境
-
-### 推荐
-
-> 最低 2 核 4 G
-
-**我的：** 腾讯云 2 核 4 G  （带宽 6Mbps）
-
-**系统：** **CentOS**
-
-**前端\后端：** Docker
-
-## 后续计划（有空）
-
-> 白天上班，只能抽空优化项目，还望理解
-
-- [x] 持续优化前台响应式
-- [x] 新增用户设置、支持修改邮箱、头像、昵称...
-- [x] 重构移动端首页
-- [x] 重构移动端文章页面
-- [x] 重构各种功能邮箱提醒(v1.4.1)
-- [ ] 实现后台导入导出
-- [x] 实现前台搜索
-- [x] 内置图片上传压缩
-- [x] 相册管理(v1.6.0)
-- [x] 前台添加更加有趣的效果
-- [x] 前台音乐播放器
-- [ ] 后台图片资源管理模块
-- [x] 找出并修复一些隐藏的bug(持续完善)
-- [x] 前端响应速度优化到网络正常的情况下5秒以内
-- [x] 实现黑名单管理机制
-- [ ] 后台首页数据大屏
-- [ ] 后台图片资源管理
-- [ ] 博客app版本
-- [ ] 博客小程序版本
-
-## 项目总结
-
-整个项目花费了大量的时间与精力（尤其是前台前端），作者独自手写了三个月左右，除了后台的页面使用了一个后台框架模板外，其他的全部一点一点手写（包括后台的全部模块），这也是我第一次正式的开源一个项目（莫名成就感），虽然但是这个项目我并不觉得很完美，一部分是因为我自己技术有限的原因（主后端的全栈选手），一部分是项目还没经过时间的拷打，开发过程中也参考了很多优秀的项目，在这里感谢大家的开源项目，希望我的项目也能给你带来收获。
-
-### 鸣谢项目：
-
-* [mrzym-blog](https://gitee.com/mrzym/stable-version-of-blog)
-
-* [掐指yi算’逢考必过-Blog](https://gitee.com/wu_shengdong/blog)
-
-* [hexo-theme-butterfly](https://github.com/jerryc127/hexo-theme-butterfly)
-
-* [Antdv Pro](https://docs.antdv-pro.com/)
-
-* [md-editor-v3](https://imzbf.github.io/md-editor-v3/zh-CN/index)
-
-* [vue-danmaku](https://github.com/hellodigua/vue-danmaku)
-
-* ……
-
-#### Heo表情包开源地址
-* https://github.com/zhheo/Sticker-Heo
-
-## 最后
-
-**该文档初次编写可能存在一些问题，如果发现，后面会进行修改提交**
-
-### <u>如果对你有益，麻烦点个star支持项目，能让项目得到更多关注，谢谢！！！</u>
-
-**该项目交流群：** （有什么不懂的可以提问）
-
-**QQ：** 635887836
-
-**二维码：**
-
-![Ruyu开源博客交流群群聊二维码](img/Ruyu%E5%BC%80%E6%BA%90%E5%8D%9A%E5%AE%A2%E4%BA%A4%E6%B5%81%E7%BE%A4%E7%BE%A4%E8%81%8A%E4%BA%8C%E7%BB%B4%E7%A0%81.png)
-
+本仓库由郑陆宇维护。早期曾以一份 Apache-2.0 开源博客为起点，当前站点定位、信息架构、首页、工作经历、安全策略与发布流程均为独立改写，不再沿用原项目的产品叙事与运营渠道。
