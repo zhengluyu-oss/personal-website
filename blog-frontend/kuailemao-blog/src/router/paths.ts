@@ -2,6 +2,7 @@ export const PUBLIC_PATHS = {
   home: '/',
   experience: '/experience',
   experienceDetail: '/experience/:id',
+  experienceProject: '/experience/:id/projects/:projectId',
   blog: '/blog',
   article: '/blog/articles/:id',
   category: '/blog/:slug',

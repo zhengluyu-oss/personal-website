@@ -16,6 +16,8 @@ public class WorkExperienceVO {
     private Date endDate;
     private Integer isCurrent;
     private String highlights;
+    private String companyIntroduction;
+    private String mainBusiness;
     private String projectSummary;
     private String coverImage;
     private String techStack;
