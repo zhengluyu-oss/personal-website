@@ -85,4 +85,22 @@ watch(()=>route.params.id,load,{immediate:true})
 @media(max-width:800px){.case-hero{margin-top:1rem;padding:3.5rem 2rem;border-radius:1.4rem}.case-hero::after{font-size:8rem}.case-body{gap:3rem}.facts{position:static}.next{padding:4rem 2rem;border-radius:1.4rem}}
 @media(max-width:480px){.back span{display:none}.case-hero{padding:3rem 1.25rem}.case-hero h1{font-size:clamp(2.65rem,12vw,3.15rem)}.case-cover{padding:.45rem;border-radius:1rem}.case-cover::before{top:1rem;left:1rem}.facts{padding:1.4rem}.facts dl{display:block}.work li{grid-template-columns:2.5rem 1fr;padding:1.1rem}.outcomes>div{grid-template-columns:1fr}.story{padding:1.5rem 1rem 2.5rem}.next{padding:3.5rem 1.25rem}}
 .company-block{margin-top:0;margin-bottom:2rem;padding:1.6rem;border:1px solid var(--line);border-radius:.8rem;background:#fff}.company-block p{margin:0;white-space:pre-line}.project-list{margin-top:4rem}.project-list>h2{font-size:1.5rem}.project-list>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.project-list a{display:flex;min-height:13rem;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:.8rem;background:#fff;color:inherit;text-decoration:none}.project-list img{width:100%;aspect-ratio:16/10;object-fit:contain;background:var(--brand-canvas-soft)}.project-list a>span{display:flex;flex:1;flex-direction:column;gap:.65rem;padding:1.2rem}.project-list b{font-size:1.1rem}.project-list small{color:var(--muted);line-height:1.6}.project-list em{margin-top:auto;color:var(--accent);font-size:.7rem;font-style:normal}@media(max-width:700px){.project-list>div{grid-template-columns:1fr}}
+
+/* Company detail stays editorial and content-led, without oversized watermarks. */
+.case-page{background:var(--brand-canvas)}
+.case-hero{margin-top:0;padding:clamp(3rem,6vw,5rem) 0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none;overflow:visible}
+.case-hero::before,.case-hero::after{display:none}
+.case-hero h1{font-size:clamp(2.75rem,5vw,4.8rem)}
+.case-hero aside{border:1px solid var(--line);border-top:2px solid var(--accent);border-radius:.5rem;background:var(--brand-surface);box-shadow:none;backdrop-filter:none}
+.case-cover{margin-top:2rem;margin-bottom:4rem;padding:.6rem;border-radius:.75rem;box-shadow:none}
+.case-cover::before{display:none}
+.facts{padding:1.5rem;border:1px solid var(--line);border-radius:.65rem;background:var(--brand-surface);box-shadow:none;overflow:visible}
+.facts::after{display:none}
+.work li{border-radius:.5rem;background:var(--brand-surface);box-shadow:none}
+.work li:hover{transform:none}
+.outcomes p,.story{box-shadow:none}
+.story{padding:2rem clamp(1rem,3vw,2.5rem) 3rem}
+@media(max-width:800px){.case-hero{padding:3rem 0;border-radius:0}.case-body{padding:3.5rem 0}}
+@media(max-width:480px){.case-hero{padding:2.5rem 0}.case-cover{padding:.35rem}}
+@media(max-width:899px){.page-shell{width:min(calc(100% - 2rem),44rem)}.case-hero{grid-template-columns:1fr;gap:3rem;padding:3rem 0}.case-body{grid-template-columns:1fr;gap:3rem;padding:3.5rem 0}.facts{position:static}.facts dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 1.5rem}.outcomes>div{grid-template-columns:1fr}}
 </style>
