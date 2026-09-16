@@ -8,6 +8,8 @@ export interface WorkExperienceItem {
   endDate?: string
   isCurrent: number
   highlights?: string
+  companyIntroduction?: string
+  mainBusiness?: string
   projectSummary?: string
   coverImage?: string
   techStack?: string
@@ -15,6 +17,13 @@ export interface WorkExperienceItem {
   metrics?: string
   content?: string
   orderNum: number
+}
+
+export interface ExperienceProjectItem {
+  id:number; experienceId:number; projectName:string; summary:string; coverImage?:string;
+  startDate?:string; endDate?:string; roleTitle?:string; techStack?:string;
+  contributions?:string; outcomes?:string; content?:string; company?:string; companyRoleTitle?:string;
+  orderNum:number; status?:number
 }
 
 export function experienceList() {
@@ -30,3 +39,6 @@ export function getExperience(id: string | number) {
     method: 'get',
   })
 }
+
+export function experienceProjectList(experienceId:string|number){return http({url:`/experience/${experienceId}/projects`,method:'get'})}
+export function getExperienceProject(experienceId:string|number,projectId:string|number){return http({url:`/experience/${experienceId}/projects/${projectId}`,method:'get'})}

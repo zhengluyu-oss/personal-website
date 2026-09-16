@@ -1,40 +1,45 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { MdPreview } from 'md-editor-v3'
 import { sanitizeRenderedHtml } from '@/utils/sanitize-html'
-import { getExperience, type WorkExperienceItem } from '@/apis/experience'
+import { experienceProjectList, getExperience, type ExperienceProjectItem, type WorkExperienceItem } from '@/apis/experience'
+import { setSeoMeta } from '@/utils/seo'
 
-const route=useRoute(); const router=useRouter(); const item=ref<WorkExperienceItem>(); const loading=ref(true); const notFound=ref(false); const mode='light'
+const route=useRoute(); const router=useRouter(); const item=ref<WorkExperienceItem>(); const projects=ref<ExperienceProjectItem[]>([]); const loading=ref(true); const notFound=ref(false); const mode='light'; let requestVersion=0
 const lines=(value?:string)=>value?.split(/\r?\n/).map(line=>line.trim()).filter(Boolean)||[]
 const tokens=(value?:string)=>lines(value).flatMap(line=>line.split(/[,，/|]/)).map(line=>line.trim()).filter(Boolean)
 const month=(value?:string)=>value?value.slice(0,7).replace('-','.') : ''
 const period=(value:WorkExperienceItem)=>`${month(value.startDate)} 至 ${value.isCurrent===1?'今':month(value.endDate)}`
 const metrics=computed(()=>lines(item.value?.metrics))
 const responsibilities=computed(()=>lines(item.value?.responsibilities).length?lines(item.value?.responsibilities):lines(item.value?.highlights))
-onMounted(async()=>{try{const response:any=await getExperience(String(route.params.id)); if(response.code!==200||!response.data) throw new Error(); item.value=response.data}catch{notFound.value=true}finally{loading.value=false}})
+async function load(){const version=++requestVersion;loading.value=true;notFound.value=false;try{const [response,projectResponse]:any[]=await Promise.all([getExperience(String(route.params.id)),experienceProjectList(String(route.params.id))]);if(version!==requestVersion)return;if(response.code!==200||!response.data)throw new Error();item.value=response.data;projects.value=projectResponse.data||[];setSeoMeta({title:`${response.data.company}工作经历 | 郑陆宇`,description:response.data.projectSummary||`${response.data.company}工作经历与项目实践`,keywords:`${response.data.company},${response.data.roleTitle},工作经历,项目经验`})}catch{if(version===requestVersion)notFound.value=true}finally{if(version===requestVersion)loading.value=false}}
+watch(()=>route.params.id,load,{immediate:true})
 </script>
 
 <template>
   <main class="case-page">
-    <nav class="back page-shell"><button type="button" @click="router.push('/experience')">← 返回职业轨迹</button><span>CAREER CASE FILE</span></nav>
+    <nav class="back page-shell"><button type="button" @click="router.push('/experience')">← 工作经历</button><span>{{ item?.company || '经历详情' }}</span></nav>
     <div v-if="loading" class="case-loading page-shell"><span/><b/><i/></div>
     <section v-else-if="notFound || !item" class="case-state page-shell"><h1>这段经历暂时无法查看</h1><p>内容可能已停用，或链接已经失效。</p><button type="button" @click="router.push('/experience')">返回列表</button></section>
     <template v-else>
       <header class="case-hero page-shell">
-        <div><p>EXPERIENCE · {{ period(item) }}</p><h1>{{ item.roleTitle }}</h1><h2>{{ item.company }}</h2></div>
-        <aside><small>ROLE BRIEF</small><span v-if="item.isCurrent===1">CURRENT</span><p>{{ item.projectSummary || lines(item.highlights)[0] || '负责业务系统的设计、开发与持续优化。' }}</p></aside>
+        <div><p>{{ period(item) }}</p><h1>{{ item.company }}</h1><h2>{{ item.roleTitle }}</h2></div>
+        <aside><small>工作概述</small><span v-if="item.isCurrent===1">在职</span><p>{{ item.projectSummary || lines(item.highlights)[0] || '负责业务系统的设计、开发与持续优化。' }}</p></aside>
       </header>
       <figure v-if="item.coverImage" class="case-cover page-shell"><img :src="item.coverImage" :alt="`${item.company} 工作经历封面`"></figure>
       <section class="case-body page-shell">
         <aside class="facts"><span class="facts-mark">PROFILE</span><h2>经历概览</h2><p class="facts-intro">一眼了解这段经历的基本背景与技术边界。</p><dl><div><dt>公司</dt><dd>{{ item.company }}</dd></div><div><dt>岗位</dt><dd>{{ item.roleTitle }}</dd></div><div><dt>时间</dt><dd>{{ period(item) }}</dd></div><div><dt>状态</dt><dd>{{ item.isCurrent===1?'目前在职':'已结束' }}</dd></div></dl><div v-if="tokens(item.techStack).length" class="tech"><h3>Technology</h3><ul><li v-for="tech in tokens(item.techStack)" :key="tech">{{ tech }}</li></ul></div></aside>
         <div class="narrative">
-          <section v-if="responsibilities.length" class="work"><h2>Selected Work</h2><ol><li v-for="(line,index) in responsibilities" :key="line"><span>{{ String(index+1).padStart(2,'0') }}</span><p>{{ line }}</p></li></ol></section>
-          <section v-if="metrics.length" class="outcomes"><h2>Impact</h2><div><p v-for="metric in metrics" :key="metric">{{ metric }}</p></div></section>
-          <article class="story"><h2>经历详情</h2><MdPreview v-if="item.content?.trim()" :model-value="item.content" :theme="mode" :sanitize="sanitizeRenderedHtml"/><p v-else>详细内容正在整理，可先查看上方公开的职责与成果。</p></article>
+          <section v-if="item.companyIntroduction?.trim()" class="story company-block"><h2>公司介绍</h2><p>{{ item.companyIntroduction }}</p></section>
+          <section v-if="item.mainBusiness?.trim()" class="story company-block"><h2>主营业务</h2><p>{{ item.mainBusiness }}</p></section>
+          <section v-if="responsibilities.length" class="work"><h2>主要职责</h2><ol><li v-for="(line,index) in responsibilities" :key="line"><span>{{ String(index+1).padStart(2,'0') }}</span><p>{{ line }}</p></li></ol></section>
+          <section v-if="projects.length" class="project-list"><h2>参与项目</h2><div><router-link v-for="project in projects" :key="project.id" :to="`/experience/${item.id}/projects/${project.id}`"><img v-if="project.coverImage" :src="project.coverImage" :alt="`${project.projectName}封面`"><span><b>{{ project.projectName }}</b><small>{{ project.summary }}</small><em v-if="tokens(project.techStack).length">{{ tokens(project.techStack).slice(0,4).join(' · ') }}</em></span></router-link></div></section>
+          <p v-else class="project-empty">项目案例正在整理，现有职责与经历补充仍可继续阅读。</p>
+          <section v-if="metrics.length" class="outcomes"><h2>工作成果</h2><div><p v-for="metric in metrics" :key="metric">{{ metric }}</p></div></section>
+          <article v-if="item.content?.trim()" class="story"><h2>经历补充</h2><MdPreview :model-value="item.content" :theme="mode" :sanitize="sanitizeRenderedHtml"/></article>
         </div>
       </section>
-      <footer class="next page-shell"><p>继续了解</p><h2>真实经历之外，<br>还有持续写下的思考。</h2><nav><router-link to="/blog">阅读技术文章</router-link><router-link to="/about">关于我</router-link></nav></footer>
     </template>
   </main>
 </template>
@@ -79,4 +84,5 @@ onMounted(async()=>{try{const response:any=await getExperience(String(route.para
 .next{position:relative;min-height:auto;margin-bottom:clamp(3rem,7vw,7rem);padding:clamp(4rem,8vw,7rem);border:0;border-radius:2rem;background:linear-gradient(130deg,#0d2948,#174c7d);color:#fff;box-shadow:0 30px 80px rgba(16,48,82,.2);overflow:hidden}.next::after{content:'';position:absolute;width:24rem;aspect-ratio:1;right:-6rem;border:1px solid rgba(255,255,255,.14);border-radius:50%;box-shadow:0 0 0 4rem rgba(255,255,255,.035),0 0 0 8rem rgba(255,255,255,.025)}.next>p{color:#9dcbff}.next h2,.next nav{position:relative;z-index:1}.next a{border-color:rgba(255,255,255,.45);color:#fff}
 @media(max-width:800px){.case-hero{margin-top:1rem;padding:3.5rem 2rem;border-radius:1.4rem}.case-hero::after{font-size:8rem}.case-body{gap:3rem}.facts{position:static}.next{padding:4rem 2rem;border-radius:1.4rem}}
 @media(max-width:480px){.back span{display:none}.case-hero{padding:3rem 1.25rem}.case-hero h1{font-size:clamp(2.65rem,12vw,3.15rem)}.case-cover{padding:.45rem;border-radius:1rem}.case-cover::before{top:1rem;left:1rem}.facts{padding:1.4rem}.facts dl{display:block}.work li{grid-template-columns:2.5rem 1fr;padding:1.1rem}.outcomes>div{grid-template-columns:1fr}.story{padding:1.5rem 1rem 2.5rem}.next{padding:3.5rem 1.25rem}}
+.company-block{margin-top:0;margin-bottom:2rem;padding:1.6rem;border:1px solid var(--line);border-radius:.8rem;background:#fff}.company-block p{margin:0;white-space:pre-line}.project-list{margin-top:4rem}.project-list>h2{font-size:1.5rem}.project-list>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.project-list a{display:flex;min-height:13rem;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:.8rem;background:#fff;color:inherit;text-decoration:none}.project-list img{width:100%;aspect-ratio:16/10;object-fit:contain;background:var(--brand-canvas-soft)}.project-list a>span{display:flex;flex:1;flex-direction:column;gap:.65rem;padding:1.2rem}.project-list b{font-size:1.1rem}.project-list small{color:var(--muted);line-height:1.6}.project-list em{margin-top:auto;color:var(--accent);font-size:.7rem;font-style:normal}@media(max-width:700px){.project-list>div{grid-template-columns:1fr}}
 </style>

@@ -30,7 +30,7 @@ onMounted(async () => {
 <template>
   <main class="career-page">
     <section class="career-hero page-shell">
-      <div class="hero-copy"><p>CAREER DOSSIER · 职业档案</p><h1>从业务问题出发，交付可靠的软件。</h1><span>记录我承担过什么、解决了什么，以及最终留下了哪些可验证结果。</span></div>
+      <div class="hero-copy"><p>工作经历</p><h1>从业务问题出发，交付可靠的软件。</h1><span>这里记录我承担过的职责、参与的项目，以及在真实业务中的技术实践。</span></div>
       <dl class="career-snapshot">
         <div v-if="current"><dt>当前岗位</dt><dd>{{ current.roleTitle }}</dd><small>{{ current.company }}</small></div>
         <div><dt>经历记录</dt><dd>{{ list.length }} 段真实业务经历</dd></div>
@@ -39,7 +39,7 @@ onMounted(async () => {
     </section>
 
     <section class="career-list page-shell" aria-labelledby="career-title">
-      <header><div><span>CAREER TIMELINE</span><h2 id="career-title">职业轨迹</h2></div><p>按时间由近到远，点击进入完整案例。</p></header>
+      <header><div><span>经历汇总</span><h2 id="career-title">职业轨迹</h2></div><p>按时间由近到远，点击查看公司与项目详情。</p></header>
       <div v-if="loading" class="loading" aria-label="工作经历加载中"><div v-for="n in 2" :key="n"><span/><b/><i/></div></div>
       <div v-else-if="failed" class="state"><h2>工作经历暂时无法读取</h2><p>请稍后刷新页面重试。</p></div>
       <div v-else-if="!list.length" class="state"><h2>工作经历正在整理</h2><p>完成后会在这里公开。</p></div>
@@ -49,8 +49,7 @@ onMounted(async () => {
           <div class="case-main"><span class="case-index">CASE {{ String(index + 1).padStart(2,'0') }}</span>
             <p class="company">{{ item.company }}</p><h3>{{ item.roleTitle }}</h3>
             <p class="case-summary">{{ item.projectSummary || lines(item.highlights)[0] || '负责业务系统的设计、开发与持续优化。' }}</p>
-            <section v-if="lines(item.highlights).length" class="selected"><h4>Selected Work</h4><ol><li v-for="work in lines(item.highlights).slice(0,4)" :key="work">{{ work }}</li></ol></section>
-            <section v-if="lines(item.metrics).length" class="impact"><h4>Impact</h4><div><p v-for="metric in lines(item.metrics).slice(0,3)" :key="metric">{{ metric }}</p></div></section>
+            <section v-if="lines(item.highlights).length" class="selected"><h4>主要工作</h4><ol><li v-for="work in lines(item.highlights).slice(0,2)" :key="work">{{ work }}</li></ol></section>
             <ul v-if="tokens(item.techStack).length" class="metadata" aria-label="使用技术"><li v-for="tech in tokens(item.techStack).slice(0,12)" :key="tech">{{ tech }}</li></ul>
           </div>
           <div class="case-action"><span v-if="item.isCurrent===1">CURRENT</span><b>查看详情 ↗</b></div>
@@ -58,7 +57,6 @@ onMounted(async () => {
       </div>
     </section>
 
-    <section class="career-closing page-shell"><p>持续构建，持续复盘。</p><h2>让每一次交付，<br>都成为下一次进步的证据。</h2><nav><router-link to="/blog">阅读技术文章</router-link><router-link to="/about">了解更多</router-link></nav></section>
   </main>
 </template>
 
