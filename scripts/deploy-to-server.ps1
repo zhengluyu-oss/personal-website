@@ -306,7 +306,9 @@ if [ -d "`$TMPDIR/blog" ]; then
   cp -a "`$TMPDIR/blog/." "`$REMOTE_BLOG"/
 fi
 if [ -d "`$TMPDIR/admin" ]; then
-  find "`$REMOTE_ADMIN" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  rm -rf "`${REMOTE_ADMIN}.previous"
+  if [ -d "`$REMOTE_ADMIN" ]; then mv "`$REMOTE_ADMIN" "`${REMOTE_ADMIN}.previous"; fi
+  mkdir -p "`$REMOTE_ADMIN"
   cp -a "`$TMPDIR/admin/." "`$REMOTE_ADMIN"/
 fi
 if [ -f "`$TMPDIR/nginx/zhengluyu-blog" ]; then
@@ -342,6 +344,10 @@ rollback() {
   if [ -d "`${REMOTE_BLOG}.previous" ]; then
     rm -rf "`$REMOTE_BLOG"
     mv "`${REMOTE_BLOG}.previous" "`$REMOTE_BLOG"
+  fi
+  if [ -d "/home/wwwroot/zhengluyu-website/admin.previous" ]; then
+    rm -rf "/home/wwwroot/zhengluyu-website/admin"
+    mv "/home/wwwroot/zhengluyu-website/admin.previous" "/home/wwwroot/zhengluyu-website/admin"
   fi
   if [ -f "`$NGINX_BACKUP" ]; then
     cp -f "`$NGINX_BACKUP" "`$REMOTE_NGINX_SITE"
