@@ -214,7 +214,7 @@ function deleteRows(ids: Array<string | number>) {
   })
 }
 
-function formatPeriod(record: DataType) {
+function formatPeriod(record: Record<string, any>) {
   if (record.isCurrent === 1)
     return '至今'
   return record.endDate || '-'
@@ -225,7 +225,8 @@ const projectModal=reactive({open:false,loading:false,title:'新增项目'})
 const projectRows=ref<any[]>([])
 const emptyProject=()=>({projectName:'',summary:'',coverImage:'',startDate:undefined,endDate:undefined,roleTitle:'',techStack:'',contributions:'',outcomes:'',content:'',orderNum:1,status:0})
 const projectForm=ref<any>(emptyProject())
-async function openProjects(record:DataType){projectDrawer.open=true;projectDrawer.experienceId=Number(record.id);projectDrawer.company=record.company;await refreshProjects()}
+async function openProjects(record:Record<string,any>){projectDrawer.open=true;projectDrawer.experienceId=Number(record.id);projectDrawer.company=String(record.company || '');await refreshProjects()}
+function setCurrent(checked:boolean|string|number){formData.value.isCurrent=checked===true?1:0}
 async function refreshProjects(){projectDrawer.loading=true;const res=await experienceProjectList(projectDrawer.experienceId);projectRows.value=res?.data||[];projectDrawer.loading=false}
 async function openProjectModal(id?:string|number){projectForm.value=emptyProject();if(id){const res=await getExperienceProject(projectDrawer.experienceId,id);projectForm.value={...res.data,startDate:res.data?.startDate?dayjs(res.data.startDate):undefined,endDate:res.data?.endDate?dayjs(res.data.endDate):undefined,content:res.data?.content||''};projectModal.title='修改项目'}else projectModal.title='新增项目';projectModal.open=true}
 async function saveProject(){if(!projectForm.value.projectName||!projectForm.value.summary){message.warn('请填写项目名称和摘要');return}projectModal.loading=true;const payload={...projectForm.value,startDate:projectForm.value.startDate?dayjs(projectForm.value.startDate).format('YYYY-MM-DD'):undefined,endDate:projectForm.value.endDate?dayjs(projectForm.value.endDate).format('YYYY-MM-DD'):undefined};const res=projectForm.value.id?await updateExperienceProject(projectDrawer.experienceId,payload):await addExperienceProject(projectDrawer.experienceId,payload);projectModal.loading=false;if(res?.code===200){message.success('保存成功');projectModal.open=false;refreshProjects()}}
@@ -299,7 +300,7 @@ async function removeProject(id:string|number){Modal.confirm({title:'确认删�
             :checked="formData.isCurrent === 1"
             checked-children="至今"
             un-checked-children="已结束"
-            @change="(checked: boolean) => formData.isCurrent = checked ? 1 : 0"
+            @change="setCurrent"
           />
         </a-form-item>
         <a-form-item v-if="formData.isCurrent !== 1" label="结束日期">
