@@ -52,6 +52,12 @@ export const constantRouter = [
                 }
             },
             {
+                path: PUBLIC_PATHS.experienceProject,
+                component: () => import('@/views/Experience/ProjectDetail.vue'),
+                name: 'experienceProject',
+                meta: { title: '项目详情' }
+            },
+            {
                 path: PUBLIC_PATHS.category,
                 component: () => import('@/views/Pigeonhole/Category/index.vue'),
                 name: 'category',

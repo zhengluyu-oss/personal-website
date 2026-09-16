@@ -12,6 +12,7 @@ import {
   experienceList,
   getExperienceById,
   updateExperience,
+  experienceProjectList, getExperienceProject, addExperienceProject, updateExperienceProject, deleteExperienceProjects,
 } from '~/api/blog/experience'
 import { uploadArticleImage } from '~/api/blog/article'
 import { compressImage } from '~/utils/CompressedImage.ts'
@@ -24,6 +25,8 @@ interface DataType {
   endDate?: string
   isCurrent: number
   highlights?: string
+  companyIntroduction?: string
+  mainBusiness?: string
   projectSummary?: string
   coverImage?: string
   techStack?: string
@@ -48,7 +51,7 @@ const columns: any = [
   { title: '结束', dataIndex: 'endDate', align: 'center' },
   { title: '排序', dataIndex: 'orderNum', align: 'center', width: 70 },
   { title: '状态', dataIndex: 'status', align: 'center', width: 90 },
-  { title: '操作', key: 'operation', align: 'center', width: 160 },
+  { title: '操作', key: 'operation', align: 'center', width: 230 },
 ]
 
 const modalInfo = reactive({
@@ -64,6 +67,8 @@ const formData = ref<any>({
   endDate: undefined as Dayjs | undefined,
   isCurrent: 0,
   highlights: undefined,
+  companyIntroduction: undefined,
+  mainBusiness: undefined,
   projectSummary: undefined,
   coverImage: undefined,
   techStack: undefined,
@@ -135,6 +140,8 @@ async function openModal(id?: string | number) {
       endDate: undefined,
       isCurrent: 0,
       highlights: undefined,
+      companyIntroduction: undefined,
+      mainBusiness: undefined,
       projectSummary: undefined,
       coverImage: undefined,
       techStack: undefined,
@@ -212,6 +219,17 @@ function formatPeriod(record: DataType) {
     return '至今'
   return record.endDate || '-'
 }
+
+const projectDrawer=reactive({open:false,experienceId:0,company:'',loading:false})
+const projectModal=reactive({open:false,loading:false,title:'新增项目'})
+const projectRows=ref<any[]>([])
+const emptyProject=()=>({projectName:'',summary:'',coverImage:'',startDate:undefined,endDate:undefined,roleTitle:'',techStack:'',contributions:'',outcomes:'',content:'',orderNum:1,status:0})
+const projectForm=ref<any>(emptyProject())
+async function openProjects(record:DataType){projectDrawer.open=true;projectDrawer.experienceId=Number(record.id);projectDrawer.company=record.company;await refreshProjects()}
+async function refreshProjects(){projectDrawer.loading=true;const res=await experienceProjectList(projectDrawer.experienceId);projectRows.value=res?.data||[];projectDrawer.loading=false}
+async function openProjectModal(id?:string|number){projectForm.value=emptyProject();if(id){const res=await getExperienceProject(projectDrawer.experienceId,id);projectForm.value={...res.data,startDate:res.data?.startDate?dayjs(res.data.startDate):undefined,endDate:res.data?.endDate?dayjs(res.data.endDate):undefined,content:res.data?.content||''};projectModal.title='修改项目'}else projectModal.title='新增项目';projectModal.open=true}
+async function saveProject(){if(!projectForm.value.projectName||!projectForm.value.summary){message.warn('请填写项目名称和摘要');return}projectModal.loading=true;const payload={...projectForm.value,startDate:projectForm.value.startDate?dayjs(projectForm.value.startDate).format('YYYY-MM-DD'):undefined,endDate:projectForm.value.endDate?dayjs(projectForm.value.endDate).format('YYYY-MM-DD'):undefined};const res=projectForm.value.id?await updateExperienceProject(projectDrawer.experienceId,payload):await addExperienceProject(projectDrawer.experienceId,payload);projectModal.loading=false;if(res?.code===200){message.success('保存成功');projectModal.open=false;refreshProjects()}}
+async function removeProject(id:string|number){Modal.confirm({title:'确认删除该项目？',onOk:async()=>{const res=await deleteExperienceProjects(projectDrawer.experienceId,[id]);if(res?.code===200){message.success('删除成功');refreshProjects()}}})}
 </script>
 
 <template>
@@ -246,6 +264,7 @@ function formatPeriod(record: DataType) {
             </a-tag>
           </template>
           <template v-if="column.key === 'operation'">
+            <a-button type="link" style="padding: 0" @click="openProjects(record)">管理项目</a-button>
             <a-button type="link" style="padding: 0" @click="openModal(record.id)">
               修改
             </a-button>
@@ -287,6 +306,8 @@ function formatPeriod(record: DataType) {
           <a-date-picker v-model:value="formData.endDate" style="width: 100%" />
         </a-form-item>
         <a-divider orientation="left">案例展示信息</a-divider>
+        <a-form-item label="公司介绍"><a-textarea v-model:value="formData.companyIntroduction" :rows="4" placeholder="简要介绍公司背景与团队环境" /></a-form-item>
+        <a-form-item label="主营业务"><a-textarea v-model:value="formData.mainBusiness" :rows="4" placeholder="说明公司的核心产品和服务领域" /></a-form-item>
         <a-form-item label="案例定位">
           <a-textarea v-model:value="formData.projectSummary" :rows="2" :maxlength="500" show-count placeholder="一句话说清这段经历解决了什么问题、创造了什么价值" />
         </a-form-item>
@@ -329,6 +350,24 @@ function formatPeriod(record: DataType) {
           </a-select>
         </a-form-item>
       </a-form>
+    </a-modal>
+
+    <a-drawer v-model:open="projectDrawer.open" :title="`${projectDrawer.company} · 项目管理`" width="min(960px, 92vw)">
+      <a-space style="margin-bottom:16px"><a-button type="primary" @click="openProjectModal()">新增项目</a-button><a-button @click="refreshProjects">刷新</a-button></a-space>
+      <a-table :loading="projectDrawer.loading" :data-source="projectRows" :row-key="(r:any)=>r.id" size="small" :pagination="false">
+        <a-table-column title="项目" data-index="projectName" /><a-table-column title="角色" data-index="roleTitle" /><a-table-column title="排序" data-index="orderNum" width="70" />
+        <a-table-column title="状态" width="90"><template #default="{record}"><a-tag :color="record.status===1?'green':'default'">{{ record.status===1?'已发布':'草稿' }}</a-tag></template></a-table-column>
+        <a-table-column title="操作" width="130"><template #default="{record}"><a-button type="link" @click="openProjectModal(record.id)">编辑</a-button><a-button type="link" danger @click="removeProject(record.id)">删除</a-button></template></a-table-column>
+      </a-table>
+    </a-drawer>
+    <a-modal v-model:open="projectModal.open" :title="projectModal.title" width="960px" :confirm-loading="projectModal.loading" :body-style="{maxHeight:'72vh',overflowY:'auto'}" @ok="saveProject">
+      <a-form layout="vertical"><a-form-item label="项目名称" required><a-input v-model:value="projectForm.projectName" :maxlength="150" /></a-form-item><a-form-item label="项目摘要" required><a-textarea v-model:value="projectForm.summary" :rows="3" :maxlength="500" show-count /></a-form-item>
+      <a-row :gutter="16"><a-col :span="12"><a-form-item label="项目角色"><a-input v-model:value="projectForm.roleTitle" :maxlength="100" /></a-form-item></a-col><a-col :span="6"><a-form-item label="开始日期"><a-date-picker v-model:value="projectForm.startDate" style="width:100%" /></a-form-item></a-col><a-col :span="6"><a-form-item label="结束日期"><a-date-picker v-model:value="projectForm.endDate" style="width:100%" /></a-form-item></a-col></a-row>
+      <a-form-item label="封面地址（建议 16:10）"><a-input v-model:value="projectForm.coverImage" :maxlength="500" /><img v-if="projectForm.coverImage" :src="projectForm.coverImage" style="width:240px;aspect-ratio:16/10;object-fit:contain;margin-top:10px"></a-form-item>
+      <a-form-item label="技术栈（每行一项）"><a-textarea v-model:value="projectForm.techStack" :rows="3" /></a-form-item><a-form-item label="个人贡献（每行一项）"><a-textarea v-model:value="projectForm.contributions" :rows="4" /></a-form-item><a-form-item label="项目成果（每行一项）"><a-textarea v-model:value="projectForm.outcomes" :rows="4" /></a-form-item>
+      <a-alert message="写作建议" description="可按业务背景、职责范围、关键问题、方案取舍、成果证据和复盘组织内容；提示不会自动写入或发布。" type="info" show-icon style="margin-bottom:16px" />
+      <a-form-item label="项目详情（Markdown）"><MdEditor v-model="projectForm.content" theme="light" style="height:360px" :toolbars="toolbars as []" @onUploadImg="onUploadImg" /></a-form-item>
+      <a-row :gutter="16"><a-col :span="12"><a-form-item label="排序"><a-input-number v-model:value="projectForm.orderNum" :min="0" style="width:100%" /></a-form-item></a-col><a-col :span="12"><a-form-item label="状态"><a-select v-model:value="projectForm.status"><a-select-option :value="0">草稿</a-select-option><a-select-option :value="1">发布</a-select-option></a-select></a-form-item></a-col></a-row></a-form>
     </a-modal>
   </page-container>
 </template>
