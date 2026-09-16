@@ -1,8 +1,5 @@
-# configurable-home-hero-copy Specification
+## MODIFIED Requirements
 
-## Purpose
-Requirements maintained by OpenSpec changes for configurable-home-hero-copy.
-## Requirements
 ### Requirement: 独立首页首屏内容
 系统 SHALL 使用独立于网站名称的字段展示首页首屏眉题、姓名与职业定位、价值说明和简介，并 SHALL 优先展示后台已保存的有效内容。
 
@@ -28,26 +25,3 @@ Requirements maintained by OpenSpec changes for configurable-home-hero-copy.
 #### Scenario: 所有按钮均未配置
 - **WHEN** 两组按钮均缺少完整文字和链接
 - **THEN** 首页 SHALL 显示“阅读博客”和“查看工作经历”默认入口，并使用现有公开一级页面路由
-
-### Requirement: 可选侧边说明组
-系统 SHALL 保留后台配置的简介说明组，可在桌面媒体下方或介绍邻近摘要区域展示，在小屏幕并入主内容流；不得用几行小字占用独立的大半屏。
-
-#### Scenario: 说明组有内容
-- **WHEN** 简介至少一项已配置
-- **THEN** 完整呈现已配置说明，使用清晰对比与可读字号，不覆盖复杂背景图片
-
-#### Scenario: 说明组为空
-- **WHEN** 已取得配置且说明组全部为空
-- **THEN** 不渲染说明组和空白占位
-
-### Requirement: 后台统一管理
-系统 SHALL 在现有网站信息页面提供首页首屏字段的编辑、校验、保存和重置能力。
-
-#### Scenario: 保存合法配置
-- **WHEN** 管理员提交符合长度限制的首屏配置
-- **THEN** 后端 SHALL 持久化配置并通过前台网站信息接口返回
-
-#### Scenario: 提交超长配置
-- **WHEN** 管理员提交超过字段限制的内容
-- **THEN** 后台或后端 SHALL 拒绝提交并给出可理解的提示
-
