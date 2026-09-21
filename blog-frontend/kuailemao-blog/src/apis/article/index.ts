@@ -31,14 +31,6 @@ export const addComment = (data: object) => {
     });
 }
 
-// 时间轴
-export const getTimeLine = () => {
-    return http.request({
-        url: '/article/timeLine',
-        method: "get"
-    });
-}
-
 // 查询不同类型下的文章列表
 export function whereArticleList(type: Number, typeId: String) {
     return http.get(`/article/where/list/${typeId}`, {

@@ -151,7 +151,6 @@
 | GET | `/article/random` | 公开 |
 | GET | `/article/detail/{id}` | 公开 |
 | GET | `/article/related/{categoryId}/{articleId}` | 公开 |
-| GET | `/article/timeLine` | 公开 |
 | GET | `/article/where/list/{typeId}` | 公开 |
 | GET | `/article/visit/{id}` | 公开 |
 | POST | `/article/upload/articleCover` | `blog:publish:article` |
