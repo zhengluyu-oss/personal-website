@@ -2,15 +2,13 @@
 
 ## Purpose
 Requirements maintained by OpenSpec changes for dynamic-blog-navigation.
-
 ## Requirements
-
 ### Requirement: Blog navigation exposes all categories
-The blog SHALL provide a primary “个人博客” navigation entry at `/blog` and generate its category children from the public category API.
+The blog SHALL provide a primary “个人博客” navigation entry at `/blog` and generate its category children from the public category API using the shared semantic slug route builder.
 
 #### Scenario: Categories load successfully
 - **WHEN** the public category API returns enabled article categories
-- **THEN** desktop and mobile navigation show links to `/blog/categories/:id` for each category
+- **THEN** desktop and mobile navigation show one `/blog/:slug` link for each category without exposing category IDs in the URL
 
 #### Scenario: Categories are unavailable
 - **WHEN** the category API fails or returns an empty list
@@ -21,4 +19,5 @@ The blog SHALL make the category navigation usable with mouse, keyboard and touc
 
 #### Scenario: Visitor opens the blog or a category
 - **WHEN** a visitor selects the primary blog entry or one of its category children
-- **THEN** the router navigates to `/blog` or the selected `/blog/categories/:id` article list
+- **THEN** the router navigates to `/blog` or the selected `/blog/:slug` aggregation-page filter
+
