@@ -56,11 +56,6 @@ public interface ArticleService extends IService<Article> {
     List<RelatedArticleVO> relatedArticleList(Integer categoryId, Integer articleId);
 
     /**
-     * 查询时间轴数据
-     */
-    List<TimeLineVO> listTimeLine();
-
-    /**
      * 查询分类或标签下的文章
      *
      * @param type   类型

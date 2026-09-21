@@ -291,12 +291,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
-    public List<TimeLineVO> listTimeLine() {
-        List<Article> list = this.query().list();
-        return list.stream().map(article -> article.asViewObject(TimeLineVO.class)).toList();
-    }
-
-    @Override
     public List<CategoryArticleVO> listCategoryArticle(Integer type, Long typeId) {
         List<Article> articles;
         if (type == 1)
