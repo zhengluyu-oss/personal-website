@@ -1,0 +1,38 @@
+# homepage-content-resilience Specification
+
+## Purpose
+TBD - created by archiving change refine-homepage-content-hierarchy. Update Purpose after archive.
+## Requirements
+### Requirement: 首页内容独立加载并可恢复
+系统 SHALL 独立加载最新文章、推荐文章和经历；每个模块 SHALL 显示自身加载、空、失败状态并支持失败重试，任何一个失败或慢响应 MUST NOT 隐藏其他成功内容。销毁页面后旧结果 MUST NOT 更新视图。
+
+#### Scenario: 推荐失败而其他请求成功
+- **WHEN** 推荐请求失败，最新文章和经历成功
+- **THEN** 最新文章和经历正常展示，推荐使用最新文章后备，提供局部重试且无需整页刷新
+
+#### Scenario: 一个请求迟迟不返回
+- **WHEN** 经历仍加载而文章已成功
+- **THEN** 文章立即展示，经历保持占位，计数不显示虚假 0
+
+#### Scenario: 重试恢复
+- **WHEN** 用户重试失败模块且请求成功
+- **THEN** 仅更新该模块，保留其他成功内容，重复触发不会产生同模块并发请求
+
+### Requirement: 计数区分未知与真实为空
+系统 SHALL 仅在请求成功时显示实际数量；等待与失败分别显示加载中和暂不可用。
+
+#### Scenario: 成功返回零条
+- **WHEN** 接口成功返回空数据与 0 总数
+- **THEN** 显示真实 0 和友好空状态，区别于请求失败
+
+### Requirement: 推荐封面完整且容错
+系统 SHALL 完整展示推荐封面，正文和标题位于图外；图片失败 SHALL 展示受控占位与重试入口，不展示破图图标、不影响文章链接。
+
+#### Scenario: 横向文字封面
+- **WHEN** 推荐文章封面宽高比与容器不同
+- **THEN** 保持原比例 contain 展示完整图像，不叠加标题遮挡图片文字
+
+#### Scenario: 封面失败
+- **WHEN** 图片触发加载错误
+- **THEN** 图片区显示明确降级提示，标题摘要与详情链接仍可操作
+
