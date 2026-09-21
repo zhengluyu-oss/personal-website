@@ -33,15 +33,6 @@ export const constantRouter = [
                     title: '工作经历详情',
                 }
             },
-            // 时间轴
-            {
-                path: PUBLIC_PATHS.archive,
-                component: () => import('@/views/Pigeonhole/TimeLine/index.vue'),
-                name: 'timeline',
-                meta: {
-                    title: '时间轴',
-                }
-            },
             // 分类
             {
                 path: PUBLIC_PATHS.blog,
@@ -50,6 +41,12 @@ export const constantRouter = [
                 meta: {
                     title: '个人博客',
                 }
+            },
+            {
+                path: '/blog/archive',
+                component: () => import('@/views/NotFound/index.vue'),
+                name: 'removedArticleArchive',
+                meta: { title: '页面不存在' },
             },
             {
                 path: PUBLIC_PATHS.experienceProject,
