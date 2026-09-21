@@ -8,7 +8,6 @@ export const PUBLIC_PATHS = {
   category: '/blog/:slug',
   tags: '/blog/tags',
   tag: '/blog/tags/:id',
-  archive: '/blog/archive',
   treeHole: '/tree-hole',
   messages: '/messages',
   message: '/messages/:id',

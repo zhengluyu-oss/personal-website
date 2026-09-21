@@ -145,13 +145,6 @@ public class ArticleController {
         return ControllerUtils.messageHandler((() -> articleService.relatedArticleList(categoryId, articleId)));
     }
 
-    @Operation(summary = "获取时间轴数据")
-    @AccessLimit(seconds = 60, maxCount = 15)
-    @GetMapping("/timeLine")
-    public ResponseResult<List<TimeLineVO>> timeLine() {
-        return ControllerUtils.messageHandler((articleService::listTimeLine));
-    }
-
     @Operation(summary = "获取分类与标签下的文章")
     @Parameters({
             @Parameter(name = "typeId", description = "类型id", required = true),

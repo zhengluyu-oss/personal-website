@@ -1,4 +1,4 @@
-# 郑陆宇的个人网站
+# 个人网站
 
 求职作品集、技术博客与工作经历，面向招聘者与长期访客。站点由我独立维护，线上地址是 [www.zhengluyu.com](https://www.zhengluyu.com/)。
 
@@ -10,7 +10,7 @@
 | --- | --- |
 | 公开站点 | [www.zhengluyu.com](https://www.zhengluyu.com/) |
 | 源码 | [github.com/zhengluyu-oss/personal-website](https://github.com/zhengluyu-oss/personal-website) |
-| 作者 | 郑陆宇 · 后端 / 全栈 |
+| 定位 | 后端 / 全栈个人站 |
 
 ## 站点在讲什么
 
@@ -96,4 +96,4 @@ pnpm dev
 
 Apache License 2.0，全文见 [LICENSE](LICENSE)。
 
-本仓库由郑陆宇维护。早期曾以一份 Apache-2.0 开源博客为起点，当前站点定位、信息架构、首页、工作经历、安全策略与发布流程均为独立改写，不再沿用原项目的产品叙事与运营渠道。
+本仓库持续维护。早期曾以一份 Apache-2.0 开源博客为起点，当前站点定位、信息架构、首页、工作经历、安全策略与发布流程均为独立改写，不再沿用原项目的产品叙事与运营渠道。

@@ -68,15 +68,6 @@
               </div>
               <span>标签</span>
             </li>
-            <li class="submenu-item" @click.stop="navigateTo('/blog/archive')">
-              <div class="submenu-item-icon">
-                <svg viewBox="0 0 24 24" width="24" height="24" :stroke="isDarkMode ? '#a78bfa' : '#8b5cf6'" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-              </div>
-              <span>时间轴</span>
-            </li>
           </ul>
         </li>
         

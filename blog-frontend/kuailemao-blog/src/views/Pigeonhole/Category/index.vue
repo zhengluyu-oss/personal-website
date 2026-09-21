@@ -178,7 +178,7 @@ function changePage(page: number) {
             </article>
 
             <div class="section-heading">
-              <div><p>LATEST NOTES</p><h2>最近更新</h2></div><router-link to="/blog/archive">按时间浏览全部文章 →</router-link>
+              <div><p>LATEST NOTES</p><h2>最近更新</h2></div>
             </div>
             <div class="article-grid">
               <article v-for="article in remainingArticles" :key="article.id" class="article-card" tabindex="0" @click="openArticle(article.id)" @keydown.enter="openArticle(article.id)">
