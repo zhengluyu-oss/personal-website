@@ -93,61 +93,75 @@ const columns: any = [
     title: '编号',
     dataIndex: 'id',
     align: 'center',
+    width: 80,
   },
   {
     title: '封面',
     dataIndex: 'articleCover',
     align: 'center',
+    width: 100,
   },
   {
     title: '标题',
     dataIndex: 'articleTitle',
     align: 'center',
+    width: 260,
+    ellipsis: true,
   },
   {
     title: '类型',
     dataIndex: 'articleType',
     align: 'center',
+    width: 90,
   },
   {
     title: '分类',
     dataIndex: 'categoryName',
     align: 'center',
+    width: 110,
   },
   {
     title: '标签',
     dataIndex: 'tagsName',
     align: 'center',
+    width: 180,
   },
   {
     title: '状态',
     dataIndex: 'status',
     align: 'center',
+    width: 100,
   },
   {
     title: '是否顶置',
     dataIndex: 'isTop',
     align: 'center',
+    width: 100,
   },
   {
     title: '访问量',
     dataIndex: 'visitCount',
     align: 'center',
+    width: 90,
   },
   {
     title: '作者',
     dataIndex: 'userName',
     align: 'center',
+    width: 100,
   },
   {
     title: '发布时间',
     dataIndex: 'createTime',
     align: 'center',
+    width: 140,
   },
   {
     title: '操作',
     dataIndex: 'operation',
     align: 'center',
+    width: 190,
+    fixed: 'right',
   },
 ]
 
@@ -341,12 +355,14 @@ const domain = import.meta.env.VITE_APP_DOMAIN_NAME_FRONT
     </template>
     <template #table-content>
       <a-table
+        class="article-list-table"
         :columns="columns"
         :data-source="tabData"
         :loading="loading"
         :row-selection="{ selectedRowKeys: state.selectedRowKeys, onChange: onSelectChange }"
         :row-key="record => record.id"
         size="small"
+        :scroll="{ x: 1540 }"
         :pagination="{
           current: pagination.current,
           pageSize: pagination.pageSize,
@@ -471,5 +487,13 @@ const domain = import.meta.env.VITE_APP_DOMAIN_NAME_FRONT
 </template>
 
 <style scoped lang="scss">
+.article-list-table {
+  width: 100%;
+  max-width: 100%;
+}
 
+:deep(.article-list-table .ant-table-content) {
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
 </style>
