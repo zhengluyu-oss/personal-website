@@ -1,0 +1,67 @@
+# category-blog-hero-copy Specification
+
+## Purpose
+TBD - created by archiving change configurable-category-blog-hero. Update Purpose after archive.
+## Requirements
+### Requirement: 分类保存独立 Hero 文案
+系统 SHALL 允许管理员为每个文章分类独立保存 Hero 眉题、主标题强调段、主标题后半段和简介；四个字段 SHALL 可为空且 SHALL 与分类记录一同新增、查询、更新和删除。
+
+#### Scenario: 新增带 Hero 文案的分类
+- **WHEN** 管理员新增分类并填写四个 Hero 文案字段
+- **THEN** 系统保存分类及对应文案，并在再次打开分类表单时完整回显
+
+#### Scenario: 清空已有分类文案
+- **WHEN** 管理员清空一个或多个 Hero 文案字段并保存分类
+- **THEN** 系统将对应字段持久化为空，而不是保留旧值
+
+### Requirement: 管理端提供受约束的文案编辑
+分类管理表单 SHALL 为四个 Hero 字段提供清晰标签、用途说明、字符计数和长度限制，并 SHALL 对只包含空白字符的输入执行去空白归一化。
+
+#### Scenario: 输入超过字段长度限制
+- **WHEN** 管理员输入的 Hero 文案超过对应字段允许长度
+- **THEN** 管理端阻止提交并显示可理解的校验提示，后端也拒绝绕过前端限制的无效请求
+
+#### Scenario: 输入只有空白字符
+- **WHEN** 管理员将某个 Hero 字段填写为仅包含空格或换行的内容
+- **THEN** 系统将该字段视为空配置并使用回退文案
+
+### Requirement: 公开分类响应包含 Hero 配置
+公开分类查询 SHALL 返回每个分类的四个 Hero 文案字段，且 SHALL 不新增 API 路径或改变现有分类标识、文章数量和推荐文章字段的语义。
+
+#### Scenario: 获取分类导航数据
+- **WHEN** 博客前端请求现有公开分类列表
+- **THEN** 每个分类对象同时包含其 Hero 文案配置、文章数量和现有分类信息
+
+#### Scenario: 读取迁移前的旧分类
+- **WHEN** 旧分类的 Hero 字段均为空
+- **THEN** 公开分类查询正常返回，且不因空字段报错
+
+### Requirement: 分类切换动态更新 Hero 左侧文案
+博客前端 SHALL 在 `/blog/:slug` 根据当前分类渲染其 Hero 眉题、双色主标题和简介，并 SHALL 在同页切换分类时同步更新文案而无需整页刷新。
+
+#### Scenario: 进入已配置文案的分类
+- **WHEN** 访客进入一个已配置全部 Hero 字段的分类路由
+- **THEN** Hero 左侧展示该分类的眉题、主标题强调段、主标题后半段和简介，右侧继续展示该分类文章统计
+
+#### Scenario: 在两个分类间切换
+- **WHEN** 访客从一个分类点击进入另一个分类
+- **THEN** Hero 左侧文案和右侧统计均切换为目标分类的数据，且不会短暂保留上一个分类的文案
+
+### Requirement: 未配置字段稳定回退
+系统 SHALL 对四个 Hero 字段逐项回退；某字段为空时 SHALL 使用当前 `/blog` 页面已有的对应默认文案，而其他已配置字段仍 SHALL 生效。`/blog` 全部文章页 SHALL 始终使用现有默认文案。
+
+#### Scenario: 分类只配置部分字段
+- **WHEN** 当前分类仅配置主标题而未配置眉题和简介
+- **THEN** 页面展示分类主标题，同时眉题和简介分别使用默认值
+
+#### Scenario: 返回全部文章页
+- **WHEN** 访客从分类页返回 `/blog`
+- **THEN** Hero 左侧恢复默认文案，且不残留此前分类配置
+
+### Requirement: Hero 文案保持响应式可读性
+分类自定义文案 SHALL 复用现有 Hero 视觉结构，并 MUST 在桌面端和移动端安全换行，不得造成横向溢出、覆盖文章统计或破坏分类导航布局。
+
+#### Scenario: 移动端展示接近上限的标题
+- **WHEN** 移动端打开一个主标题长度接近允许上限的分类
+- **THEN** 标题在 Hero 内自然换行，右侧统计移动到既有移动端位置，页面不产生横向滚动
+
