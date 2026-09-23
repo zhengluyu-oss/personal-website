@@ -148,7 +148,7 @@ public class LogAspect {
                 .module(logAnnotation.module())
                 .operation(logAnnotation.operation())
                 .ip(ipAddr)
-                .description(operation.summary())
+                .description(operation == null ? methodName : operation.summary())
                 .reqMapping(request.getMethod())
                 .userName(StringUtils.isNull(user) ? FunctionConst.UNKNOWN_USER : user.getUsername())
                 .method(className + "." + methodName + "()")
