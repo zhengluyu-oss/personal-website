@@ -24,7 +24,10 @@ public class ExperienceProjectController {
     public ResponseResult<ExperienceProjectVO> get(@PathVariable Long experienceId,@PathVariable Long projectId){ExperienceProjectVO v=service.getPublic(experienceId,projectId);return v==null?ResponseResult.failure("项目不存在或未发布"):ResponseResult.success(v);}
     @PreAuthorize("hasAnyAuthority('blog:experience:list')") @GetMapping("/back/list") public ResponseResult<List<ExperienceProjectVO>> backList(@PathVariable Long experienceId){return ResponseResult.success(service.listBack(experienceId));}
     @PreAuthorize("hasAnyAuthority('blog:experience:list')") @GetMapping("/back/get/{projectId}") public ResponseResult<ExperienceProjectVO> backGet(@PathVariable Long experienceId,@PathVariable Long projectId){return ResponseResult.success(service.getBack(experienceId,projectId));}
+    @Operation(summary="新增经历项目")
     @PreAuthorize("hasAnyAuthority('blog:experience:add')") @LogAnnotation(module="经历项目",operation=LogConst.INSERT) @AccessLimit(seconds=60,maxCount=30) @PutMapping("/back/add") public ResponseResult<Void> add(@PathVariable Long experienceId,@RequestBody @Valid ExperienceProjectDTO dto){return service.add(experienceId,dto);}
+    @Operation(summary="修改经历项目")
     @PreAuthorize("hasAnyAuthority('blog:experience:update')") @LogAnnotation(module="经历项目",operation=LogConst.UPDATE) @AccessLimit(seconds=60,maxCount=30) @PostMapping("/back/update") public ResponseResult<Void> update(@PathVariable Long experienceId,@RequestBody @Valid ExperienceProjectDTO dto){return service.update(experienceId,dto);}
+    @Operation(summary="删除经历项目")
     @PreAuthorize("hasAnyAuthority('blog:experience:delete')") @LogAnnotation(module="经历项目",operation=LogConst.DELETE) @AccessLimit(seconds=60,maxCount=30) @DeleteMapping("/back/delete") public ResponseResult<Void> delete(@PathVariable Long experienceId,@RequestBody List<Long> ids){return service.delete(experienceId,ids);}
 }
