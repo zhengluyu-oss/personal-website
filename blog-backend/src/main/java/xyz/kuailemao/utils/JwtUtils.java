@@ -39,7 +39,7 @@ public class JwtUtils {
     @Value("${spring.security.jwt.expire}")
     private int expire;
 
-    @Value("${spring.security.jwt.admin-expire-minutes:30}")
+    @Value("${spring.security.jwt.admin-expire-minutes:1440}")
     private int adminExpireMinutes;
 
     @Resource
