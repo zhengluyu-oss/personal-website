@@ -37,7 +37,12 @@ export interface HomeArticle {
 
 export function articleItems(value: unknown): HomeArticle[] {
   if (!Array.isArray(value)) throw new Error('Invalid article response')
-  return value.filter(item => item && (typeof item.id === 'number' || typeof item.id === 'string') && typeof item.articleTitle === 'string')
+  return value.filter(item => item && articleKey(item.id) && typeof item.articleTitle === 'string')
+}
+
+function articleKey(id: unknown): string {
+  if (typeof id === 'number') return Number.isFinite(id) ? String(id) : ''
+  return typeof id === 'string' ? id.trim() : ''
 }
 
 export function articlePage(value: unknown) {
@@ -50,15 +55,23 @@ export function articlePage(value: unknown) {
 }
 
 export function selectHomeArticles(latest: HomeArticle[], recommended: HomeArticle[]) {
-  const featured = recommended[0] || latest[0]
-  const seen = new Set<string>(featured ? [String(featured.id)] : [])
-  const articles = latest.filter(item => {
-    const id = String(item.id)
+  const seen = new Set<string>()
+  const featuredItems = articleItems(recommended).filter(item => {
+    const id = articleKey(item.id)
     if (seen.has(id)) return false
     seen.add(id)
     return true
+  }).slice(0, 1)
+  if (!featuredItems.length) featuredItems.push(...articleItems(latest).slice(0, 1))
+  seen.clear()
+  featuredItems.forEach(item => seen.add(articleKey(item.id)))
+  const articles = [...articleItems(recommended), ...articleItems(latest)].filter(item => {
+    const id = articleKey(item.id)
+    if (!id || seen.has(id)) return false
+    seen.add(id)
+    return true
   }).slice(0, 5)
-  return { featured, articles }
+  return { featured: featuredItems[0], featuredItems, articles }
 }
 
 export function homeCount(status: HomeResource<unknown>['status'], count?: number) {
@@ -72,7 +85,17 @@ export function firstBanner(value: unknown): string {
 }
 
 export function homeExcerpt(value = '', limit = 96) {
-  const text = value.replace(/<[^>]*>/g, ' ').replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*#>`~|]|\s+/g, ' ').trim()
+  let fence = ''
+  const prose = value.split(/\r?\n/).filter(line => {
+    const marker = line.match(/^\s{0,3}(`{3,}|~{3,})/)
+    if (marker) {
+      if (!fence) fence = marker[1]
+      else if (marker[1][0] === fence[0] && marker[1].length >= fence.length) fence = ''
+      return false
+    }
+    return !fence
+  }).join(' ')
+  const text = prose.replace(/<[^>]*>/g, ' ').replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').replace(/[*#>`~|]/g, '').replace(/\s+/g, ' ').trim()
   return text.length > limit ? `${text.slice(0, limit)}…` : text
 }

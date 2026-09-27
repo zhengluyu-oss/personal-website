@@ -381,20 +381,20 @@ if command -v nginx >/dev/null 2>&1; then
 else
   exit 1
 fi
-HTML=`$(curl -fsS -H 'Host: www.zhengluyu.com' http://127.0.0.1/)
+HTML=`$(curl -fsS --resolve 'www.zhengluyu.com:443:127.0.0.1' https://www.zhengluyu.com/)
 ASSET=`$(printf '%s' "`$HTML" | grep -oE '/js/[^" ]+\.js' | head -n 1)
 test -n "`$ASSET"
 echo "HEALTH_ASSET=`$ASSET"
 HEADERS=''
 for ATTEMPT in 1 2 3 4 5; do
-  HEADERS=`$(curl -fsS -D - -o /dev/null -H 'Host: www.zhengluyu.com' -H 'Accept-Encoding: gzip' "http://127.0.0.1`${ASSET}")
+  HEADERS=`$(curl -fsS -D - -o /dev/null --resolve 'www.zhengluyu.com:443:127.0.0.1' -H 'Accept-Encoding: gzip' "https://www.zhengluyu.com`${ASSET}")
   if printf '%s\n' "`$HEADERS" | grep -qi '^Content-Encoding: gzip'; then break; fi
   sleep 1
 done
 printf '%s\n' "`$HEADERS"
 printf '%s\n' "`$HEADERS" | grep -qi '^Content-Encoding: gzip'
 printf '%s\n' "`$HEADERS" | grep -qi '^Cache-Control: .*immutable'
-curl -fsS -H 'Host: www.zhengluyu.com' http://127.0.0.1/api/websiteInfo/front >/dev/null
+curl -fsS --resolve 'www.zhengluyu.com:443:127.0.0.1' https://www.zhengluyu.com/api/websiteInfo/front >/dev/null
 trap - ERR
 # 保留一版静态资源，为部署前已打开的页面继续提供旧哈希分包。
 # 下一次部署会先删除并重新生成该目录，因此磁盘占用不会持续累积。
