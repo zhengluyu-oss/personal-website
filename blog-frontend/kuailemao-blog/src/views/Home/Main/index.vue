@@ -57,8 +57,8 @@ onBeforeUnmount(() => { active = false })
       </header>
       <div v-if="work.data?.length" class="work-list">
         <article v-for="item in work.data.slice(0, 2)" :key="item.id" class="work-entry">
-          <RouterLink :to="experiencePath(item.id)" class="work-link">
-            <div class="work-role"><p class="company">{{ item.company }}</p><h3>{{ item.roleTitle }}</h3><p class="period">{{ period(item) }}</p></div>
+          <RouterLink :to="experiencePath(item.id)" class="work-link" :class="{ 'work-link--compact': !summary(item) && !highlights(item).length }">
+            <div class="work-role"><h3>{{ item.company }}</h3><p class="company">{{ item.roleTitle }}</p><p class="period">{{ period(item) }}</p></div>
             <div class="work-evidence">
               <p v-if="summary(item)" class="work-summary">{{ summary(item) }}</p>
               <ul v-if="highlights(item).length"><li v-for="line in highlights(item)" :key="line">{{ line }}</li></ul>
@@ -78,23 +78,27 @@ onBeforeUnmount(() => { active = false })
         <div><h2 id="writing-title">博客文章</h2><p>最近发布的技术笔记与项目复盘。</p></div>
         <RouterLink class="section-link" :to="PUBLIC_PATHS.blog">查看全部文章 <span aria-hidden="true">→</span></RouterLink>
       </header>
-      <article v-if="selection.featured" class="featured-story">
-        <RouterLink class="featured-link" :to="articlePath(selection.featured.id)">
-          <HomeMedia :key="selection.featured.id" :src="selection.featured.articleCover" :alt="selection.featured.articleTitle + '封面'" />
+      <div v-if="selection.featuredItems.length" class="featured-grid">
+      <article v-for="featured in selection.featuredItems" :key="featured.id" class="featured-story">
+        <RouterLink class="featured-link" :to="articlePath(featured.id)">
+          <HomeMedia :src="featured.articleCover" :alt="featured.articleTitle + '封面'" />
           <div class="featured-body">
             <div class="article-meta">
-              <span>{{ selection.featured.categoryName || '最近发布' }}</span>
-              <time v-if="selection.featured.createTime">{{ selection.featured.createTime.slice(0, 10) }}</time>
+              <span>{{ recommended.data?.length ? '精选文章' : '最近发布' }}</span>
+              <span v-if="featured.categoryName">{{ featured.categoryName }}</span>
+              <time v-if="featured.createTime">{{ featured.createTime.slice(0, 10) }}</time>
             </div>
-            <h3>{{ selection.featured.articleTitle }}</h3>
-            <p v-if="selection.featured.articleContent">{{ homeExcerpt(selection.featured.articleContent, 140) }}</p>
+            <h3>{{ featured.articleTitle }}</h3>
+            <p v-if="homeExcerpt(featured.articleContent)">{{ homeExcerpt(featured.articleContent, 140) }}</p>
             <span class="read-link">阅读全文 <span aria-hidden="true">→</span></span>
           </div>
         </RouterLink>
       </article>
+      </div>
       <div v-else-if="pending(latest) || pending(recommended)" class="article-skeleton" role="status" aria-label="博客文章加载中"><div /><span /><span /></div>
       <div v-else class="module-empty"><h3>这里将展示博客文章</h3><p>{{ latest.status === 'error' || recommended.status === 'error' ? '内容暂未加载，请稍后重试。' : '新的内容发布后，会出现在这里。' }}</p></div>
       <p v-if="recommended.status === 'error'" class="module-message" role="status">推荐暂未加载<span v-if="selection.featured">，先看看最近的文章。</span><button type="button" @click="loadRecommendations">重试推荐</button></p>
+      <h3 v-if="selection.articles.length" class="recent-heading">近期文章</h3>
       <ol v-if="selection.articles.length" class="story-list">
         <li v-for="item in selection.articles" :key="item.id">
           <RouterLink class="story-link" :to="articlePath(item.id)">
@@ -137,12 +141,14 @@ onBeforeUnmount(() => { active = false })
 .featured-story { overflow: hidden; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-md); background: var(--brand-surface); }
 .featured-link { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); min-height: 22rem; color: inherit; text-decoration: none; overflow-wrap: anywhere; }
 .featured-story :deep(.home-media) { height: 100%; min-height: 22rem; aspect-ratio: auto; border-radius: 0; }
-.featured-story :deep(img) { object-fit: cover; }
+.featured-story :deep(img) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.featured-grid { display: grid; gap: 1.25rem; }
+.recent-heading { margin: 2rem 0 -.6rem; font-size: 1rem; color: var(--brand-ink-soft); font-weight: 600; }
 .featured-body { display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: 2rem 2.4rem; }
 .article-meta { display: flex; flex-wrap: wrap; gap: .5rem 1rem; color: var(--brand-ink-soft); font-size: .85rem; line-height: 1.6; }
 .featured-body .article-meta > span { color: var(--brand-accent-strong); font-weight: 600; }
-.featured-link h3 { margin: .75rem 0 0; font-size: clamp(1.7rem, 2.8vw, 2.4rem); font-weight: 680; line-height: 1.28; letter-spacing: -.03em; }
-.featured-link p { margin: .9rem 0 0; max-width: 38rem; font-size: 1rem; color: var(--brand-ink-soft); line-height: 1.8; }
+.featured-link h3 { margin: .75rem 0 0; font-size: clamp(1.5rem, 2.2vw, 2rem); font-weight: 680; line-height: 1.4; letter-spacing: -.02em; }
+.featured-link p { margin: .9rem 0 0; max-width: 38rem; font-size: 1rem; color: var(--brand-ink-soft); line-height: 1.8; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .featured-link .read-link { margin-top: 1.35rem; }
 .read-link { color: var(--brand-accent-strong); font-size: .9rem; font-weight: 600; }
 .read-link span { margin-left: .5rem; }
@@ -159,6 +165,8 @@ onBeforeUnmount(() => { active = false })
 .work-link { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 2rem; padding: 1.6rem 1.75rem; color: inherit; text-decoration: none; border-radius: inherit; overflow-wrap: anywhere; }
 .company { margin: 0 0 .5rem; font-size: 1rem; color: var(--brand-ink-soft); line-height: 1.65; }
 .work-role h3 { margin: 0; font-size: 1.4rem; font-weight: 650; line-height: 1.5; }
+.work-role .company { margin-top: .4rem; }
+.work-link--compact { grid-template-columns: 1fr; gap: .3rem; }
 .period { margin: .65rem 0 0; font-size: .9rem; color: var(--brand-ink-soft); }
 .work-summary { margin: 0 0 .6rem; font-size: 1rem; line-height: 1.75; }
 .work-evidence ul { padding-left: 1.1rem; margin: .6rem 0; color: var(--brand-ink-soft); font-size: .95rem; line-height: 1.8; list-style: disc; }
@@ -192,7 +200,7 @@ button:hover { background: var(--brand-accent-soft); }
   .section-header { flex-wrap: wrap; align-items: start; gap: .35rem; }
   .section-header p { font-size: .95rem; }
   .featured-link, .article-skeleton { grid-template-columns: 1fr; min-height: 0; }
-  .featured-story :deep(.home-media) { min-height: 0; aspect-ratio: 16 / 9; }
+  .featured-story :deep(.home-media) { height: auto; min-height: 0; aspect-ratio: 16 / 9; }
   .featured-body { padding: 1.25rem 1.15rem 1.4rem; }
   .featured-link h3 { font-size: 1.45rem; }
   .story-list, .list-skeleton { grid-template-columns: 1fr; column-gap: 0; }

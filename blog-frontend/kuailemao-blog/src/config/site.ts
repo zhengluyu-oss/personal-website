@@ -6,6 +6,9 @@ export const SITE_SLUG = 'zhengluyu'
 
 export const GITHUB_URL = 'https://github.com/zhengluyu-oss'
 export const GITHUB_REPO_URL = 'https://github.com/zhengluyu-oss/personal-website'
+/** 仅填写站长明确希望公开的渠道；未提供时不显示入口。 */
+export const PUBLIC_CONTACT_LINKS: { label: string; href: string }[] = []
+export const PUBLIC_RESUME_URL = ''
 /** @deprecated 兼容旧引用，等同仓库地址 */
 export const GITEE_URL = GITHUB_REPO_URL
 

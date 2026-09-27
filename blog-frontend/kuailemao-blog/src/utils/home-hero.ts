@@ -20,8 +20,8 @@ const DEFAULT_HERO = {
 }
 
 const DEFAULT_ACTIONS = {
-  primary: { text: '阅读博客', href: '/blog', external: false },
-  secondary: { text: '查看工作经历', href: '/experience', external: false },
+  primary: { text: '查看工作经历', href: '/experience', external: false },
+  secondary: { text: '阅读博客', href: '/blog', external: false },
 }
 
 export function safeHeroUrl(value = '') {
