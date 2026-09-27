@@ -1,114 +1,66 @@
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue'
 import useWebsiteStore from '@/store/modules/website.ts'
-import {
-  ABOUT_BIO,
-  ABOUT_HEADLINE,
-  ABOUT_TAGLINE,
-  GITHUB_REPO_URL,
-  GITHUB_URL,
-} from '@/config/site'
+import { ABOUT_BIO, ABOUT_HEADLINE, ABOUT_TAGLINE, GITHUB_REPO_URL, GITHUB_URL, PUBLIC_CONTACT_LINKS, PUBLIC_RESUME_URL, SITE_AUTHOR } from '@/config/site'
+import { publicContacts, publicProfileUrl } from '@/utils/public-profile'
 
-const websiteStore = useWebsiteStore()
+const website = useWebsiteStore()
+const contacts = publicContacts(PUBLIC_CONTACT_LINKS)
+const resume = publicProfileUrl(PUBLIC_RESUME_URL, 'resume')
+const github = computed(() => publicProfileUrl(website.webInfo?.githubLink || '') || GITHUB_URL)
+const name = computed(() => website.webInfo?.webmasterName?.trim() || SITE_AUTHOR)
+const avatarFailed = ref(false)
+watch(() => website.webInfo?.webmasterAvatar, () => { avatarFailed.value = false })
 </script>
 
 <template>
-  <div class="flex justify-center items-center h-[100%] w-[99%]">
-    <div class="flex justify-center items-center max-lg:flex-col h-full w-full xl:w-[90%]">
-      <div class="w-[40%] max-lg:w-full h-full flex flex-col justify-center items-center">
-        <div class="h-[20rem] w-[20rem] rounded-full overflow-hidden mt-[5rem] drop-shadow-lg">
-          <div
-            class="bg-cover bg-no-repeat bg-center w-full h-full"
-            :style="{ 'background-image': 'url(' + websiteStore.webInfo?.webmasterAvatar + ')' }"
-          />
+  <main class="about-page">
+    <div class="about-shell">
+      <header class="about-heading"><p>关于我</p><h1>{{ name }}</h1><p class="direction">{{ ABOUT_HEADLINE }}</p></header>
+      <div class="about-layout">
+        <div class="portrait">
+          <img v-if="website.webInfo?.webmasterAvatar && !avatarFailed" :src="website.webInfo.webmasterAvatar" :alt="name + '的头像'" @error="avatarFailed = true">
+          <span v-else class="portrait-fallback" aria-hidden="true">{{ name.slice(0, 1) }}</span>
         </div>
-        <div>
-          <h1 :data-shadow="websiteStore.webInfo?.webmasterName">
-            {{ websiteStore.webInfo?.webmasterName }}
-          </h1>
-        </div>
-        <div class="text-gray-600 w-full font-bold dark:text-gray-300 text-center px-4">
-          {{ ABOUT_TAGLINE }}
-        </div>
-      </div>
-      <div class="flex flex-col justify-center items-center xl:w-[40%] lg:w-[60%] h-full">
-        <div class="w-full h-[60vh] flex flex-col justify-center items-center px-4">
-          <div
-            class="w-full text-[2.5rem] text-center text-gray-600 dark:text-gray-300 max-lg:text-[1.75rem] max-lg:pb-6"
-          >
-            {{ ABOUT_HEADLINE }}
-          </div>
-          <div class="mt-4 text-center text-gray-500 dark:text-gray-300 max-lg:px-3 leading-relaxed">
-            {{ ABOUT_BIO }}
-          </div>
-        </div>
-        <div class="w-full h-[40vh] flex flex-col justify-center items-center gap-6">
-          <div class="text-gray-600 dark:text-gray-300">个人导航</div>
-          <a :href="GITHUB_URL" target="_blank" rel="noopener noreferrer">
-            <div
-              class="bg-white dark:bg-slate-800 w-[120px] h-[120px] flex flex-col justify-center items-center rounded-2xl drop-shadow-lg gap-2"
-            >
-              <SvgIcon name="github_icon" width="72px" height="100px" />
-              <span class="text-xs text-gray-500 dark:text-gray-400">GitHub</span>
-            </div>
-          </a>
-          <a
-            :href="GITHUB_REPO_URL"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-sm text-blue-500 hover:underline"
-          >
-            本站源码仓库 →
-          </a>
+        <div class="about-body">
+          <section aria-labelledby="intro-heading"><h2 id="intro-heading">{{ ABOUT_TAGLINE }}</h2><p class="bio">{{ ABOUT_BIO }}</p></section>
+          <section class="profile-links" aria-labelledby="links-heading">
+            <h2 id="links-heading">在这里继续了解我</h2>
+            <nav aria-label="个人公开链接">
+              <a :href="github" target="_blank" rel="noopener noreferrer">GitHub 个人主页 <span aria-hidden="true">↗</span></a>
+              <RouterLink to="/experience">工作经历 <span aria-hidden="true">→</span></RouterLink>
+              <RouterLink to="/blog">阅读博客 <span aria-hidden="true">→</span></RouterLink>
+              <a v-for="contact in contacts" :key="contact.href" :href="contact.href" :target="contact.href.startsWith('https:') ? '_blank' : undefined" rel="noopener noreferrer">{{ contact.label }} <span aria-hidden="true">↗</span></a>
+              <a v-if="resume" :href="resume" target="_blank" rel="noopener noreferrer">查看简历 <span aria-hidden="true">↗</span></a>
+            </nav>
+            <a class="source-link" :href="GITHUB_REPO_URL" target="_blank" rel="noopener noreferrer">本站源码仓库 <span aria-hidden="true">↗</span></a>
+          </section>
         </div>
       </div>
     </div>
-  </div>
+  </main>
 </template>
 
 <style scoped lang="scss">
-@import url(https://fonts.googleapis.com/css?family=Righteous);
-
-*,
-*:before,
-*:after {
-  box-sizing: border-box;
-  position: relative;
-}
-
-h1 {
-  display: inline-block;
-  color: white;
-  font-family: 'Righteous', serif;
-  font-size: 10em;
-  text-shadow: 0.03em 0.03em 0 hsla(230, 40%, 50%, 1);
-}
-h1:after {
-  content: attr(data-shadow);
-  position: absolute;
-  top: 0.06em;
-  left: 0.06em;
-  z-index: -1;
-  text-shadow: none;
-  background-image: linear-gradient(
-    45deg,
-    transparent 45%,
-    hsla(48, 20%, 90%, 1) 45%,
-    hsla(48, 20%, 90%, 1) 55%,
-    transparent 0
-  );
-  background-size: 0.05em 0.05em;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-
-  animation: shad-anim 15s linear infinite;
-}
-
-@keyframes shad-anim {
-  0% {
-    background-position: 0 0;
-  }
-  0% {
-    background-position: 100% -100%;
-  }
-}
+.about-page { min-height: 100dvh; padding: 7rem 0 4rem; background: var(--brand-canvas); color: var(--brand-ink); }
+.about-shell { width: min(calc(100% - 4rem), 68rem); margin: auto; }
+.about-heading { padding-bottom: 2.5rem; border-bottom: 1px solid var(--brand-line); }
+.about-heading > p { margin: 0; color: var(--brand-accent-strong); }
+.about-heading h1 { margin: .65rem 0 1rem; font-size: clamp(2.8rem, 5vw, 4.5rem); line-height: 1.15; letter-spacing: -.04em; overflow-wrap: anywhere; }
+.about-heading .direction { color: var(--brand-ink-soft); font-size: 1.1rem; }
+.about-layout { display: grid; grid-template-columns: minmax(0, .65fr) minmax(0, 1.35fr); gap: clamp(2rem, 6vw, 5rem); padding-top: 3rem; align-items: start; }
+.portrait { aspect-ratio: 1; overflow: hidden; border-radius: var(--brand-radius-md); background: var(--brand-accent-soft); }
+.portrait img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.portrait-fallback { display: grid; height: 100%; place-items: center; color: var(--brand-accent-strong); font-size: 4rem; }
+.about-body { min-width: 0; }
+.about-body h2 { margin: 0; font-size: clamp(1.25rem, 2vw, 1.55rem); font-weight: 650; line-height: 1.65; overflow-wrap: anywhere; }
+.bio { margin: 1.25rem 0 0; color: var(--brand-ink-soft); font-size: 1.05rem; line-height: 1.95; white-space: pre-line; overflow-wrap: anywhere; }
+.profile-links { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--brand-line); }
+.profile-links h2 { font-size: 1rem; }
+.profile-links nav { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; margin: 1rem 0; }
+.profile-links a { display: inline-flex; align-items: center; gap: .6rem; min-height: 44px; color: var(--brand-accent-strong); text-decoration: none; overflow-wrap: anywhere; }
+.profile-links a:hover { text-decoration: underline; text-underline-offset: .3em; }
+.profile-links a:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 4px; }
+.profile-links .source-link { color: var(--brand-ink-soft); font-size: .9rem; }
+@media (max-width: 767px) { .about-page { padding-top: 6rem; } .about-shell { width: calc(100% - 2rem); } .about-layout { grid-template-columns: 1fr; gap: 2rem; padding-top: 2rem; } .portrait { width: min(100%, 14rem); } .about-heading { padding-bottom: 1.75rem; } }
 </style>

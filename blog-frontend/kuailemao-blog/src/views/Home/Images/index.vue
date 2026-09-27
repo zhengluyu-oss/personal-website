@@ -21,6 +21,14 @@ onBeforeUnmount(() => { active = false })
 
 <style scoped lang="scss">
 .hero-image { min-width: 0; }
+.hero-image :deep(.home-media img) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
 .banner-retry { margin-top: .75rem; padding: .5rem .75rem; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); background: var(--brand-surface); color: var(--brand-accent-strong); cursor: pointer; }
 .banner-retry:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 3px; }
 </style>

@@ -3,6 +3,8 @@ export const PUBLIC_PATHS = {
   experience: '/experience',
   experienceDetail: '/experience/:id',
   experienceProject: '/experience/:id/projects/:projectId',
+  websiteShares: '/website-shares',
+  websiteShareDetail: '/website-shares/:id',
   blog: '/blog',
   article: '/blog/articles/:id',
   category: '/blog/:slug',
