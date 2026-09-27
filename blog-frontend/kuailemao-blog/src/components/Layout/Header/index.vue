@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import {ref} from 'vue'
+import {onBeforeUnmount, ref} from 'vue'
 import {
   Setting, Promotion, Close
 } from '@element-plus/icons-vue'
@@ -58,6 +58,20 @@ const logoutSub = () => {
 }
 
 const drawer = ref(false)
+const menuTrigger = ref<HTMLButtonElement>()
+let removeBreakpointListener = () => {}
+onMounted(() => {
+  const desktop = window.matchMedia('(min-width: 911px)')
+  const closeOnDesktop = () => { if (desktop.matches) drawer.value = false }
+  desktop.addEventListener('change', closeOnDesktop)
+  removeBreakpointListener = () => desktop.removeEventListener('change', closeOnDesktop)
+})
+onBeforeUnmount(() => removeBreakpointListener())
+function restoreMenuFocus(event?: Event) {
+  event?.preventDefault()
+  const target = window.matchMedia('(min-width: 911px)').matches ? document.querySelector<HTMLElement>('.menu a') : menuTrigger.value
+  target?.focus()
+}
 
 </script>
 <template>
@@ -85,7 +99,7 @@ const drawer = ref(false)
   <!-- 移动端 -->
   <div class="move_nav">
     <div class="move_nav__left">
-      <button class="mobile-action" type="button" aria-label="打开导航" @click="drawer = true">
+      <button ref="menuTrigger" class="mobile-action" type="button" aria-label="打开导航" :aria-expanded="drawer" aria-controls="mobile-navigation" @click="drawer = true">
         <SvgIcon name="directory_icon" width="30" height="30" color="#409EFF" class="icon"/>
       </button>
       <router-link class="mobile-brand" to="/">陆屿</router-link>
@@ -93,9 +107,9 @@ const drawer = ref(false)
 
     <!-- 搜索按钮 -->
     <div class="right_nav">
-      <div class="search" @click="dialogVisible = true" style="margin-right: 2rem">
+      <button type="button" aria-label="搜索" class="search mobile-action" @click="dialogVisible = true">
         <SvgIcon name="search" width="30" height="30" color="#409EFF" class="icon"/>
-      </div>
+      </button>
       <div class="user-info">
         <div v-if="userStore.userInfo == undefined">
           <el-tooltip
@@ -104,7 +118,7 @@ const drawer = ref(false)
               content="点击去登录"
               placement="right"
           >
-            <el-avatar @click="$router.push('/auth/login')" style="margin-right: 3rem">登录</el-avatar>
+            <RouterLink to="/auth/login" aria-label="登录"><el-avatar>登录</el-avatar></RouterLink>
           </el-tooltip>
         </div>
         <div v-else style="display: flex">
@@ -163,14 +177,14 @@ const drawer = ref(false)
     </div>
   </div>
   <div>
-    <el-drawer v-model="drawer" :with-header="true" size="40%" direction="ltr" :show-close="false">
+    <el-drawer v-model="drawer" :with-header="true" size="min(22rem, calc(100vw - 2rem))" direction="ltr" :show-close="false" @close-auto-focus="restoreMenuFocus">
       <template #header>
         <span style="font-size: 1.2rem">导航</span>
-        <el-button :icon="Close" style="background: none;font-size: 1.5rem;width: 30px;border: none"
+        <el-button aria-label="关闭导航" :icon="Close" style="background: none;font-size: 1.5rem;width: 44px;height: 44px;border: none"
                    @click="drawer = false"/>
       </template>
       <template #default>
-        <MoveMenu @update:closeDrawer="drawer = false"/>
+        <MoveMenu id="mobile-navigation" @update:closeDrawer="drawer = false"/>
       </template>
     </el-drawer>
   </div>
@@ -199,7 +213,7 @@ const drawer = ref(false)
   border-bottom: 1px solid var(--brand-line);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  @media screen and (min-width: 910px) {
+  @media screen and (min-width: 911px) {
     display: none;
   }
 
@@ -210,7 +224,10 @@ const drawer = ref(false)
 }
 
 .move_nav__left { display:flex; align-items:center; gap:.65rem; }
-.mobile-action { display:grid; width:2.6rem; height:2.6rem; place-items:center; padding:0; border:1px solid var(--brand-line); border-radius:.7rem; background:var(--brand-surface-solid); }
+.mobile-action { display:grid; width:44px; height:44px; place-items:center; padding:0; border:1px solid var(--brand-line); border-radius:.7rem; background:var(--brand-surface-solid); cursor:pointer; }
+.mobile-action:focus-visible, .mobile-brand:focus-visible { outline:2px solid var(--brand-accent);outline-offset:3px; }
+.move_nav .search { margin-right:.75rem; }
+.move_nav :deep(.el-avatar) { margin-right:0!important; }
 .mobile-brand { color:var(--brand-ink); font-size:1rem; font-weight:750; text-decoration:none; }
 
 .search {

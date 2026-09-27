@@ -19,6 +19,7 @@ import { setSeoMeta } from '@/utils/seo'
 import { categoryRoute } from '@/utils/category-slug'
 import { useBlogCategories } from '@/composables/useBlogCategories'
 import { sanitizeRenderedHtml } from '@/utils/sanitize-html'
+import { getLegacyWebsiteShareId } from '@/apis/website-share'
 
 const payQrUrl = ossUrl('blog/pay/支付宝支付二维码_.png')
 const env = import.meta.env;
@@ -76,8 +77,13 @@ onMounted(async () => {
 
 
 async function getArticleDetailById() {
-  getArticleDetail(route.params.id).then(res => {
+  getArticleDetail(route.params.id).then(async res => {
     if (!res.data) {
+      const legacy: any = await getLegacyWebsiteShareId(String(route.params.id)).catch(() => null)
+      if (legacy?.code === 200 && legacy.data) {
+        await router.replace(`/website-shares/${legacy.data}`)
+        return
+      }
       ElMessage.warning({
         message: '文章不存在',
       })

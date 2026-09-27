@@ -33,6 +33,20 @@ export const constantRouter = [
                     title: '工作经历详情',
                 }
             },
+            // 网站分享
+            { path: '/blog/wzfx', redirect: '/website-shares' },
+            {
+                path: PUBLIC_PATHS.websiteShares,
+                component: () => import('@/views/WebsiteShare/index.vue'),
+                name: 'websiteShares',
+                meta: { title: '网站分享' },
+            },
+            {
+                path: PUBLIC_PATHS.websiteShareDetail,
+                component: () => import('@/views/WebsiteShare/Detail.vue'),
+                name: 'websiteShareDetail',
+                meta: { title: '网站分享详情' },
+            },
             // 分类
             {
                 path: PUBLIC_PATHS.blog,

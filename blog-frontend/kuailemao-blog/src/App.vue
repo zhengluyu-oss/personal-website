@@ -7,7 +7,6 @@
   <!-- 无音乐后端时不挂载，避免启动时请求 /wapi -->
   <Music v-if="enhancementsReady && enableMusic" />
   <DevToolsBlocker v-if="enhancementsReady && enableDevToolsBlocker" :enableDevToolsBlocker="true" />
-  <ContextMenu v-if="enhancementsReady" />
 </template>
 
 <script setup lang="ts">
@@ -16,7 +15,6 @@ import useWebsiteStore from "@/store/modules/website.ts";
 
 const Music = defineAsyncComponent(() => import('@/components/Music/index.vue'))
 const DevToolsBlocker = defineAsyncComponent(() => import('@/components/DevToolsBlocker/index.vue'))
-const ContextMenu = defineAsyncComponent(() => import('@/components/ContextMenu/index.vue'))
 
 const useWebsite = useWebsiteStore()
 const enableMusic = Boolean(import.meta.env.VITE_MUSIC_SERVE)
