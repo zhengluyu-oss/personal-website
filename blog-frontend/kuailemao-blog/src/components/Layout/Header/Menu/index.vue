@@ -12,13 +12,26 @@ import useUserStore from "@/store/modules/user.ts"
 import router from "@/router";
 import useWebsiteStore from "@/store/modules/website.ts";
 import SvgIcon from "@/components/SvgIcon/index.vue";
-import {ref} from "vue";
+import {computed, ref, watch} from "vue";
+import {useRoute} from "vue-router";
 import {useBlogCategories} from "@/composables/useBlogCategories";
 
 const userStore = useUserStore()
 const useWebsite = useWebsiteStore()
 const dialogVisible = ref(false)
 const {categoryEntries, loadCategories} = useBlogCategories()
+const blogCategoryEntries = computed(() => categoryEntries.value.filter(entry => entry.categoryId !== 21))
+const route = useRoute()
+const categoriesOpen = ref(false)
+const categoryToggle = ref<HTMLButtonElement>()
+function leaveCategories(event: MouseEvent) {
+  if (!(event.currentTarget as HTMLElement).contains(document.activeElement)) categoriesOpen.value = false
+}
+function blurCategories(event: FocusEvent) {
+  if (!(event.currentTarget as HTMLElement).contains(event.relatedTarget as Node | null)) categoriesOpen.value = false
+}
+const closeCategories = () => { categoriesOpen.value = false; categoryToggle.value?.focus() }
+watch(() => route.fullPath, () => { categoriesOpen.value = false })
 
 const logoutSub = () => {
   logout().then((res: any) => {
@@ -55,69 +68,72 @@ onMounted(() => {
       <Search @isShowSearch="dialogVisible = false"/>
     </el-dialog>
   </div>
-  <nav>
+  <nav aria-label="主导航">
     <div id="menu-left">
       <div id="menus">
         <span id="blog-info">
           <a href="/">{{ useWebsite.webInfo?.websiteName }}</a>
         </span>
         <div class="menus_items">
-          <div class="menus_item" @click="router.push('/')">
+          <RouterLink class="menus_item" to="/">
             <span>
               <el-icon>
                 <HomeFilled/>
               </el-icon>
               <span>首页</span>
             </span>
-          </div>
-          <div class="menus_item" @click="router.push('/experience')">
+          </RouterLink>
+          <RouterLink class="menus_item" :class="{ 'is-section': route.path.startsWith('/experience') }" to="/experience">
             <span>
               <el-icon>
                 <Files/>
               </el-icon>
               <span>工作经历</span>
             </span>
-          </div>
-          <div class="menus_item blog-menu" @click="router.push('/blog')">
-            <span>
+          </RouterLink>
+          <div class="menus_item blog-menu" :class="{ 'is-section': route.path.startsWith('/blog') }" @mouseenter="categoriesOpen = true" @mouseleave="leaveCategories" @keydown.esc.stop.prevent="closeCategories" @focusout="blurCategories">
+            <RouterLink to="/blog" class="blog-destination">
               <el-icon><DocumentCopy/></el-icon>
               <span>个人博客</span>
-              <el-icon class="arrow"><ArrowDownBold/></el-icon>
-            </span>
-            <ul class="menus_item_child blog-menu-child">
-              <li class="all-categories" @click.stop="router.push('/blog')">
-                <span><el-icon><DocumentCopy/></el-icon><span>全部栏目</span></span>
+            </RouterLink>
+            <button ref="categoryToggle" type="button" class="category-toggle" aria-label="展开博客栏目" :aria-expanded="categoriesOpen" aria-controls="desktop-categories" @click="categoriesOpen = !categoriesOpen"><el-icon class="arrow"><ArrowDownBold/></el-icon></button>
+            <ul v-show="categoriesOpen" id="desktop-categories" class="menus_item_child blog-menu-child">
+              <li class="all-categories">
+                <RouterLink to="/blog"><el-icon><DocumentCopy/></el-icon><span>全部栏目</span></RouterLink>
               </li>
-              <li v-for="entry in categoryEntries" :key="entry.categoryId" @click.stop="router.push(entry.path)">
-                <span class="category-link"><span>{{ entry.category.categoryName }}</span><small v-if="entry.category.articleCount !== undefined">{{ entry.category.articleCount }}</small></span>
+              <li v-for="entry in blogCategoryEntries" :key="entry.categoryId">
+                <RouterLink :to="entry.path" class="category-link"><span>{{ entry.category.categoryName }}</span><small v-if="entry.category.articleCount !== undefined">{{ entry.category.articleCount }}</small></RouterLink>
               </li>
             </ul>
           </div>
-          <div class="menus_item" @click="router.push('/photos')">
+          <RouterLink class="menus_item" :class="{ 'is-section': route.path.startsWith('/website-shares') }" to="/website-shares">
+            <span><el-icon><Link/></el-icon><span>网站分享</span></span>
+          </RouterLink>
+          <RouterLink class="menus_item" to="/photos">
             <span>
               <el-icon>
                 <PictureFilled/>
               </el-icon>
               <span>相册</span>
             </span>
-          </div>
-          <div class="menus_item" @click="router.push('/about')">
+          </RouterLink>
+          <RouterLink class="menus_item" to="/about">
             <span>
               <el-icon>
                 <UserFilled/>
               </el-icon>
               <span>关于我</span>
             </span>
-          </div>
+          </RouterLink>
         </div>
       </div>
     </div>
     <div id="menu-right">
       <div id="search-button">
         <!-- 搜索按钮 -->
-        <div class="search" @click="dialogVisible = true">
+        <button type="button" aria-label="搜索" class="search" @click="dialogVisible = true">
           <SvgIcon name="search" width="30" height="30" color="#409EFF" class="icon"/>
-        </div>
+        </button>
       </div>
       <div class="user-info">
         <div v-if="!userStore.userInfo">
@@ -127,7 +143,7 @@ onMounted(() => {
               content="点击去登录"
               placement="right"
           >
-            <el-avatar @click="$router.push('/auth/login')" style="margin-right: 3rem">登录</el-avatar>
+            <RouterLink to="/auth/login" aria-label="登录"><el-avatar style="margin-right: 1rem">登录</el-avatar></RouterLink>
           </el-tooltip>
         </div>
         <div v-else style="display: flex">
@@ -421,4 +437,18 @@ nav {
   }
 }
 
+nav a { color: inherit; text-decoration: none; }
+nav { color: var(--brand-ink); }
+nav #menu-left #menus .menus_items .menus_item { text-shadow: none; }
+nav #menu-left #menus .menus_items .menus_item.is-section::before, nav #menu-left #menus .menus_items .menus_item.router-link-exact-active::before { width: 100%; background: var(--brand-accent-strong); }
+nav .menus_item.router-link-exact-active, nav .menus_item.is-section { color: var(--brand-accent-strong); }
+nav a:focus-visible, nav button:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: -3px; }
+.blog-destination { display: inline-flex; align-items: center; gap: .35rem; min-height: 44px; }
+.category-toggle { display: inline-grid; place-items: center; min-width: 44px; min-height: 44px; border: 0; background: transparent; color: inherit; cursor: pointer; }
+nav #menu-left #menus .menus_items .menus_item_child { display: block; animation: none; }
+nav #menu-left #menus .menus_items .menus_item_child li { padding: 0; }
+.menus_item_child a { display: flex; align-items: center; gap: .5rem; min-height: 44px; width: 100%; padding: .6rem .75rem; }
+.menus_item_child .router-link-exact-active { color: var(--brand-accent-strong); background: var(--brand-accent-soft); }
+#menu-right .search { min-width: 44px; min-height: 44px; border: 0; background: transparent; padding: 0; }
+@media (max-width:1100px) { nav #menu-left #menus .menus_items { gap: .25rem; padding-inline: .25rem; } nav #menu-left #menus .menus_items .menus_item { padding-inline: .3rem; } }
 </style>

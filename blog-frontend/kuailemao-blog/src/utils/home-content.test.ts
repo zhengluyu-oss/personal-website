@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { articlePage, createHomeResource, firstBanner, homeCount, loadHomeResource, selectHomeArticles } from './home-content.ts'
+import { articleItems, articlePage, createHomeResource, firstBanner, homeCount, homeExcerpt, loadHomeResource, selectHomeArticles } from './home-content.ts'
 import { resolveHomeHero, safeHeroUrl } from './home-hero.ts'
 
 test('a slow or failed module does not block successful content', async () => {
@@ -67,14 +67,14 @@ test('first valid banner only, empty and malformed payloads handled', () => {
 })
 
 test('configured hero fields are retained; empty optional fields stay hidden', () => {
-  assert.equal(resolveHomeHero().primary?.href, '/blog')
-  assert.equal(resolveHomeHero().secondary?.href, '/experience')
+  assert.equal(resolveHomeHero().primary?.href, '/experience')
+  assert.equal(resolveHomeHero().secondary?.href, '/blog')
   assert.equal(resolveHomeHero().title, '你好，我是郑陆宇。')
   assert.equal(resolveHomeHero({ webmasterName: '陆屿' }).identityName, '陆屿')
   assert.match(resolveHomeHero().identityRole, /后端 \/ 全栈/)
   const empty = resolveHomeHero({ heroTitle: ' ', heroPrimaryText: '阅读', heroPrimaryUrl: '' })
-  assert.equal(empty.primary?.href, '/blog')
-  assert.equal(empty.secondary?.href, '/experience')
+  assert.equal(empty.primary?.href, '/experience')
+  assert.equal(empty.secondary?.href, '/blog')
   assert.equal(empty.asideText, '')
   assert.equal(empty.title, '你好，我是郑陆宇。')
   assert.match(empty.subtitle, /后端与全栈/)
@@ -106,4 +106,35 @@ test('article proof selection is deterministic, deduplicated and capped at five'
 test('unsafe configured URLs never become links', () => {
   for (const url of ['javascript:alert(1)', '//evil.test', '/\\evil.test', 'data:text/html,x', ' https://exa\nmple.test']) assert.equal(safeHeroUrl(url), '')
   assert.equal(safeHeroUrl('/blog'), '/blog')
+})
+
+test('only one article is featured; remaining recommendations move into the deduplicated list', () => {
+  const article = (id: number | string) => ({ id, articleTitle: '同名文章' })
+  const selected = selectHomeArticles([article(1), article(2), article(3), article(3), article(4)], [article('1'), article(1), article(2), article(4)])
+  assert.deepEqual(selected.featuredItems.map(item => item.id), ['1'])
+  assert.deepEqual(selected.articles.map(item => item.id), [2, 4, 3])
+  assert.deepEqual(selectHomeArticles([], [article(1), article(2)]).articles.map(item => item.id), [2])
+  assert.equal(selectHomeArticles([article(1), article(2)], []).featuredItems.length, 1)
+  assert.deepEqual(selectHomeArticles([], []).featuredItems, [])
+})
+
+test('missing identifiers cannot become featured or latest links', () => {
+  const invalid = [{ id: '', articleTitle: '空 ID' }, { id: '  ', articleTitle: '空白' }, { id: NaN, articleTitle: '非数字' }]
+  assert.deepEqual(articleItems(invalid), [])
+  assert.deepEqual(selectHomeArticles(invalid, invalid).featuredItems, [])
+})
+
+test('excerpt removes fenced code and formatting without manufacturing text', () => {
+  assert.equal(homeExcerpt('```ts\nconst password = 123\n```\n## 真实介绍\n[链接文字](https://example.test) ![封面](/cover.png) <b>正文</b>'), '真实介绍 链接文字 正文')
+  assert.equal(homeExcerpt('~~~js\n代码\n~~~'), '')
+  assert.equal(homeExcerpt('```js\n未结束的代码'), '')
+  assert.equal(homeExcerpt('  多个   空白\n段落 '), '多个 空白 段落')
+  assert.equal(homeExcerpt('abcdef', 3), 'abc…')
+})
+
+test('both complete configured actions retain their order', () => {
+  const hero = resolveHomeHero({ heroPrimaryText: '原主按钮', heroPrimaryUrl: '/blog', heroSecondaryText: '原次按钮', heroSecondaryUrl: '/experience' })
+  assert.equal(hero.primary?.text, '原主按钮')
+  assert.equal(hero.primary?.href, '/blog')
+  assert.equal(hero.secondary?.text, '原次按钮')
 })

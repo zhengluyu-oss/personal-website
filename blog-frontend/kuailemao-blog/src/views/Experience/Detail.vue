@@ -1,106 +1,141 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { MdPreview } from 'md-editor-v3'
+import 'md-editor-v3/lib/preview.css'
+import { useRoute } from 'vue-router'
 import { sanitizeRenderedHtml } from '@/utils/sanitize-html'
 import { experienceProjectList, getExperience, type ExperienceProjectItem, type WorkExperienceItem } from '@/apis/experience'
+import { createHomeResource, loadHomeResource } from '@/utils/home-content'
 import { setSeoMeta } from '@/utils/seo'
 
-const route=useRoute(); const router=useRouter(); const item=ref<WorkExperienceItem>(); const projects=ref<ExperienceProjectItem[]>([]); const loading=ref(true); const notFound=ref(false); const mode='light'; let requestVersion=0
+const route = useRoute()
+const item = ref<WorkExperienceItem>()
+const projectResource = reactive(createHomeResource<ExperienceProjectItem[]>())
+const loading = ref(true)
+const notFound = ref(false)
+let requestVersion = 0
 const lines=(value?:string)=>value?.split(/\r?\n/).map(line=>line.trim()).filter(Boolean)||[]
-const tokens=(value?:string)=>lines(value).flatMap(line=>line.split(/[,，/|]/)).map(line=>line.trim()).filter(Boolean)
+const tokens=(value?:string)=>lines(value).flatMap(line=>line.split(/[,，、/|]/)).map(line=>line.trim()).filter(Boolean)
 const month=(value?:string)=>value?value.slice(0,7).replace('-','.') : ''
 const period=(value:WorkExperienceItem)=>`${month(value.startDate)} 至 ${value.isCurrent===1?'今':month(value.endDate)}`
 const metrics=computed(()=>lines(item.value?.metrics))
 const responsibilities=computed(()=>lines(item.value?.responsibilities).length?lines(item.value?.responsibilities):lines(item.value?.highlights))
-async function load(){const version=++requestVersion;loading.value=true;notFound.value=false;try{const [response,projectResponse]:any[]=await Promise.all([getExperience(String(route.params.id)),experienceProjectList(String(route.params.id))]);if(version!==requestVersion)return;if(response.code!==200||!response.data)throw new Error();item.value=response.data;projects.value=projectResponse.data||[];setSeoMeta({title:`${response.data.company}工作经历 | 郑陆宇`,description:response.data.projectSummary||`${response.data.company}工作经历与项目实践`,keywords:`${response.data.company},${response.data.roleTitle},工作经历,项目经验`})}catch{if(version===requestVersion)notFound.value=true}finally{if(version===requestVersion)loading.value=false}}
-watch(()=>route.params.id,load,{immediate:true})
+
+function loadProjects() {
+  const version = requestVersion
+  const id = String(route.params.id)
+  return loadHomeResource(projectResource, async () => {
+    const response: any = await experienceProjectList(id)
+    if (response.code !== 200 || !Array.isArray(response.data)) throw new Error('Invalid project response')
+    return response.data
+  }, () => version === requestVersion)
+}
+
+async function load() {
+  const version = ++requestVersion
+  const id = String(route.params.id)
+  loading.value = true
+  notFound.value = false
+  item.value = undefined
+  projectResource.status = 'idle'
+  projectResource.data = null
+  void loadProjects()
+  try {
+    const response: any = await getExperience(id)
+    if (version !== requestVersion) return
+    if (response.code !== 200 || !response.data) throw new Error('Experience unavailable')
+    item.value = response.data
+    setSeoMeta({ title: `${response.data.company}工作经历 | 郑陆宇`, description: response.data.projectSummary || `${response.data.company}工作经历与项目实践`, keywords: `${response.data.company},${response.data.roleTitle},工作经历,项目经验` })
+  } catch { if (version === requestVersion) notFound.value = true }
+  finally { if (version === requestVersion) loading.value = false }
+}
+watch(() => route.params.id, load, { immediate: true })
+onBeforeUnmount(() => { requestVersion++ })
 </script>
 
 <template>
-  <main class="case-page">
-    <nav class="back page-shell"><button type="button" @click="router.push('/experience')">← 工作经历</button><span>{{ item?.company || '经历详情' }}</span></nav>
-    <div v-if="loading" class="case-loading page-shell"><span/><b/><i/></div>
-    <section v-else-if="notFound || !item" class="case-state page-shell"><h1>这段经历暂时无法查看</h1><p>内容可能已停用，或链接已经失效。</p><button type="button" @click="router.push('/experience')">返回列表</button></section>
+  <main class="case-page"><div class="page-shell">
+    <nav class="back" aria-label="面包屑"><RouterLink to="/experience">工作经历</RouterLink><span>/</span><span>{{ item?.company || '经历详情' }}</span></nav>
+    <div v-if="loading" class="case-state" role="status">正在加载经历…</div>
+    <section v-else-if="notFound || !item" class="case-state"><h1>这段经历暂时无法查看</h1><p>内容可能已停用，或暂时无法加载。</p><button type="button" @click="load">重试</button><RouterLink to="/experience">返回列表</RouterLink></section>
     <template v-else>
-      <header class="case-hero page-shell">
-        <div><p>{{ period(item) }}</p><h1>{{ item.company }}</h1><h2>{{ item.roleTitle }}</h2></div>
-        <aside><small>工作概述</small><span v-if="item.isCurrent===1">在职</span><p>{{ item.projectSummary || lines(item.highlights)[0] || '负责业务系统的设计、开发与持续优化。' }}</p></aside>
+      <header class="case-hero">
+        <p class="period">{{ period(item) }}<span v-if="item.isCurrent === 1">在职</span></p>
+        <h1>{{ item.company }}</h1><p class="role">{{ item.roleTitle }}</p>
+        <p v-if="item.projectSummary?.trim()" class="summary">{{ item.projectSummary }}</p>
+        <ul v-if="tokens(item.techStack).length" class="tech" aria-label="使用技术"><li v-for="tech in [...new Set(tokens(item.techStack))]" :key="tech">{{ tech }}</li></ul>
       </header>
-      <figure v-if="item.coverImage" class="case-cover page-shell"><img :src="item.coverImage" :alt="`${item.company} 工作经历封面`"></figure>
-      <section class="case-body page-shell">
-        <aside class="facts"><span class="facts-mark">PROFILE</span><h2>经历概览</h2><p class="facts-intro">一眼了解这段经历的基本背景与技术边界。</p><dl><div><dt>公司</dt><dd>{{ item.company }}</dd></div><div><dt>岗位</dt><dd>{{ item.roleTitle }}</dd></div><div><dt>时间</dt><dd>{{ period(item) }}</dd></div><div><dt>状态</dt><dd>{{ item.isCurrent===1?'目前在职':'已结束' }}</dd></div></dl><div v-if="tokens(item.techStack).length" class="tech"><h3>Technology</h3><ul><li v-for="tech in tokens(item.techStack)" :key="tech">{{ tech }}</li></ul></div></aside>
-        <div class="narrative">
-          <section v-if="item.companyIntroduction?.trim()" class="story company-block"><h2>公司介绍</h2><p>{{ item.companyIntroduction }}</p></section>
-          <section v-if="item.mainBusiness?.trim()" class="story company-block"><h2>主营业务</h2><p>{{ item.mainBusiness }}</p></section>
-          <section v-if="responsibilities.length" class="work"><h2>主要职责</h2><ol><li v-for="(line,index) in responsibilities" :key="line"><span>{{ String(index+1).padStart(2,'0') }}</span><p>{{ line }}</p></li></ol></section>
-          <section v-if="projects.length" class="project-list"><h2>参与项目</h2><div><router-link v-for="project in projects" :key="project.id" :to="`/experience/${item.id}/projects/${project.id}`"><img v-if="project.coverImage" :src="project.coverImage" :alt="`${project.projectName}封面`"><span><b>{{ project.projectName }}</b><small>{{ project.summary }}</small><em v-if="tokens(project.techStack).length">{{ tokens(project.techStack).slice(0,4).join(' · ') }}</em></span></router-link></div></section>
-          <p v-else class="project-empty">项目案例正在整理，现有职责与经历补充仍可继续阅读。</p>
-          <section v-if="metrics.length" class="outcomes"><h2>工作成果</h2><div><p v-for="metric in metrics" :key="metric">{{ metric }}</p></div></section>
-          <article v-if="item.content?.trim()" class="story"><h2>经历补充</h2><MdPreview :model-value="item.content" :theme="mode" :sanitize="sanitizeRenderedHtml"/></article>
+      <section class="projects" aria-labelledby="projects-title">
+        <div class="projects-heading"><h2 id="projects-title">参与项目</h2><span v-if="projectResource.data?.length">{{ projectResource.data.length }} 个项目</span></div>
+        <p v-if="projectResource.status === 'loading'" role="status">正在加载项目…</p>
+        <p v-else-if="projectResource.status === 'error'" class="project-error" role="status">项目暂未加载。<button type="button" @click="loadProjects">重试项目</button></p>
+        <div v-if="projectResource.data?.length" class="project-grid">
+          <RouterLink v-for="(project, index) in projectResource.data" :key="project.id" :class="{ 'project-card--featured': index < 2 }" :to="`/experience/${item.id}/projects/${project.id}`">
+            <img v-if="project.coverImage" :src="project.coverImage" :alt="project.projectName + '封面'" loading="lazy">
+            <div><h3>{{ project.projectName }}</h3><p v-if="project.summary">{{ project.summary }}</p><small v-if="tokens(project.techStack).length">{{ tokens(project.techStack).slice(0,4).join(' / ') }}</small><span class="project-entry">查看项目 →</span></div>
+          </RouterLink>
         </div>
+        <p v-else-if="projectResource.status === 'success'" class="project-empty">暂无公开项目，以下为这段经历的已有资料。</p>
       </section>
+      <div class="narrative">
+        <section v-if="responsibilities.some(line => line !== item?.projectSummary?.trim())"><h2>主要职责</h2><ul><li v-for="line in [...new Set(responsibilities)].filter(line => line !== item?.projectSummary?.trim())" :key="line">{{ line }}</li></ul></section>
+        <section v-if="metrics.length"><h2>工作成果</h2><ul><li v-for="metric in [...new Set(metrics)]" :key="metric">{{ metric }}</li></ul></section>
+        <section v-if="item.companyIntroduction?.trim()"><h2>公司介绍</h2><p>{{ item.companyIntroduction }}</p></section>
+        <section v-if="item.mainBusiness?.trim()"><h2>主营业务</h2><p>{{ item.mainBusiness }}</p></section>
+        <figure v-if="item.coverImage" class="case-cover"><img :src="item.coverImage" :alt="item.company + ' 工作经历封面'" loading="lazy"></figure>
+        <article v-if="item.content?.trim()" class="story"><h2>经历补充</h2><MdPreview :model-value="item.content" theme="light" :sanitize="sanitizeRenderedHtml"/></article>
+      </div>
     </template>
-  </main>
+  </div></main>
 </template>
 
 <style scoped lang="scss">
-.case-page{--accent:var(--brand-accent);--ink:var(--brand-ink);--muted:var(--brand-ink-soft);--faint:var(--brand-ink-faint);--line:var(--brand-line);min-height:100dvh;padding-top:64px;background:var(--brand-canvas);color:var(--ink)}.page-shell{width:min(calc(100% - 3rem),84rem);margin:auto}.back{padding:2rem 0;border-bottom:1px solid var(--line)}.back button{padding:.35rem 0;border:0;background:none;color:var(--muted);font-size:.75rem;font-weight:700;cursor:pointer}.back button:hover{color:var(--accent)}.case-hero{position:relative;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(18rem,.7fr);gap:clamp(4rem,10vw,11rem);align-items:end;padding:clamp(5rem,9vw,8rem) 0}.case-hero::before{content:'';position:absolute;right:7%;bottom:12%;z-index:0;width:min(30vw,24rem);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(47,116,191,.08),transparent 68%);pointer-events:none}.case-hero>*{position:relative;z-index:1}.case-hero>div>p{margin:0;color:var(--accent);font-family:"Share TechMono",monospace;font-size:.72rem}.case-hero h1{max-width:13ch;margin:1.2rem 0 .8rem;font-size:clamp(3.7rem,7vw,7rem);line-height:.95;letter-spacing:-.075em}.case-hero h2{margin:0;color:var(--muted);font-size:clamp(1.1rem,2vw,1.5rem);font-weight:600}.case-hero aside{padding:1.4rem 1.5rem;border-top:2px solid var(--accent);background:rgba(255,255,255,.62);box-shadow:0 18px 60px rgba(24,55,91,.07)}.case-hero aside span{color:var(--accent);font-family:"Share TechMono",monospace;font-size:.65rem;font-weight:700}.case-hero aside p{margin:1.2rem 0 0;font-size:1rem;font-weight:620;line-height:1.75}.case-cover{margin-bottom:5rem;padding:1rem;overflow:hidden;border:1px solid var(--line);background:var(--brand-surface);box-shadow:0 24px 70px rgba(24,55,91,.1)}.case-cover img{display:block;width:100%;max-height:42rem;object-fit:contain}.case-body{display:grid;grid-template-columns:minmax(13rem,18rem) minmax(0,1fr);gap:clamp(4rem,10vw,11rem);padding:clamp(5rem,9vw,8rem) 0;border-top:1px solid var(--line)}.facts{position:sticky;top:6rem;align-self:start;padding:1.4rem;background:var(--brand-surface);box-shadow:0 18px 50px rgba(24,55,91,.07)}.facts h2,.work h2,.outcomes h2,.story>h2{margin:0 0 1.5rem;font-family:"Share TechMono",monospace;font-size:.7rem;letter-spacing:.08em}.facts dl{margin:0}.facts dl>div{padding:1rem 0;border-top:1px solid var(--line)}.facts dt{color:var(--faint);font-size:.65rem}.facts dd{margin:.35rem 0 0;color:var(--muted);font-size:.82rem;line-height:1.5}.tech{margin-top:3rem}.tech h3{color:var(--faint);font-family:"Share TechMono",monospace;font-size:.65rem;font-weight:500}.tech ul{display:flex;flex-wrap:wrap;gap:.4rem;margin:0;padding:0;list-style:none}.tech li{padding:.35rem .5rem;border:1px solid var(--line);border-radius:3px;background:var(--brand-canvas-soft);color:var(--muted);font-family:"Share TechMono",monospace;font-size:.62rem}.work ol{margin:0;padding:0;list-style:none}.work li{display:grid;grid-template-columns:3rem 1fr;gap:1.2rem;padding:1.35rem 0;border-top:1px solid var(--line)}.work li span{color:var(--accent);font-family:"Share TechMono",monospace;font-size:.65rem}.work li p{margin:0;font-size:clamp(.95rem,1.3vw,1.08rem);line-height:1.75}.outcomes{margin-top:5rem}.outcomes>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.outcomes p{margin:0;padding:1.5rem;border-left:2px solid var(--accent);background:var(--brand-canvas-soft);color:var(--muted);line-height:1.7}.story{margin-top:5rem;padding-top:2rem;border-top:1px solid var(--line)}.story>p{color:var(--muted);line-height:1.8}.story :deep(.md-editor){background:transparent}.story :deep(.md-editor-preview-wrapper){padding:0}.story :deep(.md-editor-preview){color:var(--ink);font-size:1rem;line-height:1.95}.story :deep(h1),.story :deep(h2),.story :deep(h3){color:var(--ink);letter-spacing:-.03em}.story :deep(p),.story :deep(li){color:var(--muted)}.story :deep(a){color:var(--accent)}.story :deep(blockquote){border-left-color:var(--accent);background:var(--brand-canvas-soft);color:var(--muted)}.story :deep(code){background:var(--brand-canvas-soft);color:var(--ink)}.story :deep(img){max-width:100%;height:auto}.next{display:grid;min-height:68dvh;align-content:center;border-top:1px solid var(--line)}.next>p{margin:0 0 1.3rem;color:var(--accent);font-family:"Share TechMono",monospace;font-size:.68rem}.next h2{max-width:16ch;margin:0;font-size:clamp(3rem,6vw,6rem);line-height:1;letter-spacing:-.07em}.next nav{display:flex;gap:1.7rem;margin-top:2.5rem}.next a{padding-bottom:.3rem;border-bottom:1px solid var(--muted);color:var(--ink);font-size:.78rem;font-weight:700;text-decoration:none}.next a:hover{border-color:var(--accent);color:var(--accent)}.case-loading{padding:7rem 0}.case-loading span,.case-loading b,.case-loading i{display:block;border-radius:4px;background:linear-gradient(100deg,var(--brand-canvas-soft) 30%,var(--brand-surface) 50%,var(--brand-canvas-soft) 70%);background-size:300% 100%;animation:shimmer 1.3s infinite}.case-loading span{width:10rem;height:.8rem}.case-loading b{width:65%;height:6rem;margin-top:2rem}.case-loading i{width:40%;height:1.2rem;margin-top:1.5rem}.case-state{padding:8rem 0}.case-state h1{font-size:clamp(2.5rem,5vw,5rem)}.case-state p{color:var(--muted)}.case-state button{padding:.8rem 1rem;border:1px solid var(--accent);border-radius:3px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}@keyframes shimmer{to{background-position-x:-200%}}
-@media(max-width:800px){.page-shell{width:min(calc(100% - 2rem),44rem)}.case-hero{grid-template-columns:1fr;gap:3rem;padding:4rem 0}.case-hero h1{font-size:clamp(3.2rem,13vw,5rem)}.case-body{grid-template-columns:1fr;gap:4rem}.facts{position:static}.facts dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 1.5rem}.outcomes>div{grid-template-columns:1fr}.next{min-height:62dvh}}
-@media(max-width:480px){.case-page{padding-top:56px}.case-hero h1{font-size:clamp(2.7rem,12vw,3.2rem)}.facts dl{grid-template-columns:1fr}.work li{grid-template-columns:2rem 1fr}.next h2{font-size:2.7rem}}
-@media(prefers-reduced-motion:reduce){.case-loading>*{animation:none}}
-
-/* Case file — richer light presentation with clear evidence hierarchy */
-.case-page{background:
-  linear-gradient(rgba(47,116,191,.035) 1px,transparent 1px),
-  linear-gradient(90deg,rgba(47,116,191,.035) 1px,transparent 1px),
-  linear-gradient(180deg,#f8fbff 0,#f1f6fc 44rem,#fff 78rem);
-  background-size:32px 32px,32px 32px,100% 100%}
-.back{display:flex;align-items:center;justify-content:space-between;margin-top:1.5rem;padding:1rem 0;border-bottom-color:rgba(47,116,191,.15)}
-.back span{color:var(--faint);font-family:"Share TechMono",monospace;font-size:.62rem;letter-spacing:.16em}
-.case-hero{margin-top:2rem;padding:clamp(4rem,8vw,7rem);border:1px solid rgba(47,116,191,.17);border-radius:2rem;background:linear-gradient(135deg,rgba(255,255,255,.97),rgba(232,242,255,.9));box-shadow:0 30px 90px rgba(29,76,125,.12);overflow:hidden}
-.case-hero::before{right:-8rem;bottom:-15rem;width:36rem;border:1px solid rgba(47,116,191,.12);background:radial-gradient(circle,rgba(47,116,191,.12) 0 32%,transparent 32.5% 48%,rgba(47,116,191,.08) 48.5% 49%,transparent 49.5%)}
-.case-hero::after{content:'CASE';position:absolute;right:2%;top:.08em;color:rgba(47,116,191,.055);font-family:Georgia,serif;font-size:clamp(7rem,16vw,15rem);line-height:1;letter-spacing:-.08em;pointer-events:none}
-.case-hero h1{font-size:clamp(3.5rem,6.3vw,6.4rem)}
-.case-hero h2{max-width:36rem;line-height:1.45}
-.case-hero aside{padding:1.6rem 1.7rem;border:1px solid rgba(47,116,191,.17);border-top:3px solid var(--accent);border-radius:1rem;background:rgba(255,255,255,.86);box-shadow:0 18px 45px rgba(29,76,125,.1);backdrop-filter:blur(10px)}
-.case-hero aside small{display:block;margin-bottom:.7rem;color:var(--faint);font-family:"Share TechMono",monospace;font-size:.6rem;letter-spacing:.14em}.case-hero aside span{display:inline-block;margin-bottom:.2rem}
-.case-cover{position:relative;margin-top:2rem;margin-bottom:clamp(4rem,8vw,7rem);padding:.8rem;border:1px solid rgba(47,116,191,.16);border-radius:1.5rem;background:#fff;box-shadow:0 25px 70px rgba(29,76,125,.12)}
-.case-cover::before{content:'PROJECT VISUAL';position:absolute;z-index:1;top:1.5rem;left:1.5rem;padding:.45rem .65rem;border-radius:.25rem;background:rgba(13,41,72,.86);color:#fff;font-family:"Share TechMono",monospace;font-size:.58rem;letter-spacing:.1em}
-.case-cover img{border-radius:1rem}
-.case-body{grid-template-columns:minmax(15rem,19rem) minmax(0,1fr);gap:clamp(3rem,7vw,8rem);padding:clamp(5rem,9vw,9rem) 0;border-top:0}
-.facts{top:6.5rem;padding:1.8rem;border:1px solid rgba(47,116,191,.16);border-radius:1.2rem;background:linear-gradient(160deg,#fff,#f3f8ff);box-shadow:0 20px 55px rgba(28,63,103,.1);overflow:hidden}
-.facts::after{content:'';position:absolute;right:-3rem;top:-3rem;width:8rem;aspect-ratio:1;border:1px solid rgba(47,116,191,.12);border-radius:50%;box-shadow:0 0 0 1.5rem rgba(47,116,191,.035)}
-.facts-mark{position:relative;z-index:1;display:block;margin-bottom:.8rem;color:var(--accent);font-family:"Share TechMono",monospace;font-size:.6rem;letter-spacing:.14em}
-.facts h2{position:relative;z-index:1;margin-bottom:.6rem;font-family:inherit;font-size:1.55rem;letter-spacing:-.04em}
-.facts-intro{position:relative;z-index:1;margin:0 0 1.6rem;color:var(--muted);font-size:.76rem;line-height:1.65}
-.facts dl>div{display:grid;grid-template-columns:3.5rem 1fr;gap:.8rem;align-items:start}.facts dd{margin:0;font-weight:620}.tech{margin-top:2rem;padding-top:1.4rem;border-top:1px solid var(--line)}.tech li{border-color:rgba(47,116,191,.16);border-radius:999px;background:#fff}
-.narrative{min-width:0}.work,.outcomes,.story{position:relative}
-.work h2,.outcomes h2,.story>h2{display:flex;align-items:center;gap:.8rem;margin-bottom:1.7rem;color:var(--accent);font-size:.68rem;letter-spacing:.12em}.work h2::after,.outcomes h2::after,.story>h2::after{content:'';height:1px;flex:1;background:linear-gradient(90deg,rgba(47,116,191,.28),transparent)}
-.work ol{display:grid;gap:.8rem}.work li{grid-template-columns:3.2rem 1fr;padding:1.35rem 1.45rem;border:1px solid rgba(47,116,191,.13);border-radius:.9rem;background:rgba(255,255,255,.84);box-shadow:0 10px 30px rgba(28,63,103,.045);transition:border-color .2s ease,transform .2s ease}.work li:hover{border-color:rgba(47,116,191,.32);transform:translateX(4px)}.work li span{display:grid;width:2rem;height:2rem;place-items:center;border-radius:50%;background:#e7f1ff;font-weight:700}.work li p{padding-top:.15rem}
-.outcomes{margin-top:4.5rem}.outcomes>div{gap:1rem}.outcomes p{position:relative;padding:1.6rem 1.6rem 1.6rem 2rem;border:1px solid rgba(47,116,191,.14);border-radius:1rem;background:linear-gradient(135deg,#eef6ff,#f8fbff);box-shadow:0 12px 35px rgba(28,63,103,.055)}.outcomes p::before{content:'↗';position:absolute;top:1.55rem;left:.75rem;color:var(--accent);font-weight:800}
-.story{margin-top:4.5rem;padding:2rem clamp(1.2rem,4vw,3.5rem) 3.5rem;border:1px solid rgba(47,116,191,.14);border-radius:1.2rem;background:#fff;box-shadow:0 18px 60px rgba(28,63,103,.07)}
-.story :deep(.md-editor-preview){font-size:1.03rem;line-height:2}.story :deep(h2){margin-top:2.4em;padding-bottom:.55em;border-bottom:1px solid var(--line)}.story :deep(h3){margin-top:2em}.story :deep(blockquote){border-radius:0 .65rem .65rem 0}.story :deep(pre){border:1px solid rgba(47,116,191,.14);border-radius:.7rem}
-.next{position:relative;min-height:auto;margin-bottom:clamp(3rem,7vw,7rem);padding:clamp(4rem,8vw,7rem);border:0;border-radius:2rem;background:linear-gradient(130deg,#0d2948,#174c7d);color:#fff;box-shadow:0 30px 80px rgba(16,48,82,.2);overflow:hidden}.next::after{content:'';position:absolute;width:24rem;aspect-ratio:1;right:-6rem;border:1px solid rgba(255,255,255,.14);border-radius:50%;box-shadow:0 0 0 4rem rgba(255,255,255,.035),0 0 0 8rem rgba(255,255,255,.025)}.next>p{color:#9dcbff}.next h2,.next nav{position:relative;z-index:1}.next a{border-color:rgba(255,255,255,.45);color:#fff}
-@media(max-width:800px){.case-hero{margin-top:1rem;padding:3.5rem 2rem;border-radius:1.4rem}.case-hero::after{font-size:8rem}.case-body{gap:3rem}.facts{position:static}.next{padding:4rem 2rem;border-radius:1.4rem}}
-@media(max-width:480px){.back span{display:none}.case-hero{padding:3rem 1.25rem}.case-hero h1{font-size:clamp(2.65rem,12vw,3.15rem)}.case-cover{padding:.45rem;border-radius:1rem}.case-cover::before{top:1rem;left:1rem}.facts{padding:1.4rem}.facts dl{display:block}.work li{grid-template-columns:2.5rem 1fr;padding:1.1rem}.outcomes>div{grid-template-columns:1fr}.story{padding:1.5rem 1rem 2.5rem}.next{padding:3.5rem 1.25rem}}
-.company-block{margin-top:0;margin-bottom:2rem;padding:1.6rem;border:1px solid var(--line);border-radius:.8rem;background:#fff}.company-block p{margin:0;white-space:pre-line}.project-list{margin-top:4rem}.project-list>h2{font-size:1.5rem}.project-list>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.project-list a{display:flex;min-height:13rem;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:.8rem;background:#fff;color:inherit;text-decoration:none}.project-list img{width:100%;aspect-ratio:16/10;object-fit:contain;background:var(--brand-canvas-soft)}.project-list a>span{display:flex;flex:1;flex-direction:column;gap:.65rem;padding:1.2rem}.project-list b{font-size:1.1rem}.project-list small{color:var(--muted);line-height:1.6}.project-list em{margin-top:auto;color:var(--accent);font-size:.7rem;font-style:normal}@media(max-width:700px){.project-list>div{grid-template-columns:1fr}}
-
-/* Company detail stays editorial and content-led, without oversized watermarks. */
-.case-page{background:var(--brand-canvas)}
-.case-hero{margin-top:0;padding:clamp(3rem,6vw,5rem) 0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none;overflow:visible}
-.case-hero::before,.case-hero::after{display:none}
-.case-hero h1{font-size:clamp(2.75rem,5vw,4.8rem)}
-.case-hero aside{border:1px solid var(--line);border-top:2px solid var(--accent);border-radius:.5rem;background:var(--brand-surface);box-shadow:none;backdrop-filter:none}
-.case-cover{margin-top:2rem;margin-bottom:4rem;padding:.6rem;border-radius:.75rem;box-shadow:none}
-.case-cover::before{display:none}
-.facts{padding:1.5rem;border:1px solid var(--line);border-radius:.65rem;background:var(--brand-surface);box-shadow:none;overflow:visible}
-.facts::after{display:none}
-.work li{border-radius:.5rem;background:var(--brand-surface);box-shadow:none}
-.work li:hover{transform:none}
-.outcomes p,.story{box-shadow:none}
-.story{padding:2rem clamp(1rem,3vw,2.5rem) 3rem}
-@media(max-width:800px){.case-hero{padding:3rem 0;border-radius:0}.case-body{padding:3.5rem 0}}
-@media(max-width:480px){.case-hero{padding:2.5rem 0}.case-cover{padding:.35rem}}
-@media(max-width:899px){.page-shell{width:min(calc(100% - 2rem),44rem)}.case-hero{grid-template-columns:1fr;gap:3rem;padding:3rem 0}.case-body{grid-template-columns:1fr;gap:3rem;padding:3.5rem 0}.facts{position:static}.facts dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 1.5rem}.outcomes>div{grid-template-columns:1fr}}
+.case-page { min-height: 100dvh; padding: 6rem 0 4rem; background: var(--brand-canvas); color: var(--brand-ink); }
+.page-shell { width: min(calc(100% - 4rem), 70rem); margin: auto; }
+.back { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; color: var(--brand-ink-soft); font-size: .9rem; overflow-wrap: anywhere; }
+.back a { display: inline-flex; align-items: center; min-height: 44px; }
+a { color: var(--brand-accent-strong); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: .25em; }
+.case-hero { padding: 2rem 0 2.5rem; border-bottom: 1px solid var(--brand-line); overflow-wrap: anywhere; }
+.period { display: flex; flex-wrap: wrap; gap: 1rem; color: var(--brand-ink-soft); font-size: .95rem; }
+.period span { color: var(--brand-accent-strong); }
+.case-hero h1 { margin: .8rem 0; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.3; }
+.role { margin: 0; color: var(--brand-ink-soft); font-size: 1.15rem; }
+.summary { max-width: 48rem; margin: 1.4rem 0 0; line-height: 1.9; white-space: pre-line; }
+.tech { display: flex; flex-wrap: wrap; gap: .5rem 1rem; margin: 1.2rem 0 0; padding: 0; list-style: none; color: var(--brand-ink-soft); font-size: .85rem; }
+.projects { padding: 2rem 0; }
+h2 { margin: 0 0 1.2rem; font-size: 1.4rem; line-height: 1.5; }
+.projects-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.projects-heading span { color: var(--brand-ink-soft); font-size: .9rem; white-space: nowrap; }
+.project-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1.25rem; }
+.project-grid a { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); background: var(--brand-surface); color: inherit; text-decoration: none; transition: border-color .2s ease, transform .2s ease; }
+.project-grid a:hover { border-color: var(--brand-accent); transform: translateY(-2px); }
+.project-grid a:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 3px; }
+.project-grid .project-card--featured { grid-column: 1 / -1; border-left: 3px solid var(--brand-accent); }
+.project-grid a:hover h3 { color: var(--brand-accent-strong); }
+.project-grid img { display: block; width: 100%; aspect-ratio: 16/10; object-fit: contain; background: var(--brand-canvas-soft); }
+.project-grid a > div { display: flex; flex: 1; flex-direction: column; gap: .75rem; padding: 1.25rem; overflow-wrap: anywhere; }
+.project-grid .project-card--featured > div { padding: 1.65rem 1.8rem; }
+.project-grid h3 { margin: 0; font-size: 1.2rem; line-height: 1.5; }
+.project-grid .project-card--featured h3 { font-size: clamp(1.35rem, 2vw, 1.65rem); }
+.project-grid p { margin: 0; color: var(--brand-ink-soft); line-height: 1.8; }
+.project-grid small { color: var(--brand-ink-soft); }
+.project-entry { margin-top: auto; padding-top: .4rem; color: var(--brand-accent-strong); font-size: .9rem; }
+.project-empty, .project-error { color: var(--brand-ink-soft); line-height: 1.8; }
+.narrative { max-width: 48rem; margin: 0 auto; min-width: 0; overflow-wrap: anywhere; }
+.narrative > section, .story { margin-top: 2.5rem; padding-top: 1.75rem; border-top: 1px solid var(--brand-line); }
+.narrative p { color: var(--brand-ink-soft); line-height: 1.9; white-space: pre-line; }
+.narrative ul { padding-left: 1.25rem; list-style: disc; }
+.narrative li { margin: .65rem 0; color: var(--brand-ink-soft); line-height: 1.85; }
+.case-cover { margin: 2.5rem 0; }
+.case-cover img { display: block; width: 100%; max-height: 38rem; object-fit: contain; }
+.story :deep(.md-editor) { background: transparent; }
+.story :deep(.md-editor-preview-wrapper) { padding: 0; }
+.story :deep(pre), .story :deep(table) { max-width: 100%; overflow: auto; }
+.story :deep(img) { max-width: 100%; height: auto; }
+.case-state { padding: 3rem 0; }
+button { min-height: 44px; margin: 0 .75rem; padding: .5rem 1rem; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); background: var(--brand-surface); color: var(--brand-accent-strong); cursor: pointer; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 4px; }
+@media(max-width:899px) { .page-shell { width: calc(100% - 2rem); } .project-grid { grid-template-columns: 1fr; } .project-grid .project-card--featured > div { padding: 1.25rem; } }
+@media(prefers-reduced-motion:reduce) { .project-grid a { transition: none; } .project-grid a:hover { transform: none; } }
 </style>
