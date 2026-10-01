@@ -15,7 +15,7 @@ const fixedSeo: Record<string, SeoMeta> = {
   photo: { title: '个人相册 | 郑陆宇的个人博客', description: '用照片保存生活、旅途与值得纪念的瞬间。', keywords: '个人相册,摄影,生活记录' },
 }
 
-export function setSeoMeta(seo: SeoMeta) {
+export function setSeoMeta(seo: SeoMeta, canonicalPath = window.location.pathname) {
   document.title = seo.title
   const set = (name: string, content: string) => {
     let element = document.head.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)
@@ -30,10 +30,10 @@ export function setSeoMeta(seo: SeoMeta) {
     canonical.rel = 'canonical'
     document.head.appendChild(canonical)
   }
-  canonical.href = `${window.location.origin}${window.location.pathname}`
+  canonical.href = `${window.location.origin}${canonicalPath}`
 }
 
-export function applyFixedSeo(routeName?: string | symbol | null, fallbackTitle = '') {
+export function applyFixedSeo(routeName?: string | symbol | null, fallbackTitle = '', canonicalPath?: string) {
   const seo = fixedSeo[String(routeName)]
-  setSeoMeta(seo ?? { title: fallbackTitle || '郑陆宇的个人博客', description: '郑陆宇的个人博客。', keywords: '郑陆宇,个人博客' })
+  setSeoMeta(seo ?? { title: fallbackTitle || '郑陆宇的个人博客', description: '郑陆宇的个人博客。', keywords: '郑陆宇,个人博客' }, canonicalPath)
 }

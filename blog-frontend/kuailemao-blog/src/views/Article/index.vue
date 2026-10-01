@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue'
+import {computed, onBeforeUnmount, ref} from 'vue'
 import {MdPreview} from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
 import {
@@ -20,6 +20,7 @@ import { categoryRoute } from '@/utils/category-slug'
 import { useBlogCategories } from '@/composables/useBlogCategories'
 import { sanitizeRenderedHtml } from '@/utils/sanitize-html'
 import { getLegacyWebsiteShareId } from '@/apis/website-share'
+import { createLatestRequest } from '@/utils/latest-request'
 
 const payQrUrl = ossUrl('blog/pay/支付宝支付二维码_.png')
 const env = import.meta.env;
@@ -60,35 +61,44 @@ const route = useRoute();
 
 // 是否加载
 const loading = ref(false)
+const loadError = ref('')
+const requests = createLatestRequest()
 
 // 字数 统计
 const countMd = ref(0)
 
 // 监听路由变化
 watch(() => route.params.id, () => {
-  getArticleDetailById()
+  void getArticleDetailById()
 })
 
 
-onMounted(async () => {
+onMounted(() => {
   void loadCategories()
-  await getArticleDetailById()
+  void getArticleDetailById()
 })
+onBeforeUnmount(() => { requests.invalidate() })
 
 
 async function getArticleDetailById() {
-  getArticleDetail(route.params.id).then(async res => {
+  const version = requests.start()
+  const articleId = String(route.params.id || '')
+  loading.value = false
+  loadError.value = ''
+  collection.value = false
+  like.value = false
+  try {
+    const res: any = await getArticleDetail(articleId)
+    if (!requests.isCurrent(version)) return
+    if (res?.code !== 200) throw new Error('Article unavailable')
     if (!res.data) {
-      const legacy: any = await getLegacyWebsiteShareId(String(route.params.id)).catch(() => null)
+      const legacy: any = await getLegacyWebsiteShareId(articleId).catch(() => null)
+      if (!requests.isCurrent(version)) return
       if (legacy?.code === 200 && legacy.data) {
         await router.replace(`/website-shares/${legacy.data}`)
         return
       }
-      ElMessage.warning({
-        message: '文章不存在',
-      })
-      // 跳转回去
-      router.push({path: '/'})
+      loadError.value = '文章不存在或尚未公开。'
       return
     }
     const plainText = String(res.data.articleContent || '').replace(/```[\s\S]*?```/g, ' ').replace(/[#>*_`\[\]()!-]/g, ' ').replace(/\s+/g, ' ').trim()
@@ -98,23 +108,24 @@ async function getArticleDetailById() {
       description: res.data.seoDescription?.trim() || plainText.slice(0, 160),
       keywords: res.data.seoKeywords?.trim() || tagKeywords || '技术博客,开发实践',
     })
-    if (route.params.id) {
-      if (!sessionStorage.getItem(ARTICLE_VISIT_PREFIX + route.params.id)) {
-        // 避免重复刷新
-        sessionStorage.setItem(ARTICLE_VISIT_PREFIX + route.params.id, route.params.id as string)
-        addArticleVisit(route.params.id as string)
+    try {
+      if (!sessionStorage.getItem(ARTICLE_VISIT_PREFIX + articleId)) {
+        sessionStorage.setItem(ARTICLE_VISIT_PREFIX + articleId, articleId)
+        void addArticleVisit(articleId).catch(() => {})
       }
-    }
+    } catch { /* Private browsing can make session storage unavailable. */ }
     // 时间去掉时分秒
-    res.data.createTime = res.data.createTime.split(' ')[0]
-    res.data.updateTime = res.data.updateTime.split(' ')[0]
+    res.data.createTime = res.data.createTime?.split(' ')[0] || ''
+    res.data.updateTime = res.data.updateTime?.split(' ')[0] || ''
     articleDetail.value = res.data
     loading.value = true
     // 收藏
-    isFavoriteFunc()
+    void isFavoriteFunc(articleId, version)
     // 点赞
-    isLikeFunc()
-  })
+    void isLikeFunc(articleId, version)
+  } catch {
+    if (requests.isCurrent(version)) loadError.value = '文章暂时无法加载，请稍后重试。'
+  }
 }
 
 function mdHtml(htmlText: string) {
@@ -205,17 +216,19 @@ function likeBtn(detail: object) {
 }
 
 // 是否收藏
-function isFavoriteFunc() {
-  isFavorite(1, articleDetail.value.id).then(res => {
-    collection.value = res.data === true;
-  })
+async function isFavoriteFunc(articleId: string, version: number) {
+  try {
+    const res = await isFavorite(1, articleId)
+    if (requests.isCurrent(version)) collection.value = res.data === true
+  } catch { /* Interaction status is optional. */ }
 }
 
 // 是否点赞
-function isLikeFunc() {
-  isLike(1, articleDetail.value.id).then(res => {
-    like.value = res.code === 200;
-  })
+async function isLikeFunc(articleId: string, version: number) {
+  try {
+    const res = await isLike(1, articleId)
+    if (requests.isCurrent(version)) like.value = res.code === 200
+  } catch { /* Interaction status is optional. */ }
 }
 
 const readingMinutes = computed(() => {
@@ -312,6 +325,11 @@ const readingMinutes = computed(() => {
       </div>
     </main>
 
+    <main v-else-if="loadError" class="article-loading" role="alert">
+      <span>ARTICLE</span><p>{{ loadError }}</p>
+      <button type="button" @click="getArticleDetailById">重试</button>
+      <RouterLink to="/blog">返回博客</RouterLink>
+    </main>
     <main v-else class="article-loading" aria-live="polite">
       <span>ARTICLE</span><p>正在整理文章内容</p>
     </main>

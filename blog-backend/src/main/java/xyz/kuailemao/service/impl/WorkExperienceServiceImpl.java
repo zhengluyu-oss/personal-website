@@ -1,6 +1,7 @@
 package xyz.kuailemao.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,6 +83,12 @@ public class WorkExperienceServiceImpl extends ServiceImpl<WorkExperienceMapper,
         WorkExperience entity = dto.asViewObject(WorkExperience.class);
         entity.setIsDeleted(0);
         if (this.saveOrUpdate(entity)) {
+            if (dto.getId() != null && !this.update(new LambdaUpdateWrapper<WorkExperience>()
+                    .eq(WorkExperience::getId, dto.getId())
+                    .eq(WorkExperience::getIsDeleted, 0)
+                    .set(WorkExperience::getEndDate, dto.getEndDate()))) {
+                throw new IllegalStateException("工作经历结束日期更新失败");
+            }
             return ResponseResult.success();
         }
         return ResponseResult.failure();

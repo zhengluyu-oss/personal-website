@@ -40,8 +40,9 @@ public class TagServiceImpl extends ServiceImpl<TagMapper, Tag> implements TagSe
     }
 
     @Override
-    public ResponseResult<Void> addTag(TagDTO tagDTO) {
-        if (this.save(tagDTO.asViewObject(Tag.class))) return ResponseResult.success();
+    public ResponseResult<Long> addTag(TagDTO tagDTO) {
+        Tag tag = tagDTO.setId(null).asViewObject(Tag.class);
+        if (this.save(tag) && tag.getId() != null) return ResponseResult.success(tag.getId());
         return ResponseResult.failure();
     }
 

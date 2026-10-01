@@ -29,7 +29,7 @@ public interface CategoryService extends IService<Category> {
      * @param categoryDTO 分类
      * @return 是否成功
      */
-    ResponseResult<Void> addCategory(CategoryDTO categoryDTO);
+    ResponseResult<Long> addCategory(CategoryDTO categoryDTO);
 
     /**
      * 搜索分类

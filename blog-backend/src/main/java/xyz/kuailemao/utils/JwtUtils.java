@@ -19,7 +19,13 @@ import xyz.kuailemao.mapper.PermissionMapper;
 import xyz.kuailemao.mapper.RoleMapper;
 import xyz.kuailemao.mapper.RolePermissionMapper;
 import xyz.kuailemao.mapper.UserRoleMapper;
+import xyz.kuailemao.mapper.UserMapper;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -138,6 +144,7 @@ public class JwtUtils {
                 .withJWTId(uuid)
                 .withClaim("id", id)
                 .withClaim("name", username)
+                .withClaim("credentialProof", credentialProof(id, details.getPassword()))
 //                .withClaim("authorities", details.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList())
                 .withExpiresAt(expire)
                 .withIssuedAt(now)
@@ -191,22 +198,37 @@ public class JwtUtils {
     }
 
     public UserDetails toUser(DecodedJWT jwt) {
-        Map<String, Claim> claims = jwt.getClaims();
-        List<String> listStr = getAuthorities(toId(jwt));
+        Long userId = toId(jwt);
+        User currentUser = userMapper.selectById(userId);
+        if (currentUser == null || !Objects.equals(currentUser.getIsDisable(), 0)
+                || !Objects.equals(currentUser.getIsDeleted(), 0)) return null;
+        String suppliedProof = jwt.getClaim("credentialProof").asString();
+        if (suppliedProof == null || !MessageDigest.isEqual(
+                suppliedProof.getBytes(StandardCharsets.UTF_8),
+                credentialProof(userId, currentUser.getPassword()).getBytes(StandardCharsets.UTF_8))) return null;
+        List<String> listStr = getAuthorities(userId);
         List<SimpleGrantedAuthority> collect = listStr.stream().map(SimpleGrantedAuthority::new).toList();
 
         return new LoginUser()
-                .setUser
-                        (
-                                new User()
-                                        .setUsername(claims.get("name").asString())
-                                        .setId(toId(jwt))
-                        )
+                .setUser(new User().setId(userId).setUsername(currentUser.getUsername()))
                 .setAuthorities(collect);
+    }
+
+    private String credentialProof(Long userId, String passwordHash) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            String material = "jwt-credential-proof:v1:" + userId + ":" + Objects.toString(passwordHash, "");
+            return HexFormat.of().formatHex(mac.doFinal(material.getBytes(StandardCharsets.UTF_8)));
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("Unable to check token credentials", e);
+        }
     }
 
     @Resource
     private UserRoleMapper userRoleMapper;
+    @Resource
+    private UserMapper userMapper;
     @Resource
     private RoleMapper roleMapper;
     @Resource
@@ -218,7 +240,9 @@ public class JwtUtils {
     private List<String> getAuthorities(Long userId) {
         // 查询用户角色
         List<UserRole> userRoles = userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, userId));
-        List<Role> roles = userRoles.stream().map(role -> roleMapper.selectById(role.getRoleId())).toList();
+        List<Role> roles = userRoles.stream().map(role -> roleMapper.selectById(role.getRoleId()))
+                .filter(role -> role != null && Objects.equals(role.getStatus(), 0)
+                        && Objects.equals(role.getIsDeleted(), 0)).toList();
         if (roles.isEmpty()){
             return Collections.emptyList();
         }else{
