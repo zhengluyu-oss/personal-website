@@ -65,6 +65,22 @@ class CategoryServiceImplHeroTest {
     }
 
     @Test
+    void articleEditorReceivesDatabaseGeneratedCategoryId() {
+        CategoryDTO dto = new CategoryDTO().setId(999L).setCategoryName("新分类");
+        when(categoryMapper.insert(any(Category.class))).thenAnswer(invocation -> {
+            Category category = invocation.getArgument(0);
+            assertNull(category.getId());
+            category.setId(42L);
+            return 1;
+        });
+
+        ResponseResult<Long> result = service.addCategory(dto);
+
+        assertEquals(200, result.getCode());
+        assertEquals(42L, result.getData());
+    }
+
+    @Test
     void updatingCategoryExplicitlyIncludesClearedHeroFields() {
         CategoryDTO dto = new CategoryDTO().setId(8L).setCategoryName("技术笔记");
         when(categoryMapper.update(isNull(), any(Wrapper.class))).thenReturn(1);

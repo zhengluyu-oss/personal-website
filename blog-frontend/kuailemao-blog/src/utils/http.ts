@@ -3,7 +3,7 @@ import { ElMessage } from 'element-plus'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import { Jwt_Prefix } from '@/const/Jwt'
-import { GET_TOKEN } from '@/utils/auth.ts'
+import { GET_TOKEN, REMOVE_TOKEN } from '@/utils/auth.ts'
 import useLoadingStore from '@/store/modules/loading.ts'
 import { REQUEST_LOADING_PATH } from '@/utils/enum.ts'
 import { createRequestTracker, type RequestToken } from '@/utils/request-tracker.ts'
@@ -45,6 +45,10 @@ http.interceptors.request.use((config: TrackedRequestConfig) => {
 http.interceptors.response.use(
   response => {
     finalizeRequest(response.config as InternalAxiosRequestConfig)
+    if (response.data.code === 1002 && GET_TOKEN()) {
+      REMOVE_TOKEN()
+      window.location.replace('/auth/login')
+    }
     if (response.data.code === 1012) {
       ElNotification({ title: '账号已被封禁', message: response.data.msg, type: 'warning' })
     }

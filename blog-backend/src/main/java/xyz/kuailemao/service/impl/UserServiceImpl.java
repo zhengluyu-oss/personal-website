@@ -152,13 +152,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     public LoginUser handlerLogin(User user) {
-        // 查询用户角色
-        List<UserRole> userRoles = userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, user.getId()));
-        List<Role> roles = userRoles.stream().map(role -> roleMapper.selectById(role.getRoleId())).filter(role -> Objects.equals(role.getStatus(), RoleEnum.Role_STATUS_ARTICLE.getStatus())).toList();
-        // 用户是否被禁用
-        if (user.getIsDisable() == 1) {
+        if (user == null || !Objects.equals(user.getIsDisable(), 0)
+                || !Objects.equals(user.getIsDeleted(), 0)) {
             throw new BadCredentialsException(RespConst.ACCOUNT_DISABLED_MSG);
         }
+        // 查询用户角色
+        List<UserRole> userRoles = userRoleMapper.selectList(new LambdaQueryWrapper<UserRole>().eq(UserRole::getUserId, user.getId()));
+        List<Role> roles = userRoles.stream().map(role -> roleMapper.selectById(role.getRoleId()))
+                .filter(role -> role != null && Objects.equals(role.getStatus(), RoleEnum.Role_STATUS_ARTICLE.getStatus())
+                        && Objects.equals(role.getIsDeleted(), 0)).toList();
         if (!roles.isEmpty()) {
             // 查询权限关系表
             List<RolePermission> rolePermissions = rolePermissionMapper.selectBatchIds(roles.stream().map(Role::getId).toList());
@@ -171,6 +173,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return new LoginUser(user, list);
         }
         return new LoginUser(user, List.of());
+    }
+
+    @Override
+    public LoginUser loadLoginUserById(Long id, Integer registerType) {
+        User user = userMapper.selectById(id);
+        if (user == null || !Objects.equals(user.getRegisterType(), registerType)) {
+            throw new UsernameNotFoundException(RespConst.USERNAME_OR_PASSWORD_ERROR_MSG);
+        }
+        return handlerLogin(user);
     }
 
     // 修改用户登录或注册状态
@@ -196,7 +207,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public User findAccountByNameOrEmail(String text) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getUsername, text).or().eq(User::getEmail, text).eq(User::getRegisterType, RegisterOrLoginTypeEnum.EMAIL.getRegisterType());
+        wrapper.eq(User::getRegisterType, RegisterOrLoginTypeEnum.EMAIL.getRegisterType())
+                .and(account -> account.eq(User::getUsername, text).or().eq(User::getEmail, text));
         return userMapper.selectOne(wrapper);
     }
 
@@ -275,14 +287,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return ResponseResult.success();
     }
 
+    @Transactional
     @Override
     public ResponseResult<Void> userResetPassword(UserResetPasswordDTO userResetDTO) {
         // 校验验证码
         ResponseResult<Void> verifyCode = verifyCode(userResetDTO.getEmail(), userResetDTO.getCode(), RedisConst.RESET);
         if (verifyCode != null) return verifyCode;
         String password = passwordEncoder.encode(userResetDTO.getPassword());
-        User user = User.builder().password(password).build();
-        if (this.update(user, new LambdaQueryWrapper<User>().eq(User::getEmail, userResetDTO.getEmail()))) {
+        User account = userMapper.selectOne(new LambdaQueryWrapper<User>()
+                .eq(User::getEmail, userResetDTO.getEmail())
+                .eq(User::getRegisterType, RegisterOrLoginTypeEnum.EMAIL.getRegisterType()));
+        if (account != null && userMapper.updateById(new User().setId(account.getId()).setPassword(password)) > 0) {
             // 删除验证码
             redisCache.deleteObject(RedisConst.VERIFY_CODE + RedisConst.RESET + RedisConst.SEPARATOR + userResetDTO.getEmail());
             return ResponseResult.success();

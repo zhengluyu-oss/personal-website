@@ -35,19 +35,11 @@ export function logout() {
     })
 }
 
-// 第三方登录
-export function oauthLogin(accessToken: string,type: string,username: string) {
+// 兑换第三方登录回跳的一次性凭据；第三方 access token 不进入浏览器地址栏。
+export function oauthExchange(code: string) {
     return http({
-        url: '/user/login',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Login-Type': type,
-            'Access-Token': accessToken,
-        },
-        data: {
-            username: username,
-            password: accessToken,
-        },
+        url: '/oauth/exchange',
+        data: { code },
         method: 'post'
     })
 }

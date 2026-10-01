@@ -110,9 +110,12 @@ onMounted(() => {
 
 async function refreshFunc() {
   loading.value = true
-  const { data } = await experienceList()
-  tabData.value = data || []
-  loading.value = false
+  try {
+    const res = await experienceList()
+    if (res?.code === 200) tabData.value = res.data || []
+  } finally {
+    loading.value = false
+  }
 }
 
 function onSelectChange(selectedRowKeys: Array<string | number>) {
@@ -179,24 +182,32 @@ async function modelOk() {
     message.warn('请填写公司、岗位和开始日期')
     return
   }
+  if (formData.value.isCurrent !== 1 && formData.value.endDate
+    && dayjs(formData.value.endDate).isBefore(dayjs(formData.value.startDate), 'day')) {
+    message.warn('结束日期不能早于开始日期')
+    return
+  }
   modalInfo.loading = true
   const payload = {
     ...formData.value,
     startDate: formData.value.startDate ? dayjs(formData.value.startDate).format('YYYY-MM-DD') : undefined,
     endDate: formData.value.isCurrent === 1
-      ? undefined
-      : (formData.value.endDate ? dayjs(formData.value.endDate).format('YYYY-MM-DD') : undefined),
+      ? null
+      : (formData.value.endDate ? dayjs(formData.value.endDate).format('YYYY-MM-DD') : null),
   }
   const req = formData.value.id ? updateExperience(payload) : addExperience(payload)
-  await req.then((res) => {
-    if (res.code === 200) {
+  try {
+    const res = await req
+    if (res?.code === 200) {
       message.success(formData.value.id ? '修改成功' : '添加成功')
       modalInfo.open = false
-      refreshFunc()
+      await refreshFunc()
     }
-  }).finally(() => {
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : String(error || '保存失败'))
+  } finally {
     modalInfo.loading = false
-  })
+  }
 }
 
 function deleteRows(ids: Array<string | number>) {
@@ -227,9 +238,22 @@ const emptyProject=()=>({projectName:'',summary:'',coverImage:'',startDate:undef
 const projectForm=ref<any>(emptyProject())
 async function openProjects(record:Record<string,any>){projectDrawer.open=true;projectDrawer.experienceId=Number(record.id);projectDrawer.company=String(record.company || '');await refreshProjects()}
 function setCurrent(checked:boolean|string|number){formData.value.isCurrent=checked===true?1:0}
-async function refreshProjects(){projectDrawer.loading=true;const res=await experienceProjectList(projectDrawer.experienceId);projectRows.value=res?.data||[];projectDrawer.loading=false}
+async function refreshProjects(){projectDrawer.loading=true;try{const res=await experienceProjectList(projectDrawer.experienceId);if(res?.code===200)projectRows.value=res.data||[]}finally{projectDrawer.loading=false}}
 async function openProjectModal(id?:string|number){projectForm.value=emptyProject();if(id){const res=await getExperienceProject(projectDrawer.experienceId,id);projectForm.value={...res.data,startDate:res.data?.startDate?dayjs(res.data.startDate):undefined,endDate:res.data?.endDate?dayjs(res.data.endDate):undefined,content:res.data?.content||''};projectModal.title='修改项目'}else projectModal.title='新增项目';projectModal.open=true}
-async function saveProject(){if(!projectForm.value.projectName||!projectForm.value.summary){message.warn('请填写项目名称和摘要');return}projectModal.loading=true;const payload={...projectForm.value,startDate:projectForm.value.startDate?dayjs(projectForm.value.startDate).format('YYYY-MM-DD'):undefined,endDate:projectForm.value.endDate?dayjs(projectForm.value.endDate).format('YYYY-MM-DD'):undefined};const res=projectForm.value.id?await updateExperienceProject(projectDrawer.experienceId,payload):await addExperienceProject(projectDrawer.experienceId,payload);projectModal.loading=false;if(res?.code===200){message.success('保存成功');projectModal.open=false;refreshProjects()}}
+async function saveProject(){
+  if(!projectForm.value.projectName||!projectForm.value.summary){message.warn('请填写项目名称和摘要');return}
+  if(projectForm.value.startDate&&projectForm.value.endDate&&dayjs(projectForm.value.endDate).isBefore(dayjs(projectForm.value.startDate),'day')){message.warn('结束日期不能早于开始日期');return}
+  projectModal.loading=true
+  try{
+    const payload={...projectForm.value,startDate:projectForm.value.startDate?dayjs(projectForm.value.startDate).format('YYYY-MM-DD'):null,endDate:projectForm.value.endDate?dayjs(projectForm.value.endDate).format('YYYY-MM-DD'):null}
+    const res=projectForm.value.id?await updateExperienceProject(projectDrawer.experienceId,payload):await addExperienceProject(projectDrawer.experienceId,payload)
+    if(res?.code!==200)throw new Error(res?.msg||'保存失败')
+    message.success('保存成功')
+    projectModal.open=false
+    await refreshProjects()
+  }catch(error){message.error(error instanceof Error?error.message:String(error||'保存失败'))}
+  finally{projectModal.loading=false}
+}
 async function removeProject(id:string|number){Modal.confirm({title:'确认删除该项目？',onOk:async()=>{const res=await deleteExperienceProjects(projectDrawer.experienceId,[id]);if(res?.code===200){message.success('删除成功');refreshProjects()}}})}
 </script>
 
