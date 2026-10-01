@@ -36,16 +36,18 @@ public class JwtAuthorizeFilter extends OncePerRequestFilter {
         // 解析jwt
         DecodedJWT jwt = jwtUtils.resolveJwt(authorization);
 
-         if (!ObjectUtils.isEmpty(jwt)) {
+        if (!ObjectUtils.isEmpty(jwt)) {
             // 获取UserDetails
             LoginUser user = (LoginUser) jwtUtils.toUser(jwt);
-            // 创建认证对象
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-            // 保存认证详细信息
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            // 验证通过，设置上下文中
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+            if (user != null) {
+                // 创建认证对象
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+                // 保存认证详细信息
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                // 验证通过，设置上下文中
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
         }
         filterChain.doFilter(request, response);
     }

@@ -45,7 +45,7 @@ public class TagController {
     @LogAnnotation(module="标签管理",operation= LogConst.INSERT)
     @AccessLimit(seconds = 60, maxCount = 30)
     @PutMapping()
-    public ResponseResult<Void> addTag(@RequestBody @Valid TagDTO tagDTO) {
+    public ResponseResult<Long> addTag(@RequestBody @Valid TagDTO tagDTO) {
         return tagService.addTag(tagDTO);
     }
 

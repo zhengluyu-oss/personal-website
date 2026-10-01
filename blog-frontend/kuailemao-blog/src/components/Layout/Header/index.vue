@@ -5,7 +5,7 @@ import {
 } from '@element-plus/icons-vue'
 import SvgIcon from '@/components/SvgIcon/index.vue'
 import useUserStore from "@/store/modules/user.ts"
-import {logout, oauthLogin} from "@/apis/user"
+import {logout, oauthExchange} from "@/apis/user"
 import {REMOVE_TOKEN, SET_TOKEN} from "@/utils/auth.ts"
 import {ElMessage} from "element-plus"
 import router from "@/router"
@@ -15,6 +15,7 @@ const route = useRoute()
 const dialogVisible = ref(false)
 
 onMounted(async () => {
+  if (route.query.oauth_code || route.query.oauth_error || route.query.access_token) return
   try {
     await userStore.getInfo();
   } catch (error) {
@@ -22,27 +23,46 @@ onMounted(async () => {
   }
 })
 
-thirdLogin()
+void thirdLogin()
 
 // 第三方登录
-function thirdLogin() {
-  // 判断url上面是否有gitee的token
-  let access_token = route.query.access_token
-  let login_type = route.query.login_type
-  let user_name = route.query.user_name
-  if (access_token && login_type) {
-    oauthLogin(<string>access_token, <string>login_type, <string>user_name).then(async (res: any) => {
-      if (res.code === 200) {
-        // 去掉参数query
-        await router.replace({query: {}})
-        SET_TOKEN(res.data.token, res.data.expire, true)
-        await userStore.getInfo()
-        ElMessage.success('登录成功')
-        await router.push('/')
-      } else {
-        ElMessage.error(res.msg)
-      }
-    })
+async function thirdLogin() {
+  const code = typeof route.query.oauth_code === 'string' ? route.query.oauth_code : undefined
+  const error = typeof route.query.oauth_error === 'string' ? route.query.oauth_error : undefined
+  const legacyToken = route.query.access_token
+  if (!code && !error && !legacyToken) return
+
+  // Remove even an expired/legacy credential before starting any network request.
+  const cleanUrl = new URL(window.location.href)
+  for (const key of ['oauth_code', 'oauth_error', 'access_token', 'login_type', 'user_name']) {
+    cleanUrl.searchParams.delete(key)
+  }
+  window.history.replaceState(window.history.state, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash)
+
+  if (error || legacyToken || !code) {
+    ElMessage.error(error === 'account_conflict' ? '该第三方账号与现有账号冲突，请联系管理员' : '第三方登录失败，请重新尝试')
+    return
+  }
+  try {
+    const res: any = await oauthExchange(code)
+    if (res.code !== 200) {
+      ElMessage.error(res.msg || '第三方登录失败，请重新尝试')
+      return
+    }
+    if (res.data?.secondFactorRequired) {
+      ElMessage.warning('管理员账号请通过后台登录并完成邮箱验证')
+      return
+    }
+    if (!res.data?.token || !res.data?.expire) {
+      ElMessage.error('第三方登录未完成，请重新尝试')
+      return
+    }
+    SET_TOKEN(res.data.token, res.data.expire, true)
+    await userStore.getInfo()
+    ElMessage.success('登录成功')
+    await router.push('/')
+  } catch {
+    ElMessage.error('第三方登录失败，请重新尝试')
   }
 }
 

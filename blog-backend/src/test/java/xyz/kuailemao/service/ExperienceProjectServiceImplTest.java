@@ -1,5 +1,10 @@
 package xyz.kuailemao.service;
 
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 import xyz.kuailemao.domain.dto.ExperienceProjectDTO;
@@ -79,6 +84,24 @@ class ExperienceProjectServiceImplTest {
 
         assertTrue(service.update(8L,dto).getMsg().contains("不属于"));
         verify(service,never()).updateById(any());
+    }
+
+    @Test void clearingProjectDatesWritesExplicitNullValues() {
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), ExperienceProject.class);
+        ExperienceProjectServiceImpl service=serviceWithParent(publicParent());
+        doReturn(project(12L,8L,1)).when(service).getOne(any());
+        doReturn(true).when(service).updateById(any(ExperienceProject.class));
+        doReturn(true).when(service).update(any(Wrapper.class));
+        ExperienceProjectDTO dto=validDto(); dto.setId(12L);
+
+        assertEquals(200,service.update(8L,dto).getCode());
+        @SuppressWarnings("unchecked")
+        org.mockito.ArgumentCaptor<Wrapper<ExperienceProject>> captor=org.mockito.ArgumentCaptor.forClass(Wrapper.class);
+        verify(service).update(captor.capture());
+        LambdaUpdateWrapper<ExperienceProject> update=(LambdaUpdateWrapper<ExperienceProject>)captor.getValue();
+        assertTrue(update.getSqlSet().contains("start_date"));
+        assertTrue(update.getSqlSet().contains("end_date"));
+        assertTrue(update.getParamNameValuePairs().containsValue(null));
     }
 
     @Test void crossParentBatchDeleteFailsBeforeMutation() {

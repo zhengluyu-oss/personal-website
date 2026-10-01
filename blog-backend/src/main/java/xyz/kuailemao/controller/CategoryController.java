@@ -45,7 +45,7 @@ public class CategoryController {
     @LogAnnotation(module="新增分类",operation= LogConst.INSERT)
     @AccessLimit(seconds = 60, maxCount = 30)
     @PutMapping()
-    public ResponseResult<Void> addCategory(@RequestBody @Valid CategoryDTO categoryDTO) {
+    public ResponseResult<Long> addCategory(@RequestBody @Valid CategoryDTO categoryDTO) {
         return categoryService.addCategory(categoryDTO);
     }
 
