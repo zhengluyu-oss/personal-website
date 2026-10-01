@@ -18,6 +18,7 @@ const lines=(value?:string)=>value?.split(/\r?\n/).map(line=>line.trim()).filter
 const tokens=(value?:string)=>lines(value).flatMap(line=>line.split(/[,，、/|]/)).map(line=>line.trim()).filter(Boolean)
 const month=(value?:string)=>value?value.slice(0,7).replace('-','.') : ''
 const period=(value:WorkExperienceItem)=>`${month(value.startDate)} 至 ${value.isCurrent===1?'今':month(value.endDate)}`
+const projectCardImage=(cover:string)=>cover.replace(/(\/experience-gallery\/project-\d+-cover)-v3\.webp$/, '$1-card-v3.webp')
 const metrics=computed(()=>lines(item.value?.metrics))
 const responsibilities=computed(()=>lines(item.value?.responsibilities).length?lines(item.value?.responsibilities):lines(item.value?.highlights))
 
@@ -71,7 +72,7 @@ onBeforeUnmount(() => { requestVersion++ })
         <p v-else-if="projectResource.status === 'error'" class="project-error" role="status">项目暂未加载。<button type="button" @click="loadProjects">重试项目</button></p>
         <div v-if="projectResource.data?.length" class="project-grid">
           <RouterLink v-for="(project, index) in projectResource.data" :key="project.id" :class="{ 'project-card--featured': index < 2 }" :to="`/experience/${item.id}/projects/${project.id}`">
-            <img v-if="project.coverImage" :src="project.coverImage" :alt="project.projectName + '封面'" loading="lazy">
+            <img v-if="project.coverImage" :src="projectCardImage(project.coverImage)" :alt="project.projectName + '封面'" loading="lazy" decoding="async">
             <div><h3>{{ project.projectName }}</h3><p v-if="project.summary">{{ project.summary }}</p><small v-if="tokens(project.techStack).length">{{ tokens(project.techStack).slice(0,4).join(' / ') }}</small><span class="project-entry">查看项目 →</span></div>
           </RouterLink>
         </div>

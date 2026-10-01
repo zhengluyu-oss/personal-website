@@ -5,6 +5,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.multipart.MultipartFile;
 import xyz.kuailemao.domain.dto.*;
 import xyz.kuailemao.domain.entity.User;
+import xyz.kuailemao.domain.entity.LoginUser;
 import xyz.kuailemao.domain.response.ResponseResult;
 import xyz.kuailemao.domain.vo.UserAccountVO;
 import xyz.kuailemao.domain.vo.UserDetailsVO;
@@ -27,6 +28,9 @@ public interface UserService extends IService<User>, UserDetailsService {
      * @return 用户信息
      */
     User findAccountByNameOrEmail(String text);
+
+    /** Load a current, enabled OAuth account and its current authorities. */
+    LoginUser loadLoginUserById(Long id, Integer registerType);
 
     /**
      * 根据用户id查询用户信息

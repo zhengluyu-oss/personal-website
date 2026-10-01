@@ -131,6 +131,9 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     public ResponseResult<String> userComment(UserCommentDTO commentDTO) {
         Comment comment = commentDTO.asViewObject(Comment.class, commentDto -> commentDto.setCommentUserId(SecurityUtils.getUserId()));
         if (this.save(comment)) {
+            if (Objects.equals(comment.getType(), CommentEnum.COMMENT_TYPE_ARTICLE.getType())) {
+                redisCache.incrementCacheMapValue(RedisConst.ARTICLE_COMMENT_COUNT, comment.getTypeId().toString(), 1);
+            }
             // 判断用是否为第三方登录没有邮箱
             User user = userMapper.selectById(SecurityUtils.getUserId());
             if (StringUtils.isEmpty(user.getEmail())) {
@@ -151,8 +154,6 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
      * @return ResponseResult
      */
     public ResponseResult<String> commentEmailReminder(UserCommentDTO commentDTO, User user, Comment comment) {
-        // 缓存评论数量+1
-        redisCache.incrementCacheMapValue(RedisConst.ARTICLE_COMMENT_COUNT, commentDTO.getTypeId().toString(), 1);
         // 评论
         if (StringUtils.isNull(commentDTO.getReplyId())) {
 
@@ -232,28 +233,22 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
     @Override
     public ResponseResult<Void> isCheckComment(CommentIsCheckDTO isCheckDTO) {
-        LambdaUpdateWrapper<Comment> wrapper = new LambdaUpdateWrapper<>();
-        wrapper.eq(Comment::getId, isCheckDTO.getId()).or().eq(Comment::getParentId, isCheckDTO.getId());
-        int updateCount = commentMapper.update(Comment.builder().id(isCheckDTO.getId()).isCheck(isCheckDTO.getIsCheck()).build(), wrapper);
-        if (updateCount > 0) {
-            // 同步redis评论数量
-            // 如果是文章评论，则改变redis中文章数量
-            // 1.查询评论所在的文章id
-            Integer articleId = commentMapper
-                    .selectOne(
-                            new LambdaQueryWrapper<Comment>()
-                                    .eq(Comment::getId, isCheckDTO.getId())
-                                    .eq(Comment::getType, CommentEnum.COMMENT_TYPE_ARTICLE.getType())).getTypeId();
-            // 2.修改redis数量
-            if (Objects.equals(isCheckDTO.getIsCheck(), SQLConst.COMMENT_IS_CHECK)) {
-                redisCache.incrementCacheMapValue(RedisConst.ARTICLE_COMMENT_COUNT, articleId.toString(), updateCount);
-            } else {
-                redisCache.incrementCacheMapValue(RedisConst.ARTICLE_COMMENT_COUNT, articleId.toString(), -updateCount);
-            }
-            return ResponseResult.success();
-        }
+        Comment comment = commentMapper.selectById(isCheckDTO.getId());
+        if (comment == null) return ResponseResult.failure();
 
-        return ResponseResult.failure();
+        LambdaUpdateWrapper<Comment> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.and(i -> i.eq(Comment::getId, isCheckDTO.getId()).or().eq(Comment::getParentId, isCheckDTO.getId()))
+                .ne(Comment::getIsCheck, isCheckDTO.getIsCheck());
+        int updateCount = commentMapper.update(Comment.builder().isCheck(isCheckDTO.getIsCheck()).build(), wrapper);
+        if (updateCount > 0 && Objects.equals(comment.getType(), CommentEnum.COMMENT_TYPE_ARTICLE.getType())) {
+            // 只同步状态实际发生变化的文章评论数量
+            if (Objects.equals(isCheckDTO.getIsCheck(), SQLConst.COMMENT_IS_CHECK)) {
+                redisCache.incrementCacheMapValue(RedisConst.ARTICLE_COMMENT_COUNT, comment.getTypeId().toString(), updateCount);
+            } else {
+                redisCache.incrementCacheMapValue(RedisConst.ARTICLE_COMMENT_COUNT, comment.getTypeId().toString(), -updateCount);
+            }
+        }
+        return ResponseResult.success();
     }
 
     @Override
