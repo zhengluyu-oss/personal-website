@@ -257,10 +257,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         List<Tag> tags = tagMapper.selectBatchIds(articleTags.stream().map(ArticleTag::getTagId).toList());
         // 当前文章的上一篇文章与下一篇文章,大于当前文章的最小文章与小于当前文章的最大文章
         LambdaQueryWrapper<Article> preAndNextWrapper = new LambdaQueryWrapper<>();
-        preAndNextWrapper.lt(Article::getId, id);
+        preAndNextWrapper.eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE).lt(Article::getId, id);
         Article preArticle = articleMapper.selectOne(preAndNextWrapper.orderByDesc(Article::getId).last(SQLConst.LIMIT_ONE_SQL));
         preAndNextWrapper.clear();
-        preAndNextWrapper.gt(Article::getId, id);
+        preAndNextWrapper.eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE).gt(Article::getId, id);
         Article nextArticle = articleMapper.selectOne(preAndNextWrapper.orderByAsc(Article::getId).last(SQLConst.LIMIT_ONE_SQL));
 
         return article.asViewObject(ArticleDetailVO.class, vo -> {
@@ -362,6 +362,19 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Transactional
     @Override
     public ResponseResult<Void> publish(ArticleDTO articleDTO) {
+        Category category = categoryMapper.selectById(articleDTO.getCategoryId());
+        if (category == null || Objects.equals(category.getIsDeleted(), 1)) {
+            return ResponseResult.failure("所选分类不存在，请重新选择");
+        }
+        List<Long> requestedTags = articleDTO.getTagId();
+        if (requestedTags == null || requestedTags.isEmpty() || requestedTags.stream().anyMatch(Objects::isNull)) {
+            return ResponseResult.failure("请至少选择一个有效标签");
+        }
+        Set<Long> tagIds = new HashSet<>(requestedTags);
+        List<Tag> tags = tagMapper.selectBatchIds(tagIds);
+        if (tags.size() != tagIds.size() || tags.stream().anyMatch(tag -> Objects.equals(tag.getIsDeleted(), 1))) {
+            return ResponseResult.failure("所选标签不存在，请重新选择");
+        }
         Article article = articleDTO.asViewObject(Article.class, v -> v.setUserId(SecurityUtils.getUserId()));
         if (this.saveOrUpdate(article)) {
             // 清除标签关系

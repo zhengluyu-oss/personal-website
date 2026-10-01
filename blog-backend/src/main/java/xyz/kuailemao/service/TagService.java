@@ -28,7 +28,7 @@ public interface TagService extends IService<Tag> {
      * @param tagDTO 标签DTO
      * @return 是否成功
      */
-    ResponseResult<Void> addTag(TagDTO tagDTO);
+    ResponseResult<Long> addTag(TagDTO tagDTO);
 
     /**
      * 搜索标签

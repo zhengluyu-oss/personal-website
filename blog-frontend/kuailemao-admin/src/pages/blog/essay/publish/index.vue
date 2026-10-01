@@ -87,45 +87,52 @@ async function getTag() {
 
 const categoryLoading = ref(false)
 
-function addCategoryFunc(e: MouseEvent) {
-  console.log(categoryName.value)
-  if (!categoryName.value) {
+async function addCategoryFunc(e: MouseEvent) {
+  e.preventDefault()
+  if (categoryLoading.value) return
+  const name = String(categoryName.value || '').trim()
+  if (!name) {
     message.warn('请检查分类内容是否填写完整')
     return
   }
   categoryLoading.value = true
-  e.preventDefault()
-  const data = { categoryName: categoryName.value, id: categoryList.value[categoryList.value.length - 1].id + 1 }
-  addCategory(data).then((res) => {
-    if (res.code === 200)
-      categoryLoading.value = false
-    categoryList.value.push(data)
-  })
-  categoryName.value = ''
-  setTimeout(() => {
+  try {
+    const res = await addCategory({ categoryName: name })
+    const id = Number(res?.data)
+    if (res?.code !== 200 || !Number.isSafeInteger(id) || id <= 0) throw new Error('新增分类未返回有效编号，请刷新列表')
+    categoryList.value.push({ id, categoryName: name })
+    categoryName.value = ''
     inputRef.value?.focus()
-  }, 0)
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '新增分类失败')
+  } finally {
+    categoryLoading.value = false
+  }
 }
 
 const tagLoading = ref(false)
 
-function addTagFunc(e: MouseEvent) {
-  if (!tagName.value) {
+async function addTagFunc(e: MouseEvent) {
+  e.preventDefault()
+  if (tagLoading.value) return
+  const name = String(tagName.value || '').trim()
+  if (!name) {
     message.warn('请检查标签内容是否填写完整')
     return
   }
   tagLoading.value = true
-  e.preventDefault()
-  const data = { tagName: tagName.value, id: tagList.value[tagList.value.length - 1].id + 1 }
-  addTag(data).then((res) => {
-    if (res.code === 200)
-      tagLoading.value = false
-    tagList.value.push(data)
-  })
-  tagName.value = ''
-  setTimeout(() => {
+  try {
+    const res = await addTag({ tagName: name })
+    const id = Number(res?.data)
+    if (res?.code !== 200 || !Number.isSafeInteger(id) || id <= 0) throw new Error('新增标签未返回有效编号，请刷新列表')
+    tagList.value.push({ id, tagName: name })
+    tagName.value = ''
     inputRef.value?.focus()
-  }, 0)
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '新增标签失败')
+  } finally {
+    tagLoading.value = false
+  }
 }
 
 async function beforeUpload(file: UploadProps['fileList'][number]) {

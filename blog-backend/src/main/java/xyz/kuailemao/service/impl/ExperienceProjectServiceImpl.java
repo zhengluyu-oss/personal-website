@@ -1,6 +1,7 @@
 package xyz.kuailemao.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,26 @@ public class ExperienceProjectServiceImpl extends ServiceImpl<ExperienceProjectM
     public ExperienceProjectVO getBack(Long id,Long pid) { WorkExperience p=parent(id,false); ExperienceProject x=p==null?null:getOne(owned(id).eq(ExperienceProject::getId,pid)); return x==null?null:vo(x,p,true); }
     private String validate(Long id, ExperienceProjectDTO d) { if(parent(id,false)==null)return "工作经历不存在"; if(d.getStatus()!=null&&d.getStatus()!=0&&d.getStatus()!=1)return "项目状态不合法"; if(d.getStartDate()!=null&&d.getEndDate()!=null&&d.getEndDate().before(d.getStartDate()))return "结束日期不能早于开始日期"; return null; }
     @Transactional public ResponseResult<Void> add(Long id,ExperienceProjectDTO d){String e=validate(id,d);if(e!=null)return ResponseResult.failure(e);ExperienceProject x=d.asViewObject(ExperienceProject.class);x.setId(null);x.setExperienceId(id);x.setOrderNum(d.getOrderNum()==null?1:d.getOrderNum());x.setStatus(d.getStatus()==null?0:d.getStatus());x.setIsDeleted(0);return save(x)?ResponseResult.success():ResponseResult.failure();}
-    @Transactional public ResponseResult<Void> update(Long id,ExperienceProjectDTO d){if(d.getId()==null)return ResponseResult.failure("项目编号不能为空");String e=validate(id,d);if(e!=null)return ResponseResult.failure(e);ExperienceProject old=getOne(owned(id).eq(ExperienceProject::getId,d.getId()));if(old==null)return ResponseResult.failure("项目不存在或不属于当前经历");ExperienceProject x=d.asViewObject(ExperienceProject.class);x.setExperienceId(id);x.setIsDeleted(0);return updateById(x)?ResponseResult.success():ResponseResult.failure();}
+    @Transactional
+    public ResponseResult<Void> update(Long id, ExperienceProjectDTO d) {
+        if (d.getId() == null) return ResponseResult.failure("项目编号不能为空");
+        String error = validate(id, d);
+        if (error != null) return ResponseResult.failure(error);
+        ExperienceProject old = getOne(owned(id).eq(ExperienceProject::getId, d.getId()));
+        if (old == null) return ResponseResult.failure("项目不存在或不属于当前经历");
+        ExperienceProject project = d.asViewObject(ExperienceProject.class);
+        project.setExperienceId(id);
+        project.setIsDeleted(0);
+        if (!updateById(project)) return ResponseResult.failure();
+        // updateById skips nulls; explicitly persist cleared dates without changing other nullable fields.
+        boolean datesUpdated = this.update(new LambdaUpdateWrapper<ExperienceProject>()
+                .eq(ExperienceProject::getId, d.getId())
+                .eq(ExperienceProject::getExperienceId, id)
+                .eq(ExperienceProject::getIsDeleted, 0)
+                .set(ExperienceProject::getStartDate, d.getStartDate())
+                .set(ExperienceProject::getEndDate, d.getEndDate()));
+        if (!datesUpdated) throw new IllegalStateException("项目日期更新失败");
+        return ResponseResult.success();
+    }
     @Transactional public ResponseResult<Void> delete(Long id,List<Long> ids){if(ids==null||ids.isEmpty())return ResponseResult.failure();long count=count(owned(id).in(ExperienceProject::getId,ids));if(count!=new HashSet<>(ids).size())return ResponseResult.failure("存在不属于当前经历的项目");return updateBatchById(ids.stream().map(x->ExperienceProject.builder().id(x).isDeleted(1).build()).toList())?ResponseResult.success():ResponseResult.failure();}
 }

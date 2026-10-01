@@ -45,8 +45,14 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     }
 
     @Override
-    public ResponseResult<Void> addCategory(CategoryDTO categoryDTO) {
-        return addOrUpdateCategory(categoryDTO.setId(null));
+    public ResponseResult<Long> addCategory(CategoryDTO categoryDTO) {
+        categoryDTO.setId(null);
+        normalizeHeroCopy(categoryDTO);
+        ResponseResult<Void> validation = validateFeaturedArticle(categoryDTO);
+        if (validation != null) return ResponseResult.failure(validation.getMsg());
+        Category category = categoryDTO.asViewObject(Category.class);
+        if (categoryMapper.insert(category) <= 0 || category.getId() == null) return ResponseResult.failure();
+        return ResponseResult.success(category.getId());
     }
 
     @Override

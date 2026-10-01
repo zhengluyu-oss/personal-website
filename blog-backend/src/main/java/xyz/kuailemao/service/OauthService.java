@@ -2,6 +2,7 @@ package xyz.kuailemao.service;
 
 import jakarta.servlet.http.HttpServletRequest;
 import me.zhyd.oauth.model.AuthResponse;
+import xyz.kuailemao.domain.entity.LoginUser;
 
 /**
  * @author kuailemao
@@ -19,4 +20,9 @@ public interface OauthService {
      * @return 响应结果
      */
     String handleLogin(AuthResponse authResponse, HttpServletRequest request,Integer type);
+
+    /**
+     * Consume a short-lived, single-use OAuth handoff code and resolve the current local account.
+     */
+    LoginUser exchangeCode(String code);
 }

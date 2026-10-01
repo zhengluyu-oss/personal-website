@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import me.zhyd.oauth.config.AuthConfig;
 import me.zhyd.oauth.model.AuthCallback;
@@ -13,14 +14,18 @@ import me.zhyd.oauth.request.AuthGithubRequest;
 import me.zhyd.oauth.request.AuthRequest;
 import me.zhyd.oauth.utils.AuthStateUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.annotation.*;
 import xyz.kuailemao.annotation.AccessLimit;
+import xyz.kuailemao.domain.dto.OauthExchangeDTO;
+import xyz.kuailemao.domain.response.ResponseResult;
 import xyz.kuailemao.domain.request.oauth.GiteeBody;
 import xyz.kuailemao.domain.request.oauth.GithubBody;
+import xyz.kuailemao.enums.RespEnum;
 import xyz.kuailemao.enums.RegisterOrLoginTypeEnum;
+import xyz.kuailemao.handler.SecurityHandler;
 import xyz.kuailemao.service.OauthService;
+import xyz.kuailemao.utils.WebUtil;
 
 import java.io.IOException;
 
@@ -44,6 +49,9 @@ public class OauthController {
     @Resource
     private OauthService oauthService;
 
+    @Resource
+    private SecurityHandler securityHandler;
+
     @Value("${web.index.path}")
     private String path;
 
@@ -62,6 +70,7 @@ public class OauthController {
     public void giteeLogin(AuthCallback callback, HttpServletRequest request, HttpServletResponse response) throws IOException {
         AuthRequest authRequest = getGiteeAuthRequest();
         String parameter = oauthService.handleLogin(authRequest.login(callback), request, RegisterOrLoginTypeEnum.GITEE.getRegisterType());
+        response.setHeader("Cache-Control", "no-store");
         response.sendRedirect(path+parameter);
     }
     // github登录
@@ -79,7 +88,23 @@ public class OauthController {
     public void githubLogin(AuthCallback callback, HttpServletRequest request, HttpServletResponse response) throws IOException {
         AuthRequest authRequest = getGithubAuthRequest();
         String parameter = oauthService.handleLogin(authRequest.login(callback), request,RegisterOrLoginTypeEnum.GITHUB.getRegisterType());
+        response.setHeader("Cache-Control", "no-store");
         response.sendRedirect(path+parameter);
+    }
+
+    @Operation(summary = "兑换第三方登录一次性凭据")
+    @AccessLimit(seconds = 60, maxCount = 10)
+    @PostMapping("/exchange")
+    public void exchange(@Valid @RequestBody OauthExchangeDTO dto,
+                         HttpServletRequest request, HttpServletResponse response) {
+        response.setHeader("Cache-Control", "no-store");
+        try {
+            securityHandler.handlerOnAuthenticationSuccess(request, response, oauthService.exchangeCode(dto.getCode()));
+        } catch (AuthenticationException exception) {
+            WebUtil.renderString(response, ResponseResult.failure(
+                    RespEnum.USERNAME_OR_PASSWORD_ERROR.getCode(),
+                    "第三方登录已失效，请重新尝试").asJsonString());
+        }
     }
 
     /**
