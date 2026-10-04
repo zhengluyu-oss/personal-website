@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import 'md-editor-v3/lib/style.css'
 import { MdEditor } from 'md-editor-v3'
-import type { UploadProps } from 'ant-design-vue'
+import type { UploadFile } from 'ant-design-vue'
+import type { FileType } from 'ant-design-vue/es/upload/interface'
 import { message } from 'ant-design-vue'
 import type { Ref, UnwrapRef } from 'vue'
 import {
@@ -26,7 +27,7 @@ const router = useRouter()
 const multiTab = useMultiTab()
 const publishing = ref(false)
 
-const fileList = ref<UploadProps['fileList']>([])
+const fileList = ref<UploadFile[]>([])
 // 预览Base64
 const previewBase64 = ref<string>()
 const formData = ref({
@@ -135,7 +136,7 @@ async function addTagFunc(e: MouseEvent) {
   }
 }
 
-async function beforeUpload(file: UploadProps['fileList'][number]) {
+async function beforeUpload(file: FileType) {
   const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp'
   if (!isJpgOrPng) {
     message.error('文件格式必须是jpg或png或webp')
@@ -143,7 +144,7 @@ async function beforeUpload(file: UploadProps['fileList'][number]) {
   }
 
   // 压缩图片
-  const compressedFile = await compressImage(file as unknown as File)
+  const compressedFile = await compressImage(file)
   const isLt03M = compressedFile.size / 1024 / 1024 < 0.3
   if (!isLt03M) {
     message.error('图片压缩后大于 0.3MB')
@@ -152,14 +153,14 @@ async function beforeUpload(file: UploadProps['fileList'][number]) {
 
   const coverFile = compressedFile instanceof File
     ? compressedFile
-    : new File([compressedFile], (file as File).name || 'cover.jpg', { type: compressedFile.type || 'image/jpeg' })
+    : new File([compressedFile], file.name || 'cover.jpg', { type: compressedFile.type || 'image/jpeg' })
 
   // 使用 Ant Design UploadFile 结构，避免列表一直显示转圈
   fileList.value = [{
     uid: `${Date.now()}`,
     name: coverFile.name,
     status: 'done',
-    originFileObj: coverFile as any,
+    originFileObj: Object.assign(coverFile, { uid: file.uid, lastModifiedDate: file.lastModifiedDate }),
   }]
   getBase64(coverFile, (base64Url: string) => {
     previewBase64.value = base64Url
@@ -235,7 +236,7 @@ async function onFinish() {
   }
 }
 
-async function onUploadArticleImg(files: any, callback: any) {
+async function onUploadArticleImg(files: File[], callback: (urls: string[]) => void) {
   const res = await Promise.all(
     files.map(async (file) => {
       const compressedFile = await compressImage(file)
