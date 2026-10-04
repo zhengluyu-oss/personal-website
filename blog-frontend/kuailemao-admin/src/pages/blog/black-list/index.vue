@@ -3,8 +3,6 @@ import type {Ref, UnwrapRef} from 'vue'
 import {createVNode} from 'vue'
 import {message, Modal} from 'ant-design-vue'
 import {ExclamationCircleOutlined} from '@ant-design/icons-vue'
-import {deleteCategoryByIds,} from '~/api/blog/category'
-import {addCategory} from '~/api/blog/article'
 import {addBlackList, blackList, deleteBlackList, updateBlackList} from "~/api/blog/black-list";
 import dayjs, {Dayjs} from "dayjs";
 import {debounce} from 'lodash-es';
@@ -123,8 +121,6 @@ const modalInfo = reactive({
   loading: false,
 })
 
-const formData = ref()
-
 function deleteBlackListFunc(ids: string[], type?: number) {
   if (type === 0) {
     Modal.confirm({
@@ -164,7 +160,12 @@ const updateOrInsertModal = ref<{
   expiresTime: undefined
 })
 
-const userState = reactive({
+const userState = reactive<{
+  data: { label: string; value: Key }[]
+  value: { label: string; value: Key }[]
+  fetching: boolean
+  isInsert: boolean
+}>({
   data: [],
   value: [],
   fetching: false,
@@ -215,13 +216,10 @@ async function modelOk() {
   } else {
     // TODO 新增黑名单
     let insertData = {
-      userIds: [],
+      userIds: userState.value.map(user => user.value),
       ...updateOrInsertModal.value,
     }
     insertData.expiresTime = dayjs(updateOrInsertModal.value.expiresTime).format('YYYY-MM-DD HH:mm:ss')
-    userState.value.map((data: any) => {
-      insertData.userIds.push(data.value)
-    })
     console.log('添加', insertData)
     await addBlackList(insertData).then((res) => {
       if (res.code === 200) {

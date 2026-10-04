@@ -7,9 +7,11 @@ import {
   VueDraggable,
 } from 'vue-draggable-plus'
 import {ref} from 'vue'
-import {message, UploadProps} from 'ant-design-vue'
+import {message} from 'ant-design-vue'
+import type {FileType} from 'ant-design-vue/es/upload/interface'
 import {backGetBanners, deleteBanner, updateOrder, uploadBanner} from "~/api/blog/banners";
 import {compressImage} from "~/utils/CompressedImage.ts";
+import {toImageUploadFile} from '~/utils/upload-file'
 
 // 图片类型
 interface FileItem {
@@ -42,34 +44,22 @@ onMounted(() => {
   getFileList()
 })
 
-function getBase64(file: File) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
-    reader.onload = () => resolve(reader.result)
-    reader.onerror = error => reject(error)
-  })
-}
-
 function handleCancel() {
   previewVisible.value = false
   previewTitle.value = ''
 }
 
-async function handlePreview(file: UploadProps['fileList'][number]) {
-  if (!file.path && !file.preview)
-    file.preview = (await getBase64(file.originFileObj)) as string
-
+function handlePreview(file: FileItem) {
   tempImage.value = file
   previewVisible.value = true
-  previewTitle.value = file.name || file.path.substring(file.path.lastIndexOf('/') + 1)
+  previewTitle.value = file.path.substring(file.path.lastIndexOf('/') + 1) || '轮播图'
 }
 
 const uploading = ref(false)
 const progress = ref(0)
 
 // 上传前
-async function beforeUpload(file: UploadProps['fileList'][number]) {
+async function beforeUpload(file: FileType) {
   const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp'
   if (!isJpgOrPng) {
     message.error('文件格式必须是jpg或png或webp')
@@ -85,7 +75,8 @@ async function beforeUpload(file: UploadProps['fileList'][number]) {
 
   // 手动上传
   const formData = new FormData();
-  formData.append('bannerImage', compressedFile, compressedFile.name);
+  const bannerFile = toImageUploadFile(compressedFile, file.name)
+  formData.append('bannerImage', bannerFile, bannerFile.name);
   uploading.value = true;
   uploadBanner(formData, handleProgress).then(async (res) => {
     if (res.code === 200) {

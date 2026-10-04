@@ -5,6 +5,7 @@ import type {UploadProps, FormInstance} from 'ant-design-vue'
 import type {Rule} from 'ant-design-vue/es/form'
 import {createAlbum, photoAndAlbumList, uploadPhoto, updateAlbum, deletePhotoOrAlbum} from "~/api/blog/photo";
 import {compressImage} from "~/utils/CompressedImage.ts";
+import {toImageUploadFile} from '~/utils/upload-file'
 
 // 统一的数据接口
 interface BaseItem {
@@ -151,7 +152,7 @@ const updateBreadcrumb = async (album: Album) => {
         })
         
         if (res.code === 200) {
-          const items = res.data.list
+          const items: (Album | Photo)[] = res.data.list
           const path: Album[] = []
           let currentId: number | null = album.id
           
@@ -367,7 +368,8 @@ const handleSubmit = async () => {
         // 构建 FormData
         const formData = new FormData()
 
-        formData.append('file', compressedFile, compressedFile.name)
+        const photoFile = toImageUploadFile(compressedFile, formState.value.file.name)
+        formData.append('file', photoFile, photoFile.name)
         formData.append('name', formState.value.name)
         if (formState.value.parentId) {
           formData.append('parentId', String(formState.value.parentId))
