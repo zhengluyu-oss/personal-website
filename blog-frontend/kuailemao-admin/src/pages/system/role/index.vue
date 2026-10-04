@@ -114,23 +114,20 @@ async function onFinish(values: any) {
 /**
  * 修改状态
  */
-async function statusBtn(id: string, status: number) {
-  const data = await roleUpdateStatus(id, status ? 0 : 1).catch((msg) => {
-    message.warn(msg)
-    tabData.value = tabData.value.map((item: any) => {
-      if (id === (item.id)) {
-        // 等待 0.5s
-        setTimeout(() => {
-          item.isDisable = !item.isDisable
-        }, 500)
-      }
-      return item
-    })
-  })
-  if (data.code === 200) {
+async function statusBtn(id: string, status: boolean) {
+  try {
+    const data = await roleUpdateStatus(id, status ? 0 : 1)
+    if (data.code !== 200)
+      throw new Error('修改角色状态失败')
     if (status)
       message.success('已启用')
     else message.info('已停用')
+  }
+  catch {
+    const row = tabData.value.find(item => item.id === id)
+    if (row)
+      row.status = !status
+    message.warn('修改角色状态失败，请重试')
   }
 }
 

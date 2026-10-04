@@ -1,9 +1,9 @@
-/// <reference types="vitest" />
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as process from 'node:process'
 import { loadEnv } from 'vite'
-import type { ConfigEnv, UserConfig } from 'vite'
+import type { ConfigEnv } from 'vite'
+import type { UserConfig } from 'vitest/config'
 import { createVitePlugins } from './plugins'
 import { OUTPUT_DIR } from './plugins/constants'
 
@@ -72,6 +72,8 @@ export default ({ mode }: ConfigEnv): UserConfig => {
       ],
     },
     build: {
+      // Preserve the previous Vite 4 browser syntax target during the tool migration.
+      target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
       chunkSizeWarningLimit: 4096,
       outDir: OUTPUT_DIR,
       rollupOptions: {

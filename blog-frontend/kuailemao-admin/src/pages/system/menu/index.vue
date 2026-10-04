@@ -88,7 +88,7 @@ onMounted(() => {
   getMenuList()
 })
 // 元数据
-const menuData = ref()
+const menuData = ref<MenuDataItem[]>([])
 // 构建好的树形数据
 const menuDataList: Ref<UnwrapRef<MenuData>> = ref([])
 // 上级菜单数据
@@ -209,7 +209,7 @@ function handleAddSuccess() {
 
 const formData = ref()
 // 弹窗标识：0：新增 1：修改 2：删除
-const modalType: Ref<UnwrapRef<number | null>> = ref(null)
+const modalType = ref<number>()
 
 /**
  * 修改
