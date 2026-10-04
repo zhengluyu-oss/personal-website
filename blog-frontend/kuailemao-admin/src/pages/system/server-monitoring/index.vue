@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import type { Ref } from 'vue'
 import { onMounted, ref } from 'vue'
 import type SystemInfo from './type.ts'
 import { getServiceMonitorData } from '~/api/server'
 
-const serverInfo: Ref<SystemInfo> = ref()
+const serverInfo = ref<SystemInfo>()
 const loading = ref(true)
 
 onMounted(async () => {

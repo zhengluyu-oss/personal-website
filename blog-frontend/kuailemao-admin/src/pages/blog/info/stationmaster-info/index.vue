@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import {ref} from 'vue'
 import {LoadingOutlined, PlusOutlined, UploadOutlined} from '@ant-design/icons-vue'
-import type {UploadProps} from 'ant-design-vue'
+import type {UploadFile} from 'ant-design-vue'
+import type {FileType} from 'ant-design-vue/es/upload/interface'
 import {message} from 'ant-design-vue'
 import {updateStationmaster, uploadAckgroundImage, uploadAvatar} from "~/api/blog/webInfo";
 import {compressImage} from "~/utils/CompressedImage.ts";
+import {toImageUploadFile} from '~/utils/upload-file'
 
 const emit = defineEmits(["reset:stationmaster:info"])
 
@@ -44,19 +46,20 @@ const avatarFileList = ref([])
 const loading = ref<boolean>(false)
 const imageAvatarUrl = ref<string>()
 // 背景上传
-const backFileList = ref<UploadProps['fileList']>([])
+const backFileList = ref<UploadFile[]>([])
 
 if(formData.webmasterAvatar && formData.webmasterProfileBackground){
   imageAvatarUrl.value = formData.webmasterAvatar as string
   const myUrl = new URL(formData.webmasterProfileBackground as string);
   const fileName = myUrl.pathname.split('/').pop();
   backFileList.value = [{
+    uid: 'profile-background',
     thumbUrl: formData.webmasterProfileBackground,
-    name: fileName
+    name: fileName || 'background'
   }]
 }
 
-async function beforeUploadAvatar(file: UploadProps['fileList'][number]) {
+async function beforeUploadAvatar(file: FileType) {
   loading.value = true
   try {
     const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp'
@@ -65,7 +68,7 @@ async function beforeUploadAvatar(file: UploadProps['fileList'][number]) {
       return false
     }
 
-    const compressedFile = await compressImage(file as unknown as File)
+    const compressedFile = await compressImage(file)
     const isLt03M = compressedFile.size / 1024 / 1024 < 0.3
     if (!isLt03M) {
       message.error('图片压缩后大小必须小于 0.3MB')
@@ -101,7 +104,7 @@ async function beforeUploadAvatar(file: UploadProps['fileList'][number]) {
   return false
 }
 
-async function beforeUploadAckgroundImag(file: UploadProps['fileList'][number]) {
+async function beforeUploadAckgroundImag(file: FileType) {
   const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp'
   if (!isJpgOrPng){
     message.error('文件格式必须是jpg或png或webp')
@@ -116,12 +119,14 @@ async function beforeUploadAckgroundImag(file: UploadProps['fileList'][number]) 
   }
 
   const webmasterAvatar = new FormData()
-  webmasterAvatar.append('background', compressedFile,compressedFile.name)
+  const backgroundFile = toImageUploadFile(compressedFile, file.name)
+  webmasterAvatar.append('background', backgroundFile, backgroundFile.name)
   uploadAckgroundImage(webmasterAvatar).then((res) => {
     if (res.code === 200) {
       backFileList.value = [{
+        uid: 'profile-background',
         thumbUrl: res.data,
-        name: new URL(res.data).pathname.split('/').pop(),
+        name: new URL(res.data).pathname.split('/').pop() || 'background',
       }]
       message.success('资料卡背景图上传成功')
     }else{

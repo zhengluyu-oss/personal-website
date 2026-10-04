@@ -53,18 +53,18 @@ export const useAppStore = defineStore('app', () => {
     },
     components: {
       Layout: {
-        bodyBg: '#f3f5f8',
-        headerBg: '#ffffff',
-        siderBg: '#ffffff',
+        colorBgBody: '#f3f5f8',
+        colorBgHeader: '#ffffff',
+        colorBgContainer: '#ffffff',
       },
       Menu: {
-        itemBg: 'transparent',
-        itemColor: '#526079',
-        itemHoverBg: ACCENT_HOVER,
-        itemHoverColor: ACCENT,
-        itemSelectedBg: ACCENT_SOFT,
-        itemSelectedColor: ACCENT,
-        subMenuItemBg: 'transparent',
+        colorItemBg: 'transparent',
+        colorItemText: '#526079',
+        colorItemBgHover: ACCENT_HOVER,
+        colorItemTextHover: ACCENT,
+        colorItemBgSelected: ACCENT_SOFT,
+        colorItemTextSelected: ACCENT,
+        colorSubItemBg: 'transparent',
       },
     },
   })
