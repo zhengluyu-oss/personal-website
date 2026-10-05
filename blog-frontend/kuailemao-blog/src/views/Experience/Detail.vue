@@ -7,6 +7,7 @@ import { sanitizeRenderedHtml } from '@/utils/sanitize-html'
 import { experienceProjectList, getExperience, type ExperienceProjectItem, type WorkExperienceItem } from '@/apis/experience'
 import { createHomeResource, loadHomeResource } from '@/utils/home-content'
 import { setSeoMeta } from '@/utils/seo'
+import { contributionParts } from '@/utils/experience-presentation'
 
 const route = useRoute()
 const item = ref<WorkExperienceItem>()
@@ -65,21 +66,25 @@ onBeforeUnmount(() => { requestVersion++ })
         <h1>{{ item.company }}</h1><p class="role">{{ item.roleTitle }}</p>
         <p v-if="item.projectSummary?.trim()" class="summary">{{ item.projectSummary }}</p>
         <ul v-if="tokens(item.techStack).length" class="tech" aria-label="使用技术"><li v-for="tech in [...new Set(tokens(item.techStack))]" :key="tech">{{ tech }}</li></ul>
+        <a v-if="projectResource.data?.length" class="browse-projects" href="#projects-title">浏览 {{ projectResource.data.length }} 个项目及我的工作 →</a>
       </header>
+      <section v-if="responsibilities.length" class="responsibility-overview" aria-labelledby="responsibility-title">
+        <div><p class="section-label">职责概览</p><h2 id="responsibility-title">我在这里做了什么</h2></div>
+        <ul><li v-for="line in [...new Set(responsibilities)]" :key="line"><strong v-if="contributionParts(line).title">{{ contributionParts(line).title }}</strong><span>{{ contributionParts(line).detail }}</span></li></ul>
+      </section>
       <section class="projects" aria-labelledby="projects-title">
         <div class="projects-heading"><h2 id="projects-title">参与项目</h2><span v-if="projectResource.data?.length">{{ projectResource.data.length }} 个项目</span></div>
         <p v-if="projectResource.status === 'loading'" role="status">正在加载项目…</p>
         <p v-else-if="projectResource.status === 'error'" class="project-error" role="status">项目暂未加载。<button type="button" @click="loadProjects">重试项目</button></p>
         <div v-if="projectResource.data?.length" class="project-grid">
-          <RouterLink v-for="(project, index) in projectResource.data" :key="project.id" :class="{ 'project-card--featured': index < 2 }" :to="`/experience/${item.id}/projects/${project.id}`">
+          <RouterLink v-for="project in projectResource.data" :key="project.id" :to="`/experience/${item.id}/projects/${project.id}`">
             <img v-if="project.coverImage" :src="projectCardImage(project.coverImage)" :alt="project.projectName + '封面'" loading="lazy" decoding="async">
-            <div><h3>{{ project.projectName }}</h3><p v-if="project.summary">{{ project.summary }}</p><small v-if="tokens(project.techStack).length">{{ tokens(project.techStack).slice(0,4).join(' / ') }}</small><span class="project-entry">查看项目 →</span></div>
+            <div><h3>{{ project.projectName }}</h3><p v-if="project.summary">{{ project.summary }}</p><ul v-if="lines(project.contributions).length" class="project-work"><li v-for="line in lines(project.contributions).slice(0, 3)" :key="line">{{ contributionParts(line).title || line }}</li></ul><small v-if="tokens(project.techStack).length">{{ tokens(project.techStack).slice(0,5).join(' / ') }}</small><span class="project-entry">了解我的工作与实现细节 →</span></div>
           </RouterLink>
         </div>
         <p v-else-if="projectResource.status === 'success'" class="project-empty">暂无公开项目，以下为这段经历的已有资料。</p>
       </section>
       <div class="narrative">
-        <section v-if="responsibilities.some(line => line !== item?.projectSummary?.trim())"><h2>主要职责</h2><ul><li v-for="line in [...new Set(responsibilities)].filter(line => line !== item?.projectSummary?.trim())" :key="line">{{ line }}</li></ul></section>
         <section v-if="metrics.length"><h2>工作成果</h2><ul><li v-for="metric in [...new Set(metrics)]" :key="metric">{{ metric }}</li></ul></section>
         <section v-if="item.companyIntroduction?.trim()"><h2>公司介绍</h2><p>{{ item.companyIntroduction }}</p></section>
         <section v-if="item.mainBusiness?.trim()"><h2>主营业务</h2><p>{{ item.mainBusiness }}</p></section>
@@ -108,17 +113,26 @@ a:hover { text-decoration: underline; text-underline-offset: .25em; }
 h2 { margin: 0 0 1.2rem; font-size: 1.4rem; line-height: 1.5; }
 .projects-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
 .projects-heading span { color: var(--brand-ink-soft); font-size: .9rem; white-space: nowrap; }
-.project-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1.25rem; }
-.project-grid a { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); background: var(--brand-surface); color: inherit; text-decoration: none; transition: border-color .2s ease, transform .2s ease; }
+.project-grid { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+.project-grid a { display: grid; grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr); align-items: start; overflow: hidden; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); background: var(--brand-surface); color: inherit; text-decoration: none; transition: border-color .2s ease, transform .2s ease; }
+.project-grid a:not(:has(> img)) { grid-template-columns: 1fr; }
 .project-grid a:hover { border-color: var(--brand-accent); transform: translateY(-2px); }
 .project-grid a:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 3px; }
-.project-grid .project-card--featured { grid-column: 1 / -1; border-left: 3px solid var(--brand-accent); }
 .project-grid a:hover h3 { color: var(--brand-accent-strong); }
-.project-grid img { display: block; width: 100%; aspect-ratio: 16/10; object-fit: contain; background: var(--brand-canvas-soft); }
-.project-grid a > div { display: flex; flex: 1; flex-direction: column; gap: .75rem; padding: 1.25rem; overflow-wrap: anywhere; }
-.project-grid .project-card--featured > div { padding: 1.65rem 1.8rem; }
+.project-grid img { display: block; width: 100%; aspect-ratio: 16/10; object-fit: contain; background: var(--brand-canvas-soft); margin-top: 1.5rem; }
+.project-grid a > div { display: flex; flex: 1; flex-direction: column; gap: .8rem; padding: 1.5rem 1.75rem; overflow-wrap: anywhere; }
 .project-grid h3 { margin: 0; font-size: 1.2rem; line-height: 1.5; }
-.project-grid .project-card--featured h3 { font-size: clamp(1.35rem, 2vw, 1.65rem); }
+.project-grid h3 { font-size: clamp(1.25rem, 2vw, 1.6rem); }
+.section-label { color: var(--brand-ink-soft); font-size: .8rem; letter-spacing: .05em; }
+.browse-projects { display: inline-flex; align-items: center; min-height: 44px; margin-top: 1rem; font-size: .9rem; }
+#projects-title { scroll-margin-top: 100px; }
+.project-work { display: flex; flex-wrap: wrap; gap: .5rem 1.1rem; padding: 0; margin: .15rem 0; list-style: none; color: var(--brand-ink); font-size: .9rem; }
+.project-work li::before { content: '·'; color: var(--brand-accent); margin-right: .4rem; }
+.responsibility-overview { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; padding: 2.5rem 0; border-bottom: 1px solid var(--brand-line); }
+.responsibility-overview .section-label { margin: 0 0 .6rem; }
+.responsibility-overview ul { padding: 0; margin: 0; list-style: none; display: grid; gap: 1.2rem; }
+.responsibility-overview li { display: grid; gap: .3rem; line-height: 1.85; }
+.responsibility-overview span { color: var(--brand-ink-soft); }
 .project-grid p { margin: 0; color: var(--brand-ink-soft); line-height: 1.8; }
 .project-grid small { color: var(--brand-ink-soft); }
 .project-entry { margin-top: auto; padding-top: .4rem; color: var(--brand-accent-strong); font-size: .9rem; }
@@ -137,6 +151,7 @@ h2 { margin: 0 0 1.2rem; font-size: 1.4rem; line-height: 1.5; }
 .case-state { padding: 3rem 0; }
 button { min-height: 44px; margin: 0 .75rem; padding: .5rem 1rem; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); background: var(--brand-surface); color: var(--brand-accent-strong); cursor: pointer; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 4px; }
-@media(max-width:899px) { .page-shell { width: calc(100% - 2rem); } .project-grid { grid-template-columns: 1fr; } .project-grid .project-card--featured > div { padding: 1.25rem; } }
+@media(max-width:899px) { .page-shell { width: calc(100% - 2rem); } .responsibility-overview { grid-template-columns: 1fr; gap: .5rem; } }
+@media(max-width:640px) { .project-grid a { grid-template-columns: 1fr; } .project-grid img { margin: 0; max-height: 15rem; } .project-grid a > div { padding: 1.25rem; } }
 @media(prefers-reduced-motion:reduce) { .project-grid a { transition: none; } .project-grid a:hover { transform: none; } }
 </style>
