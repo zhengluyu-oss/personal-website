@@ -27,7 +27,7 @@
 | 6 服务端页面 | 同仓库 `apps/seo-web/src/routes/pages/news-geo-handlers.js` | 新闻与地区内容的服务端页面、规范地址与分页；未混为 Next.js 的实现 |
 | 7 内容工具 | `B_guangtuo_offecial_website/text_management/machineAndUpload/web/src/api/sse.ts`、`views/ArticleManageView.vue` | 流解析、取消、鉴权异常、文章管理与上传配置 |
 | 7 后端 | 同仓库 `backend/app/schemas/stream_event.py`、`services/article_guard.py` | 事件结构、阶段枚举及发布前状态约束 |
-| 8 展示页 | `D_GEO/GTark/ai_geo_system/admin-react-front/client/src/pages/Landing.tsx` | 区块、锚点与登录路由；无行为按钮不算已完成业务功能 |
+| 8 展示页 | `D_GEO/GTark/ai_geo_system/geo-front/client/public/index-static.html`、`static/gt-geo.css`、`src/pages/common/NotFound.tsx` | 个人提交对应的静态首页、访问链接、404 页面与 SEO 基础；React 工作台仅为产品背景 |
 | 9 查询 | `G wx_channels/wx_channels_download/internal/channels/search_paged.go`、`feed_comments_paged.go` 及同名测试 | 搜索聚合、评论去重、请求预算和截断元信息 |
 
 ## 补充范围与归属说明
@@ -65,7 +65,7 @@
 
 ## 2026-10-06 提交历史与文档复核
 
-以下是本轮新增内容的可追溯依据。提交只用于核对具体变更，最终能力仍以当前代码和文档为准；曾回滚或关闭的能力不写成当前交付。此索引只保存在本地内容资料中，公开正文不暴露源仓库、内部地址或凭据。
+以下是本轮新增内容的可追溯依据。已清点九个相关源码仓库的提交规模、个人提交标题与相关文档目录，并对与六篇正文直接相关的提交差异、设计约定和当前代码进行交叉核对。这不等于逐行阅读九仓库的全部历史提交或数百份无关文档；提交只用于核对具体变更，最终能力仍以当前代码和文档为准。曾回滚或关闭的能力不写成当前交付。此索引只保存在本地内容资料中，公开正文不暴露源仓库、内部地址或凭据。
 
 | 项目 | 代表提交与对应文档 | 本轮补充的事实边界 |
 | --- | --- | --- |
@@ -75,3 +75,12 @@
 | 内容生产与发布工具 | `70365e7`、`2927ef9`、`2896d91`、`b9590e8`；项目 `README.md` | 生成与评分事件、人工复核、素材校验、官网与独立站两类发布路径；内部配置细节不公开。 |
 | GEO 展示入口 | `f75b43a4`、`05e95c4e`、`20e0cfb8`；静态站页面和路由实现 | 个人提交可直接证明展示、规范地址、robots 和 sitemap；配套工作台只写产品背景，不扩大个人归属。 |
 | 视频号接口扩展 | `1e6db45`、`db9f4a4`、`6dcbdce`、`99b76e0`；`docs/feature/channels-ext.md` | 搜索、详情、分享与评论树的最终对外接口；旧批量解析路径已下线，不再按当前能力陈述。 |
+
+### 深入复核后的修正与新增依据
+
+- 验收链路：`superpowers/changes/1-flow-job-spot-check/design.md`、`openwiki/architecture/flow-job.md` 与 `gt_flow_job/puller.py`、`gt_cron/process/flow_job_keyword_search_consumer.py` 共同说明 Java OpenAPI claim → Python puller → 本机 Redis Stream → 消费者 → complete 的两段式执行。早期设计里“无 Redis Stream”只是 Java 侧领取模型，不能覆盖消费者侧现行队列实现。
+- 直播材料：`gt_video_processor/docs/zip-delivery-acceptance.md` 与名单匹配、交付清单相关提交说明真实截图、模拟补量、未命中名单必须分别统计；具体客户名单、原始评论与截图不用于公开经历。
+- 官网线索：`2ee4b82`、`1f55ed3` 及 `apps/cms/src/plugins/leads-dashboard/README.md` 支持表单后台的单条/批量状态、删除和导出；`openspec/changes/fix-cms-page-cache-invalidation/design.md` 与当前清缓存代码说明整页缓存和数据层缓存需同时处理，跨页失效仍有边界。
+- 内容工具：历史 OpenSpec 的 SSE、平台维度、OSS 插图、独立站上传规格与当前 `backend/app/services/geo_upload_service.py` 交叉核对。历史规格曾要求缺图留空，而现行服务保留兜底路径，因此公开正文按最终代码描述。
+- 号卡商品：`docs/newPoster-data-model.md` 与海报回填提交对应卡片图、详情图的字段分层；预下单弹窗的归档规格仍写“先激活”，但 `fe19c97` 和当前 `src/views/manage/product/productPreOrderAlert.js` 已将触发条件改为名称包含“激活”。公开正文采用最终条件。
+- GEO 归属纠正：`git log --author=zhengluyu -- geo-front/client/public/index-static.html` 与 `f75b43a4`、`20e0cfb8` 证明个人修改集中在静态首页、404、品牌资源及 SEO 文件；`admin-react-front/client/src/pages/Landing.tsx` 没有匹配的个人提交。项目摘要、技术栈和正文已据此改写，不再把 React 展示页写成主要个人交付。
