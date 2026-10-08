@@ -5,8 +5,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import me.zhyd.oauth.model.AuthResponse;
 import me.zhyd.oauth.model.AuthUser;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import xyz.kuailemao.domain.entity.LoginUser;
@@ -14,13 +14,14 @@ import xyz.kuailemao.domain.entity.User;
 import xyz.kuailemao.mapper.UserMapper;
 import xyz.kuailemao.service.IpService;
 import xyz.kuailemao.service.OauthService;
+import xyz.kuailemao.service.OauthBrowserBinding;
 import xyz.kuailemao.service.UserService;
 import xyz.kuailemao.utils.IpUtils;
+import xyz.kuailemao.utils.SecurityUtils;
 
 import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author kuailemao
@@ -31,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class OauthServiceImpl implements OauthService {
 
-    private static final String EXCHANGE_CODE_PREFIX = "auth:oauth:exchange:";
     private static final String LOGIN_FAILED = "第三方登录已失效，请重新尝试";
 
     @Resource
@@ -47,7 +47,10 @@ public class OauthServiceImpl implements OauthService {
     private IpService ipService;
 
     @Resource
-    private StringRedisTemplate stringRedisTemplate;
+    private OauthBrowserBinding browserBinding;
+
+    @Resource
+    private xyz.kuailemao.service.EmailChangeService emailChangeService;
 
 
     @Override
@@ -65,6 +68,16 @@ public class OauthServiceImpl implements OauthService {
             return "?oauth_error=provider_failed";
         }
         if (userId <= 0) return "?oauth_error=provider_failed";
+
+        String challenge = browserBinding.reauthenticationChallenge(request, type);
+        if (challenge != null) {
+            try {
+                emailChangeService.verifyProvider(challenge, type, userId);
+                return "?email_reauth=complete";
+            } catch (BadCredentialsException failure) {
+                return "?email_reauth=failed";
+            }
+        }
 
         User user = userMapper.selectById(userId);
         if (user == null) {
@@ -85,7 +98,12 @@ public class OauthServiceImpl implements OauthService {
                     .isDisable(0)
                     .isDeleted(0)
                     .build();
-            if (!userService.save(user)) return "?oauth_error=provider_failed";
+            try {
+                if (!userService.save(user)) return "?oauth_error=provider_failed";
+            } catch (DuplicateKeyException conflict) {
+                // Email equality is not proof that two provider identities belong to one account.
+                return "?oauth_error=account_conflict";
+            }
             ipService.refreshIpDetailAsyncByUidAndRegister(userId);
         } else if (!Objects.equals(user.getRegisterType(), type)) {
             // Provider IDs are not globally unique. Never attach one provider to another local account.
@@ -95,10 +113,7 @@ public class OauthServiceImpl implements OauthService {
         if (Objects.equals(user.getIsDisable(), 1) || Objects.equals(user.getIsDeleted(), 1)) {
             return "?oauth_error=account_unavailable";
         }
-        String code = UUID.randomUUID().toString().replace("-", "")
-                + UUID.randomUUID().toString().replace("-", "");
-        stringRedisTemplate.opsForValue().set(EXCHANGE_CODE_PREFIX + code,
-                type + ":" + userId, 2, TimeUnit.MINUTES);
+        String code = browserBinding.issue(request, type, userId);
         return "?oauth_code=" + code;
     }
 
@@ -107,8 +122,7 @@ public class OauthServiceImpl implements OauthService {
         if (code == null || !code.matches("[0-9a-f]{64}")) {
             throw new BadCredentialsException(LOGIN_FAILED);
         }
-        // GETDEL makes the handoff single-use even when two requests arrive concurrently.
-        String account = stringRedisTemplate.opsForValue().getAndDelete(EXCHANGE_CODE_PREFIX + code);
+        String account = browserBinding.exchange(SecurityUtils.getCurrentHttpRequest(), code);
         if (account == null) throw new BadCredentialsException(LOGIN_FAILED);
         try {
             String[] parts = account.split(":", 2);

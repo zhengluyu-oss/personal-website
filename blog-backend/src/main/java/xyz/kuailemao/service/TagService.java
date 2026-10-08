@@ -1,6 +1,6 @@
 package xyz.kuailemao.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import xyz.kuailemao.domain.dto.SearchTagDTO;
 import xyz.kuailemao.domain.dto.TagDTO;
 import xyz.kuailemao.domain.entity.Tag;

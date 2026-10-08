@@ -6,6 +6,7 @@ import useWebsiteStore from '@/store/modules/website'
 import { PUBLIC_PATHS, routeWithId } from '@/router/paths'
 import { articleItems, articlePage, createHomeResource, homeCount, homeExcerpt, loadHomeResource, selectHomeArticles, type HomeArticle, type HomeResource } from '@/utils/home-content'
 import HomeMedia from '../HomeMedia.vue'
+import { canViewModule } from '@/composables/useSiteModuleAccess'
 
 const website = useWebsiteStore()
 const latest = reactive(createHomeResource<ReturnType<typeof articlePage>>())
@@ -35,7 +36,10 @@ const githubUrl = computed(() => {
   const url = website.webInfo?.githubLink?.trim() || ''
   return /^https?:\/\//i.test(url) ? url : ''
 })
-onMounted(() => { void loadArticles(); void loadRecommendations(); void loadWork() })
+onMounted(() => {
+  if (canViewModule('blog')) { void loadArticles(); void loadRecommendations() }
+  if (canViewModule('experience')) void loadWork()
+})
 onBeforeUnmount(() => { active = false })
 </script>
 
@@ -44,13 +48,13 @@ onBeforeUnmount(() => { active = false })
     <section class="snapshot section-shell" aria-labelledby="snapshot-title">
       <h2 id="snapshot-title" class="sr-only">内容概览</h2>
       <dl>
-        <div><dt>公开文章</dt><dd>{{ homeCount(latest.status, latest.data?.total) }}</dd></div>
-        <div><dt>职业经历</dt><dd>{{ homeCount(work.status, work.data?.length) }}</dd></div>
+        <div v-if="canViewModule('blog')"><dt>公开文章</dt><dd>{{ homeCount(latest.status, latest.data?.total) }}</dd></div>
+        <div v-if="canViewModule('experience')"><dt>职业经历</dt><dd>{{ homeCount(work.status, work.data?.length) }}</dd></div>
         <div v-if="current" class="snapshot-current"><dt>当前岗位</dt><dd>{{ current.roleTitle }}</dd></div>
       </dl>
     </section>
 
-    <section class="selected-work section-shell" aria-labelledby="work-title">
+    <section v-if="canViewModule('experience')" class="selected-work section-shell" aria-labelledby="work-title">
       <header class="section-header">
         <div><h2 id="work-title">工作经历</h2><p>在实际项目中积累开发与协作经验。</p></div>
         <RouterLink class="section-link" :to="PUBLIC_PATHS.experience">查看工作经历 <span aria-hidden="true">→</span></RouterLink>
@@ -73,7 +77,7 @@ onBeforeUnmount(() => { active = false })
       <p v-if="work.status === 'error'" class="module-message" role="status">工作经历暂未加载。<button type="button" @click="loadWork">重试经历</button></p>
     </section>
 
-    <section class="writing section-shell" aria-labelledby="writing-title">
+    <section v-if="canViewModule('blog')" class="writing section-shell" aria-labelledby="writing-title">
       <header class="section-header">
         <div><h2 id="writing-title">博客文章</h2><p>最近发布的技术笔记与项目复盘。</p></div>
         <RouterLink class="section-link" :to="PUBLIC_PATHS.blog">查看全部文章 <span aria-hidden="true">→</span></RouterLink>

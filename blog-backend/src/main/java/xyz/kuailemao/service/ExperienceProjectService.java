@@ -1,5 +1,5 @@
 package xyz.kuailemao.service;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import xyz.kuailemao.domain.dto.ExperienceProjectDTO;
 import xyz.kuailemao.domain.entity.ExperienceProject;
 import xyz.kuailemao.domain.response.ResponseResult;

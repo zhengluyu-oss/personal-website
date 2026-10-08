@@ -2,7 +2,7 @@ server:
   port: 8001
 spring:
   profiles:
-    active: "@profiles.active@"
+    default: prod
 #  security:
 #    jwt:
 #      key: jwt-key

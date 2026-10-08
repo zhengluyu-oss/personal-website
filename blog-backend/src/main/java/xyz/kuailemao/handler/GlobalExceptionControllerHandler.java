@@ -30,15 +30,14 @@ public class GlobalExceptionControllerHandler {
      */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseResult<Void> handlerConstraintViolationException(ConstraintViolationException e){
-        log.error("参数校验异常:{}({})", e.getMessage(), e.getStackTrace());
-        return ResponseResult.failure(RespEnum.PARAM_ERROR.getCode(), e.getMessage().split(":")[1]);
+        log.warn("Request validation rejected: constraint violation");
+        return ResponseResult.failure(RespEnum.PARAM_ERROR.getCode(), "参数格式不正确，请检查后重试");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseResult<Void> handlerMethodArgumentNotValidException(MethodArgumentNotValidException e){
-        log.error("参数校验异常:{}({})", e.getMessage(), e.getStackTrace());
-        BindingResult bindingResult = e.getBindingResult();
-        return ResponseResult.failure(RespEnum.PARAM_ERROR.getCode(), Objects.requireNonNull(bindingResult.getFieldError()).getDefaultMessage());
+        log.warn("Request validation rejected: invalid body");
+        return ResponseResult.failure(RespEnum.PARAM_ERROR.getCode(), "参数格式不正确，请检查后重试");
     }
 
     @ExceptionHandler(FileUploadException.class)

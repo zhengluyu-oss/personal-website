@@ -58,7 +58,7 @@ class ExperienceProjectServiceImplTest {
     @Test void publicListExcludesBodyFromSummary() {
         ExperienceProjectServiceImpl service=serviceWithParent(publicParent());
         ExperienceProject project=project(12L,8L,1); project.setContent("私有长正文");
-        doReturn(List.of(project)).when(service).list(any());
+        doReturn(List.of(project)).when(service).list(any(Wrapper.class));
 
         List<ExperienceProjectVO> result=service.listPublic(8L);
         assertEquals(1,result.size());
@@ -71,7 +71,7 @@ class ExperienceProjectServiceImplTest {
         when(parents.getOne(any())).thenReturn(null,publicParent());
         ExperienceProjectServiceImpl service=spy(new ExperienceProjectServiceImpl());
         ReflectionTestUtils.setField(service,"workExperienceService",parents);
-        doReturn(List.of(project(12L,8L,1))).when(service).list(any());
+        doReturn(List.of(project(12L,8L,1))).when(service).list(any(Wrapper.class));
 
         assertTrue(service.listPublic(8L).isEmpty());
         assertEquals(1,service.listPublic(8L).size());

@@ -1,7 +1,7 @@
 package xyz.kuailemao.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import xyz.kuailemao.constants.RedisConst;
@@ -16,6 +16,7 @@ import xyz.kuailemao.mapper.FavoriteMapper;
 import xyz.kuailemao.mapper.LeaveWordMapper;
 import xyz.kuailemao.mapper.UserMapper;
 import xyz.kuailemao.service.FavoriteService;
+import xyz.kuailemao.service.ContentVisibilityService;
 import xyz.kuailemao.utils.RedisCache;
 import xyz.kuailemao.utils.SecurityUtils;
 import xyz.kuailemao.utils.StringUtils;
@@ -48,8 +49,14 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
     @Resource
     private LeaveWordMapper leaveWordMapper;
 
+    @Resource
+    private ContentVisibilityService contentVisibilityService;
+
     @Override
     public ResponseResult<Void> userFavorite(Integer type, Long typeId) {
+        if (!SecurityUtils.isLogin() || !contentVisibilityService.isPublic(type, typeId)) {
+            return ResponseResult.failure("收藏目标不可用");
+        }
         // 查询是否已经收藏
         Favorite favorite = favoriteMapper.selectOne(new LambdaQueryWrapper<Favorite>()
                 .eq(Favorite::getUserId, SecurityUtils.getUserId())
@@ -61,8 +68,12 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
                 .userId(SecurityUtils.getUserId())
                 .type(type)
                 .typeId(typeId).build();
-        redisCache.incrementCacheMapValue(RedisConst.ARTICLE_FAVORITE_COUNT, typeId.toString(), 1);
-        if (this.save(Savefavorite)) return ResponseResult.success();
+        if (this.save(Savefavorite)) {
+            if (Integer.valueOf(1).equals(type)) {
+                redisCache.incrementCacheMapValue(RedisConst.ARTICLE_FAVORITE_COUNT, typeId.toString(), 1);
+            }
+            return ResponseResult.success();
+        }
         return ResponseResult.failure();
     }
 
@@ -116,14 +127,14 @@ public class FavoriteServiceImpl extends ServiceImpl<FavoriteMapper, Favorite> i
         if (!favorites.isEmpty()) {
             return favorites.stream().map(favorite -> favorite.asViewObject(FavoriteListVO.class,
                     v -> {
-                        v.setUserName(userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getId, favorite.getUserId())).getUsername());
-                        switch (favorite.getType()) {
-                            case 1 -> v.setContent(articleMapper.selectById(favorite.getTypeId()).getArticleContent());
-                            case 2 -> v.setContent(leaveWordMapper.selectById(favorite.getTypeId()).getContent());
-                        }
+                        User user = userMapper.selectById(favorite.getUserId());
+                        v.setUserName(user == null ? "用户已不可用" : user.getUsername());
+                        String content = contentVisibilityService.publicContent(favorite.getType(), favorite.getTypeId());
+                        v.setContent(content == null ? "收藏内容已不可用" : content);
+                        if (content == null) v.setIsCheck(0);
                     })).toList();
         }
-        return null;
+        return List.of();
     }
 
     @Override

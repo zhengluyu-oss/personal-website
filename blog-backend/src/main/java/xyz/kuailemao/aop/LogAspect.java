@@ -1,6 +1,5 @@
 package xyz.kuailemao.aop;
 
-import com.alibaba.fastjson.JSON;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,23 +12,19 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 import xyz.kuailemao.annotation.LogAnnotation;
 import xyz.kuailemao.constants.FunctionConst;
 import xyz.kuailemao.domain.entity.Log;
 import xyz.kuailemao.domain.entity.User;
 import xyz.kuailemao.domain.response.ResponseResult;
 import xyz.kuailemao.mapper.UserMapper;
-import xyz.kuailemao.utils.AddressUtils;
+import xyz.kuailemao.utils.AuditDataProtection;
 import xyz.kuailemao.utils.IpUtils;
 import xyz.kuailemao.utils.SecurityUtils;
 import xyz.kuailemao.utils.StringUtils;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 
 /**
  * @author kuailemao
@@ -65,61 +60,27 @@ public class LogAspect {
     @Around("pt()")
     public Object log(ProceedingJoinPoint joinPoint) throws Throwable {
         long beginTime = System.currentTimeMillis();
+        Object result;
         try {
-            // 执行方法
-            Object result = joinPoint.proceed();
-            // 执行时长
-            long time = System.currentTimeMillis() - beginTime;
-            recordLog(joinPoint, time,result);
-            // 打印日志
-            log.info("【{}】执行方法【{}】，耗时【{}】毫秒", joinPoint.getSignature().getDeclaringTypeName(), joinPoint.getSignature().getName(), time);
-            return result;
+            result = joinPoint.proceed();
         } catch (Throwable e) {
-            MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-            Method method = signature.getMethod();
-            LogAnnotation logAnnotation = method.getAnnotation(LogAnnotation.class);
-            long time = System.currentTimeMillis() - beginTime;
-            // 获取 request 设置IP地址
-            HttpServletRequest request = SecurityUtils.getCurrentHttpRequest();
-            // 请求的方法名
-            String className = joinPoint.getTarget().getClass().getName();
-            String methodName = signature.getName();
-             assert request != null;
-            // 是否前台
-            String ipAddr = IpUtils.getIpAddr(request);
-            User user = userMapper.selectById(SecurityUtils.getUserId());
-
-            Object[] args = joinPoint.getArgs();
-            List<Object> multipartFile = new ArrayList<>();
-            for (Object arg : args) {
-                if (arg instanceof MultipartFile) {
-                    // 这个arg是MultipartFile类型
-                    multipartFile.add(arg);
-                }
-            }
-            Log logEntity = Log.builder()
-                    .module(logAnnotation.module())
-                    .operation(logAnnotation.operation())
-                    .ip(ipAddr)
-                    .exception(e.getMessage())
-                    .reqMapping(request.getMethod())
-                    .userName(StringUtils.isNull(user) ? FunctionConst.UNKNOWN_USER : user.getUsername())
-                    .state(2)
-                    .exception(e.getMessage())
-                    .method(className + "." + methodName + "()")
-                    .reqParameter(!multipartFile.isEmpty() ? multipartFile.toString() : JSON.toJSONString(joinPoint.getArgs()))
-                    .reqAddress(request.getRequestURI())
-                    .time(time)
-                    .build();
-            rabbitTemplate.convertAndSend(exchange,routingKey,logEntity);
-            log.error("【{}】执行方法【{}】异常", joinPoint.getSignature().getDeclaringTypeName(), joinPoint.getSignature().getName(), e);
-            // 这里一定要重新抛出去，不然全局异常处理器会失效
+            recordSafely(joinPoint, System.currentTimeMillis() - beginTime, null, e);
             throw e;
         }
-
+        recordSafely(joinPoint, System.currentTimeMillis() - beginTime, result, null);
+        return result;
     }
 
-    private void recordLog(ProceedingJoinPoint joinPoint, long time,Object result) {
+    private void recordSafely(ProceedingJoinPoint point, long time, Object result, Throwable failure) {
+        try {
+            recordLog(point, time, result, failure);
+        } catch (Exception auditFailure) {
+            // Broker/serializer error messages may themselves contain the original payload.
+            log.error("Audit publication failed: {}", auditFailure.getClass().getSimpleName());
+        }
+    }
+
+    private void recordLog(ProceedingJoinPoint joinPoint, long time, Object result, Throwable failure) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Method method = signature.getMethod();
         LogAnnotation logAnnotation = method.getAnnotation(LogAnnotation.class);
@@ -131,39 +92,26 @@ public class LogAspect {
         // 请求的方法名
         String className = joinPoint.getTarget().getClass().getName();
         String methodName = signature.getName();
-        assert request != null;
-        String ipAddr = IpUtils.getIpAddr(request);
+        String ipAddr = request == null ? null : IpUtils.getIpAddr(request);
         User user = userMapper.selectById(SecurityUtils.getUserId());
 
-        Object[] args = joinPoint.getArgs();
-        List<Object> multipartFile = new ArrayList<>();
-        for (Object arg : args) {
-            if (arg instanceof MultipartFile) {
-                // 这个arg是MultipartFile类型
-                multipartFile.add(arg);
-            }
-        }
 
         Log log = Log.builder()
                 .module(logAnnotation.module())
                 .operation(logAnnotation.operation())
                 .ip(ipAddr)
                 .description(operation == null ? methodName : operation.summary())
-                .reqMapping(request.getMethod())
+                .reqMapping(request == null ? null : request.getMethod())
                 .userName(StringUtils.isNull(user) ? FunctionConst.UNKNOWN_USER : user.getUsername())
                 .method(className + "." + methodName + "()")
-                .reqParameter(!multipartFile.isEmpty() ? multipartFile.toString() : JSON.toJSONString(joinPoint.getArgs()))
-                .returnParameter(JSON.toJSONString(result))
-                .reqAddress(request.getRequestURI())
+                .reqParameter(AuditDataProtection.request(joinPoint.getArgs(), className, methodName))
+                .returnParameter(AuditDataProtection.response(result))
+                .reqAddress(request == null ? null : request.getRequestURI())
+                .exception(failure == null ? null : failure.getClass().getSimpleName())
                 .time(time)
                 .build();
-        // TODO ResponseResult为null
-        ResponseResult responseResult = (ResponseResult)result;
-        if ( responseResult != null && responseResult.getCode() == 200) {
-            log.setState(0);
-        }else{
-            log.setState(1);
-        }
+        log.setState(failure != null ? 2 : result instanceof ResponseResult<?> responseResult
+                && !Integer.valueOf(200).equals(responseResult.getCode()) ? 1 : 0);
 
         rabbitTemplate.convertAndSend(exchange,routingKey,log);
         LogAspect.log.info("耗时：{}毫秒", time);

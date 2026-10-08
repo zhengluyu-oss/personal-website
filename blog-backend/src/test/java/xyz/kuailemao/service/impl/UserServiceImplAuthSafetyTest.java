@@ -86,7 +86,7 @@ class UserServiceImplAuthSafetyTest {
 
         assertEquals(200, response.getCode());
         var order = inOrder(userMapper, redisCache);
-        order.verify(userMapper).updateById(argThat(user -> user.getId().equals(42L)
+        order.verify(userMapper).updateById(argThat((User user) -> user.getId().equals(42L)
                 && "encoded".equals(user.getPassword())));
         order.verify(redisCache).deleteObject(codeKey);
     }

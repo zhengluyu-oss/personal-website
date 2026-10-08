@@ -1,6 +1,6 @@
 package xyz.kuailemao.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import xyz.kuailemao.domain.dto.LogDTO;
 import xyz.kuailemao.domain.dto.LogDeleteDTO;
 import xyz.kuailemao.domain.entity.Log;

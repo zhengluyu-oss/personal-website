@@ -9,6 +9,9 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import xyz.kuailemao.service.AccountAuthenticationVersion;
+import xyz.kuailemao.mapper.UserMapper;
+import xyz.kuailemao.domain.entity.User;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -20,6 +23,12 @@ class JwtUtilsExpiryTest {
     private final RedisCache redisCache = mock(RedisCache.class);
 
     private JwtUtilsExpiryTest() {
+        AccountAuthenticationVersion versions = spy(new AccountAuthenticationVersion());
+        doReturn("a".repeat(64)).when(versions).forCompletedLogin(anyLong(), any());
+        ReflectionTestUtils.setField(jwtUtils, "authenticationVersion", versions);
+        UserMapper users = mock(UserMapper.class);
+        when(users.selectById(anyLong())).thenAnswer(call -> new User().setId(call.getArgument(0)).setIsDisable(0).setIsDeleted(0));
+        ReflectionTestUtils.setField(jwtUtils, "userMapper", users);
         ReflectionTestUtils.setField(jwtUtils, "key", "local-test-key");
         ReflectionTestUtils.setField(jwtUtils, "expire", 7);
         ReflectionTestUtils.setField(jwtUtils, "adminExpireMinutes", 1440);
