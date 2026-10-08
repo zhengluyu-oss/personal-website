@@ -32,7 +32,7 @@ export async function uploadPhoto(data: any) {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
-  }).catch(msg => message.warn(msg))
+  })
 }
 
 /**

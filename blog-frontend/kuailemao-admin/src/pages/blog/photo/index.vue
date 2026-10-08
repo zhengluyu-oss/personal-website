@@ -71,7 +71,10 @@ const showModal = ref(false)
 const modalType = ref<1 | 2 | 3>(1)
 const formRef = ref<FormInstance>()
 const formRules: Record<string, Rule[]> = {
-  name: [{required: true, type: 'string', message: '请输入名称', trigger: 'blur'}]
+  name: [
+    {required: true, type: 'string', message: '请输入名称', trigger: 'blur'},
+    {max: 20, message: '名称不能超过20个字符', trigger: 'blur'}
+  ]
 }
 const formState = ref({
   id: 0,
@@ -286,15 +289,15 @@ const uploadProps: UploadProps = {
       return Upload.LIST_IGNORE
     }
 
-    // 检查文件大小（8MB = 8 * 1024 * 1024 bytes）
+    // 原图允许到 8MB，压缩后的文件还需满足服务端 4MB 限制。
     const isLessThan8M = file.size / 1024 / 1024 < 8
     if (!isLessThan8M) {
-      message.error('图片大小不能超过 8MB')
+      message.error('原图大小不能超过 8MB')
       return Upload.LIST_IGNORE
     }
 
     formState.value.file = file
-    formState.value.name = file.name.split('.')[0]
+    formState.value.name = (file.name.replace(/\.[^.]+$/, '') || '照片').slice(0, 20)
     handleFileChange(file)
     return false
   },
@@ -364,6 +367,10 @@ const handleSubmit = async () => {
       try {
         // 压缩图片
         const compressedFile = await compressImage(formState.value.file)
+        if (compressedFile.size >= 4 * 1024 * 1024) {
+          message.error('压缩后图片仍超过 4MB，请选择较小的图片')
+          return
+        }
 
         // 构建 FormData
         const formData = new FormData()
@@ -382,7 +389,8 @@ const handleSubmit = async () => {
           await loadCurrentItems()
         }
       } catch (error) {
-        message.error('上传照片成功')
+        message.error(typeof error === 'string' ? error : '上传照片失败，请重试')
+        return
       }
 
     }
@@ -532,7 +540,7 @@ onMounted(() => {
               :rules="formRules"
           >
             <Form.Item label="名称" name="name">
-              <Input v-model:value="formState.name" placeholder="请输入名称"/>
+              <Input v-model:value="formState.name" :maxlength="20" placeholder="请输入名称（最多20个字符）"/>
             </Form.Item>
 
             <Form.Item v-if="modalType === 1 || modalType === 3" label="描述" name="description">
@@ -550,7 +558,7 @@ onMounted(() => {
                     <i class="icon">📷</i>
                     <span>点击上传照片</span>
                     <p style="margin-top: 8px; color: #999; font-size: 12px;">
-                      支持 JPG/PNG/WebP/GIF 格式，大小不超过 4MB
+                      支持 JPG/PNG/WebP/GIF 格式，原图不超过 8MB，压缩后不超过 4MB
                     </p>
                   </div>
                 </Upload>
