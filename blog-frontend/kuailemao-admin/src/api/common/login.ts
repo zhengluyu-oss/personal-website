@@ -11,6 +11,7 @@ export interface LoginMobileParams {
 }
 
 export interface LoginResultModel {
+  taskId?: string
   token?: string
   expire?: string
   code: number
