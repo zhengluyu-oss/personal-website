@@ -12,7 +12,6 @@ import me.zhyd.oauth.model.AuthCallback;
 import me.zhyd.oauth.request.AuthGiteeRequest;
 import me.zhyd.oauth.request.AuthGithubRequest;
 import me.zhyd.oauth.request.AuthRequest;
-import me.zhyd.oauth.utils.AuthStateUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +24,7 @@ import xyz.kuailemao.enums.RespEnum;
 import xyz.kuailemao.enums.RegisterOrLoginTypeEnum;
 import xyz.kuailemao.handler.SecurityHandler;
 import xyz.kuailemao.service.OauthService;
+import xyz.kuailemao.service.OauthBrowserBinding;
 import xyz.kuailemao.utils.WebUtil;
 
 import java.io.IOException;
@@ -50,6 +50,27 @@ public class OauthController {
     private OauthService oauthService;
 
     @Resource
+    private OauthBrowserBinding browserBinding;
+
+    @Resource
+    private xyz.kuailemao.service.EmailChangeService emailChangeService;
+
+    public record ReauthenticationRequest(@jakarta.validation.constraints.Pattern(regexp = "[0-9a-f]{64}")
+                                         @jakarta.validation.constraints.NotNull String challengeId) {}
+
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    @AccessLimit(seconds = 60, maxCount = 3)
+    @PostMapping("/reauth/start")
+    public ResponseResult<String> startReauthentication(@Valid @RequestBody ReauthenticationRequest dto,
+                                                        HttpServletRequest request, HttpServletResponse response) {
+        int provider = emailChangeService.requiredProvider(dto.challengeId());
+        String callback = provider == 1 ? giteeBody.getRedirectUri() : githubBody.getRedirectUri();
+        String state = browserBinding.beginReauthentication(request, response, provider, callback, dto.challengeId());
+        AuthRequest auth = provider == 1 ? getGiteeAuthRequest() : getGithubAuthRequest();
+        return ResponseResult.success(auth.authorize(state));
+    }
+
+    @Resource
     private SecurityHandler securityHandler;
 
     @Value("${web.index.path}")
@@ -59,15 +80,16 @@ public class OauthController {
     @Operation(summary = "Gitee登录")
     @AccessLimit(seconds = 60, maxCount = 5)
     @GetMapping("/gitee/render")
-    public void giteeRenderAuth(HttpServletResponse response) throws IOException {
+    public void giteeRenderAuth(HttpServletRequest request, HttpServletResponse response) throws IOException {
         AuthRequest authRequest = getGiteeAuthRequest();
-        response.sendRedirect(authRequest.authorize(AuthStateUtils.createState()));
+        response.sendRedirect(authRequest.authorize(browserBinding.begin(request, response, 1, giteeBody.getRedirectUri())));
     }
 
     @Operation(summary = "Gitee登录回调")
     @AccessLimit(seconds = 60, maxCount = 5)
     @GetMapping("/gitee/callback")
     public void giteeLogin(AuthCallback callback, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        if (!validateBrowser(callback, request, response, 1)) return;
         AuthRequest authRequest = getGiteeAuthRequest();
         String parameter = oauthService.handleLogin(authRequest.login(callback), request, RegisterOrLoginTypeEnum.GITEE.getRegisterType());
         response.setHeader("Cache-Control", "no-store");
@@ -77,19 +99,33 @@ public class OauthController {
     @Operation(summary = "Github登录")
     @AccessLimit(seconds = 60, maxCount = 5)
     @GetMapping("/github/render")
-    public void githubRenderAuth(HttpServletResponse response) throws IOException {
+    public void githubRenderAuth(HttpServletRequest request, HttpServletResponse response) throws IOException {
         AuthRequest authRequest = getGithubAuthRequest();
-        response.sendRedirect(authRequest.authorize(AuthStateUtils.createState()));
+        response.sendRedirect(authRequest.authorize(browserBinding.begin(request, response, 2, githubBody.getRedirectUri())));
     }
 
     @Operation(summary = "Github登录回调")
     @AccessLimit(seconds = 60, maxCount = 5)
     @GetMapping("/github/callback")
     public void githubLogin(AuthCallback callback, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        if (!validateBrowser(callback, request, response, 2)) return;
         AuthRequest authRequest = getGithubAuthRequest();
         String parameter = oauthService.handleLogin(authRequest.login(callback), request,RegisterOrLoginTypeEnum.GITHUB.getRegisterType());
         response.setHeader("Cache-Control", "no-store");
         response.sendRedirect(path+parameter);
+    }
+
+    private boolean validateBrowser(AuthCallback callback, HttpServletRequest request,
+                                    HttpServletResponse response, int provider) throws IOException {
+        response.setHeader("Cache-Control", "no-store");
+        response.setHeader("Referrer-Policy", "no-referrer");
+        try {
+            browserBinding.validateCallback(request, callback.getState(), provider);
+            return true;
+        } catch (AuthenticationException failure) {
+            response.sendRedirect(path + "?oauth_error=invalid_attempt");
+            return false;
+        }
     }
 
     @Operation(summary = "兑换第三方登录一次性凭据")

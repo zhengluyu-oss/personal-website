@@ -4,8 +4,7 @@ import me.zhyd.oauth.model.AuthResponse;
 import me.zhyd.oauth.model.AuthUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
+import xyz.kuailemao.service.OauthBrowserBinding;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -15,7 +14,6 @@ import xyz.kuailemao.mapper.UserMapper;
 import xyz.kuailemao.service.UserService;
 import xyz.kuailemao.service.IpService;
 
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -26,7 +24,7 @@ class OauthServiceImplExchangeTest {
     private OauthServiceImpl service;
     private UserMapper users;
     private UserService userService;
-    private ValueOperations<String, String> values;
+    private OauthBrowserBinding binding;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
@@ -34,12 +32,11 @@ class OauthServiceImplExchangeTest {
         service = new OauthServiceImpl();
         users = mock(UserMapper.class);
         userService = mock(UserService.class);
-        StringRedisTemplate redis = mock(StringRedisTemplate.class);
-        values = mock(ValueOperations.class);
-        when(redis.opsForValue()).thenReturn(values);
+        binding = mock(OauthBrowserBinding.class);
+        when(binding.issue(isNull(), anyInt(), anyLong())).thenReturn("c".repeat(64));
         ReflectionTestUtils.setField(service, "userMapper", users);
         ReflectionTestUtils.setField(service, "userService", userService);
-        ReflectionTestUtils.setField(service, "stringRedisTemplate", redis);
+        ReflectionTestUtils.setField(service, "browserBinding", binding);
     }
 
     @Test
@@ -57,8 +54,7 @@ class OauthServiceImplExchangeTest {
         assertTrue(redirectQuery.matches("\\?oauth_code=[0-9a-f]{64}"));
         assertFalse(redirectQuery.contains("access_token"));
         assertFalse(redirectQuery.contains("user_name"));
-        verify(values).set(eq("auth:oauth:exchange:" + redirectQuery.substring(12)),
-                eq("1:42"), eq(2L), eq(TimeUnit.MINUTES));
+        verify(binding).issue(null, 1, 42L);
     }
 
     @Test
@@ -71,7 +67,7 @@ class OauthServiceImplExchangeTest {
         when(users.selectById(42L)).thenReturn(User.builder().id(42L).registerType(2).build());
 
         assertEquals("?oauth_error=account_conflict", service.handleLogin(response, null, 1));
-        verify(values, never()).set(anyString(), anyString(), anyLong(), any(TimeUnit.class));
+        verify(binding, never()).issue(any(), anyInt(), anyLong());
     }
 
     @Test
@@ -102,9 +98,8 @@ class OauthServiceImplExchangeTest {
     @Test
     void handoffIsConsumedOnceAndRechecksCurrentAccount() {
         String code = "a".repeat(64);
-        String key = "auth:oauth:exchange:" + code;
         LoginUser user = new LoginUser();
-        when(values.getAndDelete(key)).thenReturn("2:42", null);
+        when(binding.exchange(null, code)).thenReturn("2:42", null);
         when(userService.loadLoginUserById(42L, 2)).thenReturn(user);
 
         assertSame(user, service.exchangeCode(code));
@@ -115,6 +110,6 @@ class OauthServiceImplExchangeTest {
     @Test
     void malformedHandoffIsRejectedWithoutLookup() {
         assertThrows(BadCredentialsException.class, () -> service.exchangeCode("not-a-code"));
-        verify(values, never()).getAndDelete(anyString());
+        verify(binding, never()).exchange(any(), anyString());
     }
 }

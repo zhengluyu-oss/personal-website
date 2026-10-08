@@ -40,6 +40,9 @@ class ArticleServiceImplFeaturedTest {
 
     @BeforeEach
     void setUp() {
+        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
+                new org.apache.ibatis.builder.MapperBuilderAssistant(new com.baomidou.mybatisplus.core.MybatisConfiguration(), ""),
+                xyz.kuailemao.domain.entity.ArticleTag.class);
         service = new ArticleServiceImpl();
         ReflectionTestUtils.setField(service, "articleMapper", articleMapper);
         ReflectionTestUtils.setField(service, "baseMapper", articleMapper);

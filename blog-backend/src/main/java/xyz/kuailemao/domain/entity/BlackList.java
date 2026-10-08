@@ -3,7 +3,7 @@ package xyz.kuailemao.domain.entity;
 import java.util.Date;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.baomidou.mybatisplus.extension.handlers.Jackson3TypeHandler;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -39,7 +39,7 @@ public class BlackList implements BaseData{
     // 类型（1：用户，2：路人/攻击者）
     private Integer type;
     // ip信息，如果type=2，则需要有ip信息
-    @TableField(value = "ip_info",typeHandler = JacksonTypeHandler.class)
+    @TableField(value = "ip_info",typeHandler = Jackson3TypeHandler.class)
     private BlackListIpInfo ipInfo;
     //创建时间
     @TableField(fill = FieldFill.INSERT)

@@ -18,6 +18,12 @@ export const constantRouter = [
             },
             // 工作经历
             {
+                path: '/access-denied',
+                component: () => import('@/views/ModuleAccessDenied/index.vue'),
+                name: 'moduleAccessDenied',
+                meta: { title: '模块访问权限' },
+            },
+            {
                 path: PUBLIC_PATHS.experience,
                 component: () => import('@/views/Experience/index.vue'),
                 name: 'experience',

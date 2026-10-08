@@ -13,6 +13,17 @@ test -f "$package"
 test ! -e "$release"
 test "$(sha256sum "$package" | awk '{print $1}')" = "$expected"
 
+# This command is intentionally read-only and silent: service settings may contain secrets.
+unit_start=$(systemctl show zhengluyu-blog --property=ExecStart --value)
+printf '%s' "$unit_start" | grep -Eq -- '--spring.profiles.active=prod([ ;}]|$)' || { echo PROD_PROFILE_REQUIRED; exit 1; }
+printf '%s' "$unit_start" | grep -q -- '--spring.config.additional-location=file:/' || { echo EXTERNAL_CONFIG_REQUIRED; exit 1; }
+unset unit_start
+# Refuse old packages with embedded private profiles, even if their checksum matches.
+command -v unzip >/dev/null
+if unzip -Z1 "$package" | grep -E '(^|/)application-[^/]+\.(yml|yaml|properties)$' >/dev/null; then echo PRIVATE_CONFIG_IN_PACKAGE; exit 1; fi
+unzip -Z1 "$package" | grep 'BOOT-INF/classes/xyz/kuailemao/config/ProductionConfigurationGuard.class' >/dev/null || { echo PRODUCTION_GUARD_REQUIRED; exit 1; }
+
+umask 077
 mkdir -p "$release/backup"
 cp -a "$target" "$release/backup/blog-backend.jar"
 

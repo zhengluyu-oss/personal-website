@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@11.3.0",
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/compress-dist.mjs && node scripts/check-performance-budget.mjs",
@@ -16,7 +17,7 @@
     "@element-plus/icons-vue": "^2.1.0",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@vueuse/core": "^10.4.1",
-    "axios": "^1.5.1",
+    "axios": "1.20.0",
     "easy-typer-js": "^2.1.0",
     "echarts": "^5.4.3",
     "element-plus": "^2.8.6",

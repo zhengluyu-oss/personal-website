@@ -70,7 +70,7 @@ function Resolve-NativeExe([string]$Name) {
 
 function Invoke-Native([string]$File, [string[]]$CmdArgs, [string]$WorkDir = $null) {
     Write-Host ("  > {0} {1}" -f $File, ($CmdArgs -join " "))
-    $exe = if ($File -in @("ssh", "scp", "tar", "mvn", "pnpm", "npm")) {
+    $exe = if ($File -in @("ssh", "scp", "tar", "mvn", "corepack")) {
         Resolve-NativeExe $File
     }
     else {
@@ -181,13 +181,14 @@ try {
     Assert-Command "scp"
     Assert-Command "sftp"
     Assert-Command "tar"
+    Assert-Command "python"
     if (-not (Test-Path $IdentityFile)) {
         throw "SSH private key not found: $IdentityFile"
     }
     if (-not $SkipBuild) {
         if (Test-Should "backend" $Selected) { Assert-Command "mvn" }
         if ((Test-Should "blog" $Selected) -or (Test-Should "admin" $Selected)) {
-            Assert-Command "pnpm"
+            Assert-Command "corepack"
         }
     }
 
@@ -197,7 +198,7 @@ try {
     if (-not $SkipBuild) {
         if (Test-Should "backend" $Selected) {
             Write-Step "Build backend (Maven)"
-            Invoke-Native "mvn" @("-DskipTests", "package") $BackendDir
+            Invoke-Native "mvn" @("-Pprod", "-DskipTests", "package") $BackendDir
         }
 
         if (Test-Should "blog" $Selected) {
@@ -206,10 +207,8 @@ try {
             if (-not (Test-Path $blogEnv)) {
                 throw "Missing $blogEnv (required for production build)."
             }
-            if (-not (Test-Path (Join-Path $BlogDir "node_modules"))) {
-                Invoke-Native "pnpm" @("install") $BlogDir
-            }
-            Invoke-Native "pnpm" @("build") $BlogDir
+            Invoke-Native "corepack" @("pnpm", "install", "--frozen-lockfile") $BlogDir
+            Invoke-Native "corepack" @("pnpm", "build") $BlogDir
         }
 
         if (Test-Should "admin" $Selected) {
@@ -222,10 +221,14 @@ try {
             if ($adminEnvText -notmatch '(?m)^VITE_APP_BASE_API\s*=\s*\S') {
                 Write-Host "  WARNING: VITE_APP_BASE_API looks empty in admin .env.production" -ForegroundColor Yellow
             }
-            if (-not (Test-Path (Join-Path $AdminDir "node_modules"))) {
-                Invoke-Native "pnpm" @("install") $AdminDir
+            # Deployment builds do not install developer Git hooks in this nested package.
+            $previousHusky = $env:HUSKY
+            try {
+                $env:HUSKY = "0"
+                Invoke-Native "corepack" @("pnpm", "install", "--frozen-lockfile") $AdminDir
             }
-            Invoke-Native "pnpm" @("build") $AdminDir
+            finally { $env:HUSKY = $previousHusky }
+            Invoke-Native "corepack" @("pnpm", "build") $AdminDir
         }
     }
     else {
@@ -242,6 +245,7 @@ try {
         if (-not $jar) {
             throw "Backend jar not found under blog-backend/target. Build first or remove -SkipBuild."
         }
+        Invoke-Native "python" @((Join-Path $ScriptDir "security/check_release_artifacts.py"), "--jar", $jar.FullName) $LocalRoot
         $appStage = Join-Path $stageRoot "app"
         New-Item -ItemType Directory -Path $appStage -Force | Out-Null
         Copy-Item $jar.FullName (Join-Path $appStage "blog-backend.jar") -Force
@@ -253,6 +257,7 @@ try {
         if (-not (Test-Path $blogDist)) {
             throw "Blog dist not found: $blogDist"
         }
+        Invoke-Native "python" @((Join-Path $ScriptDir "security/check_release_artifacts.py"), "--dist", $blogDist) $LocalRoot
         $blogStage = Join-Path $stageRoot "blog"
         New-Item -ItemType Directory -Path $blogStage -Force | Out-Null
         Copy-Item -Path (Join-Path $blogDist "*") -Destination $blogStage -Recurse -Force
@@ -269,6 +274,7 @@ try {
         if (-not (Test-Path $adminDist)) {
             throw "Admin dist not found: $adminDist"
         }
+        Invoke-Native "python" @((Join-Path $ScriptDir "security/check_release_artifacts.py"), "--dist", $adminDist) $LocalRoot
         $adminStage = Join-Path $stageRoot "admin"
         New-Item -ItemType Directory -Path $adminStage -Force | Out-Null
         Copy-Item -Path (Join-Path $adminDist "*") -Destination $adminStage -Recurse -Force
@@ -293,6 +299,12 @@ REMOTE_ADMIN='$RemoteAdmin'
 REMOTE_NGINX_SITE='$RemoteNginxSite'
 NGINX_BACKUP='/etc/nginx/zhengluyu-blog.codex-backup'
 REMOTE_ARCHIVE='$remoteArchive'
+UNIT='$SystemdUnit'
+# Require explicit production + external configuration before placing any files.
+UNIT_START=`$(systemctl show "`$UNIT" --property=ExecStart --value)
+printf '%s' "`$UNIT_START" | grep -Eq -- '--spring.profiles.active=prod([ ;}]|$)' || { echo PROD_PROFILE_REQUIRED; exit 1; }
+printf '%s' "`$UNIT_START" | grep -q -- '--spring.config.additional-location=file:/' || { echo EXTERNAL_CONFIG_REQUIRED; exit 1; }
+unset UNIT_START
 mkdir -p "`$REMOTE_APP" "`$REMOTE_BLOG" "`$REMOTE_ADMIN"
 TMPDIR=`$(mktemp -d /tmp/zhengluyu-deploy-XXXXXX)
 tar -xzf "`$REMOTE_ARCHIVE" -C "`$TMPDIR"

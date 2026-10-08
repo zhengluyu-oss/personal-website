@@ -6,7 +6,7 @@ import {
 import SvgIcon from '@/components/SvgIcon/index.vue'
 import useUserStore from "@/store/modules/user.ts"
 import {logout, oauthExchange} from "@/apis/user"
-import {REMOVE_TOKEN, SET_TOKEN} from "@/utils/auth.ts"
+import {GET_TOKEN, REMOVE_TOKEN, SET_TOKEN} from "@/utils/auth.ts"
 import {ElMessage} from "element-plus"
 import router from "@/router"
 
@@ -27,6 +27,16 @@ void thirdLogin()
 
 // 第三方登录
 async function thirdLogin() {
+  const emailReauth = route.query.email_reauth
+  if (emailReauth) {
+    const cleanUrl = new URL(window.location.href)
+    cleanUrl.searchParams.delete('email_reauth')
+    window.history.replaceState(window.history.state, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash)
+    if (emailReauth === 'complete') ElMessage.success('第三方身份已验证，请回到邮箱设置完成验证码验证')
+    else ElMessage.error('第三方身份验证失败，请使用原来绑定的第三方账号重试')
+    await router.replace('/account')
+    return
+  }
   const code = typeof route.query.oauth_code === 'string' ? route.query.oauth_code : undefined
   const error = typeof route.query.oauth_error === 'string' ? route.query.oauth_error : undefined
   const legacyToken = route.query.access_token
@@ -44,6 +54,11 @@ async function thirdLogin() {
     return
   }
   try {
+    if (GET_TOKEN()) {
+      ElMessage.warning('当前已登录；如需切换账号，请先退出后重新发起第三方登录')
+      await userStore.getInfo()
+      return
+    }
     const res: any = await oauthExchange(code)
     if (res.code !== 200) {
       ElMessage.error(res.msg || '第三方登录失败，请重新尝试')
