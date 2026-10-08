@@ -1,29 +1,36 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import useWebsiteStore from '@/store/modules/website.ts'
-import { ABOUT_BIO, ABOUT_HEADLINE, ABOUT_TAGLINE, GITHUB_REPO_URL, GITHUB_URL, PUBLIC_CONTACT_LINKS, PUBLIC_RESUME_URL, SITE_AUTHOR } from '@/config/site'
+import { computed, ref, onMounted } from 'vue'
+import { GITHUB_REPO_URL, GITHUB_URL, PUBLIC_CONTACT_LINKS, PUBLIC_RESUME_URL, SITE_AUTHOR } from '@/config/site'
+import http from '@/utils/http'
 import { publicContacts, publicProfileUrl } from '@/utils/public-profile'
 
-const website = useWebsiteStore()
 const contacts = publicContacts(PUBLIC_CONTACT_LINKS)
 const resume = publicProfileUrl(PUBLIC_RESUME_URL, 'resume')
-const github = computed(() => publicProfileUrl(website.webInfo?.githubLink || '') || GITHUB_URL)
-const name = computed(() => website.webInfo?.webmasterName?.trim() || SITE_AUTHOR)
+const profile = ref<{ name: string; avatar: string; github: string; headline: string; tagline: string; bio: string }>()
+const loadError = ref(false)
+const github = computed(() => publicProfileUrl(profile.value?.github || '') || GITHUB_URL)
+const name = computed(() => profile.value?.name?.trim() || SITE_AUTHOR)
 const avatarFailed = ref(false)
-watch(() => website.webInfo?.webmasterAvatar, () => { avatarFailed.value = false })
+onMounted(async () => {
+  try {
+    const result: any = await http.get('/site-modules/about')
+    if (result.code !== 200 || !result.data) throw new Error('Profile unavailable')
+    profile.value = result.data
+  } catch { loadError.value = true }
+})
 </script>
 
 <template>
   <main class="about-page">
-    <div class="about-shell">
-      <header class="about-heading"><p>关于我</p><h1>{{ name }}</h1><p class="direction">{{ ABOUT_HEADLINE }}</p></header>
+    <div v-if="profile" class="about-shell">
+      <header class="about-heading"><p>关于我</p><h1>{{ name }}</h1><p class="direction">{{ profile.headline }}</p></header>
       <div class="about-layout">
         <div class="portrait">
-          <img v-if="website.webInfo?.webmasterAvatar && !avatarFailed" :src="website.webInfo.webmasterAvatar" :alt="name + '的头像'" @error="avatarFailed = true">
+          <img v-if="profile.avatar && !avatarFailed" :src="profile.avatar" :alt="name + '的头像'" @error="avatarFailed = true">
           <span v-else class="portrait-fallback" aria-hidden="true">{{ name.slice(0, 1) }}</span>
         </div>
         <div class="about-body">
-          <section aria-labelledby="intro-heading"><h2 id="intro-heading">{{ ABOUT_TAGLINE }}</h2><p class="bio">{{ ABOUT_BIO }}</p></section>
+          <section aria-labelledby="intro-heading"><h2 id="intro-heading">{{ profile.tagline }}</h2><p class="bio">{{ profile.bio }}</p></section>
           <section class="profile-links" aria-labelledby="links-heading">
             <h2 id="links-heading">在这里继续了解我</h2>
             <nav aria-label="个人公开链接">
@@ -38,6 +45,7 @@ watch(() => website.webInfo?.webmasterAvatar, () => { avatarFailed.value = false
         </div>
       </div>
     </div>
+    <p v-else class="about-shell" role="status">{{ loadError ? '内容暂不可用，请重新检查访问权限或稍后重试。' : '正在加载个人介绍…' }}</p>
   </main>
 </template>
 

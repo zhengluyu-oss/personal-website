@@ -4,6 +4,7 @@ import { Modal, message } from 'ant-design-vue'
 import { createVNode } from 'vue'
 import { ExclamationCircleOutlined } from '@ant-design/icons-vue'
 import MyModal from './my-modal.vue'
+import SiteModuleAccess from './site-module-access.vue'
 import { roleDelete, roleInfoById, roleList, roleSearch, roleUpdateStatus } from '~/api/role'
 import { getMenusApi } from '~/api/common/menu.ts'
 import { buildTree } from '~/utils/tree.ts'
@@ -68,6 +69,7 @@ const columns: any = [
 type Key = string | number
 
 const loading = ref(false)
+const moduleAccessOpen = ref(false)
 const tabData: Ref<UnwrapRef<DataType[]>> = ref([])
 
 onMounted(() => {
@@ -246,6 +248,7 @@ async function updateOrInsertRole(id?: string) {
       </a-form-item>
     </template>
     <template #operate-btn>
+      <a-button @click="moduleAccessOpen = true">前台模块访问</a-button>
       <a-button type="primary" @click="updateOrInsertRole()">
         <template #icon>
           <PlusOutlined />
@@ -324,6 +327,7 @@ async function updateOrInsertRole(id?: string) {
         :form-data="formData"
         @update:close="closeModal"
       />
+      <SiteModuleAccess :open="moduleAccessOpen" @close="moduleAccessOpen = false" />
     </template>
   </layout>
 </template>

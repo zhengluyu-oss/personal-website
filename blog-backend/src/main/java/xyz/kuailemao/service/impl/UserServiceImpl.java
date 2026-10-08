@@ -3,11 +3,12 @@ package xyz.kuailemao.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -269,7 +270,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .isDeleted(UserConst.DEFAULT_STATUS)
                 .email(userRegisterDTO.getEmail())
                 .loginTime(date).build();
-        if (this.save(user)) {
+        final boolean saved;
+        try {
+            saved = this.save(user);
+        } catch (DuplicateKeyException conflict) {
+            // A concurrent registration/change may win after the availability check.
+            return ResponseResult.failure(RespEnum.USERNAME_OR_EMAIL_EXIST.getCode(), RespEnum.USERNAME_OR_EMAIL_EXIST.getMsg());
+        }
+        if (saved) {
             // 删除验证码
             ipService.refreshIpDetailAsyncByUidAndRegister(user.getId());
             redisCache.deleteObject(RedisConst.VERIFY_CODE + RedisConst.REGISTER + RedisConst.SEPARATOR + userRegisterDTO.getEmail());
@@ -395,44 +403,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Resource
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
+    @Resource
+    private xyz.kuailemao.service.EmailChangeService emailChangeService;
+
     @Override
     public ResponseResult<Void> updateEmailAndVerify(UpdateEmailDTO updateEmailDTO) {
-        // 1.验证密码是否正确
-        User user = userMapper.selectById(SecurityUtils.getUserId());
-        // 邮箱是否改变
-        if (user.getEmail().equals(updateEmailDTO.getEmail())) return ResponseResult.failure("邮箱未更改");
-        // 是否已经存在该邮箱
-        if (userIsExist(null, updateEmailDTO.getEmail())) return ResponseResult.failure("该邮箱已被注册");
-        if (bCryptPasswordEncoder.matches(updateEmailDTO.getPassword(), user.getPassword())) {
-            // 2.验证码是否正确
-            ResponseResult<Void> verifyCode = verifyCode(updateEmailDTO.getEmail(), updateEmailDTO.getCode(), RedisConst.RESET_EMAIL);
-            if (verifyCode == null){
-                // 3.修改
-                user.setEmail(updateEmailDTO.getEmail());
-                userMapper.updateById(user);
-                return ResponseResult.success();
-            }
-        }
-        return ResponseResult.failure("密码或验证码错误");
+        return emailChangeService.complete(updateEmailDTO);
     }
 
     @Override
     public ResponseResult<Void> thirdUpdateEmail(UpdateEmailDTO updateEmailDTO) {
-        // 1.验证密码是否正确
-        User user = userMapper.selectById(SecurityUtils.getUserId());
-        // 邮箱是否改变
-        if (user.getEmail() != null && user.getEmail().equals(updateEmailDTO.getEmail())) return ResponseResult.failure("邮箱未更改");
-        // 2.验证码是否正确
-        ResponseResult<Void> verifyCode = verifyCode(updateEmailDTO.getEmail(), updateEmailDTO.getCode(), RedisConst.RESET_EMAIL);
-        // 是否已经存在该邮箱
-        if (userIsExist(null, updateEmailDTO.getEmail())) return ResponseResult.failure("该邮箱已被注册");
-        if (verifyCode == null){
-            // 3.修改
-            user.setEmail(updateEmailDTO.getEmail());
-            userMapper.updateById(user);
-            return ResponseResult.success();
-        }
-        return ResponseResult.failure("密码或验证码错误");
+        return emailChangeService.complete(updateEmailDTO);
     }
 
     /**

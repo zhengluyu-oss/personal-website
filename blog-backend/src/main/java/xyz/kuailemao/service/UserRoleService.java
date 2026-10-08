@@ -1,6 +1,6 @@
 package xyz.kuailemao.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import xyz.kuailemao.domain.dto.RoleUserDTO;
 import xyz.kuailemao.domain.dto.UserRoleDTO;
 import xyz.kuailemao.domain.entity.UserRole;
