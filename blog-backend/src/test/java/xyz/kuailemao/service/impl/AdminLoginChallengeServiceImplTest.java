@@ -15,6 +15,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.util.ReflectionTestUtils;
 import xyz.kuailemao.domain.entity.LoginUser;
 import xyz.kuailemao.domain.entity.User;
+import xyz.kuailemao.service.EmailDeliveryService;
 import xyz.kuailemao.service.UserService;
 import xyz.kuailemao.service.AccountAuthenticationVersion;
 
@@ -39,6 +40,7 @@ class AdminLoginChallengeServiceImplTest {
     @Mock private HashOperations<String, String, String> hashOperations;
     @Mock private ValueOperations<String, String> valueOperations;
     @Mock private RabbitTemplate rabbitTemplate;
+    @Mock private EmailDeliveryService emailDeliveryService;
     @Mock private UserService userService;
     @Mock private AccountAuthenticationVersion authenticationVersion;
 
@@ -50,6 +52,7 @@ class AdminLoginChallengeServiceImplTest {
         service = new AdminLoginChallengeServiceImpl();
         ReflectionTestUtils.setField(service, "stringRedisTemplate", stringRedisTemplate);
         ReflectionTestUtils.setField(service, "rabbitTemplate", rabbitTemplate);
+        ReflectionTestUtils.setField(service, "emailDeliveryService", emailDeliveryService);
         ReflectionTestUtils.setField(service, "userService", userService);
         ReflectionTestUtils.setField(service, "authenticationVersion", authenticationVersion);
         org.mockito.Mockito.lenient().when(authenticationVersion.snapshotVersion(7L)).thenReturn("a".repeat(64));
@@ -66,10 +69,12 @@ class AdminLoginChallengeServiceImplTest {
         when(stringRedisTemplate.<String, String>opsForHash()).thenReturn(hashOperations);
         when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
         when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
+        when(emailDeliveryService.create(eq(1), anyList())).thenReturn("b".repeat(64));
 
         var result = service.create(administrator, "203.0.113.2");
 
         assertEquals("a***@example.com", result.getMaskedEmail());
+        assertEquals("b".repeat(64), result.getTaskId());
         assertEquals(300, result.getExpiresIn());
         assertEquals("original-hash", administrator.getPassword());
         verify(hashOperations).putAll(anyString(), org.mockito.ArgumentMatchers.argThat(values ->

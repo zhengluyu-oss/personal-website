@@ -2,11 +2,14 @@
 import { ElMessage } from 'element-plus'
 import http from '@/utils/http'
 import useUserStore from '@/store/modules/user'
+import { confirmEmailDelivery, EmailDeliveryError } from '@/apis/email'
 import { REMOVE_TOKEN } from '@/utils/auth'
 
 const userStore = useUserStore()
 const form = reactive({ email: '', password: '', code: '', oldCode: '' })
 const busy = ref(false)
+const deliveryController = new AbortController()
+const deliveryMessage = ref('')
 const savedKey = 'email-change-challenge-v1'
 type Challenge = { challengeId: string; email: string; expiresAt: number; oldEmailRequired: boolean; maskedOldEmail: string; provider: number; userId: string }
 const challenge = ref<Challenge>()
@@ -27,7 +30,7 @@ onMounted(() => {
   } catch { reset() }
   timer = setInterval(() => { now.value = Date.now(); if (challenge.value && remaining.value === 0) reset() }, 1000)
 })
-onBeforeUnmount(() => { if (timer) clearInterval(timer) })
+onBeforeUnmount(() => { deliveryController.abort(); if (timer) clearInterval(timer) })
 watch(() => userStore.userInfo?.username, id => {
   if (id && challenge.value && String(id) !== challenge.value.userId) reset()
 })
@@ -38,8 +41,16 @@ async function start() {
     if (result.code !== 200) { ElMessage.error(result.msg || '无法发起安全验证'); return }
     challenge.value = { ...result.data, email: form.email, expiresAt: Date.now() + result.data.expiresIn * 1000, userId: String(userStore.userInfo?.username) }
     sessionStorage.setItem(savedKey, JSON.stringify(challenge.value))
+    deliveryMessage.value = '验证码正在发送，请稍候'
+    await confirmEmailDelivery(result.data?.taskId, deliveryController.signal)
+    deliveryMessage.value = '验证码已发送，请查收邮件'
     ElMessage.success('验证码已发送，请在五分钟内完成全部验证')
-  } catch { ElMessage.error('暂时无法发起验证，请稍后重试') }
+  } catch (error) {
+    if (deliveryController.signal.aborted) return
+    if (error instanceof EmailDeliveryError && ['FAILED', 'EXPIRED'].includes(error.status)) reset()
+    deliveryMessage.value = error instanceof Error ? error.message : '暂时无法发起验证，请稍后重试'
+    ElMessage.error(deliveryMessage.value)
+  }
   finally { form.password = ''; busy.value = false }
 }
 async function reauthenticate() {
@@ -81,6 +92,7 @@ async function complete() {
       <el-button type="success" :loading="busy" :disabled="!userStore.userInfo || !form.email" @click="start">发起安全验证</el-button>
     </template>
     <template v-else>
+      <p v-if="deliveryMessage" class="mb-4" role="status">{{ deliveryMessage }}</p>
       <p class="mb-4">验证剩余 {{ remaining }} 秒。最多允许 5 次失败，过期后请重新发起。</p>
       <el-form-item v-if="challenge.provider !== 0" label="原第三方身份">
         <el-button :loading="busy" @click="reauthenticate">重新验证 {{ challenge.provider === 1 ? 'Gitee' : 'GitHub' }} 账号</el-button>
