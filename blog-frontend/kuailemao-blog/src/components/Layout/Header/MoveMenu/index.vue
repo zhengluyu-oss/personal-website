@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, watch, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useBlogCategories } from '@/composables/useBlogCategories'
+import { canViewModule } from '@/composables/useSiteModuleAccess'
 
 const emit = defineEmits(['update:closeDrawer'])
 function isClose() { emit('update:closeDrawer') }
@@ -9,8 +10,8 @@ const route = useRoute()
 const expanded = ref(false)
 const toggle = ref<HTMLButtonElement>()
 const { categoryEntries, loadCategories } = useBlogCategories()
-const blogCategoryEntries = computed(() => categoryEntries.value.filter(entry => entry.categoryId !== 21))
-onMounted(loadCategories)
+const blogCategoryEntries = computed(() => canViewModule('blog') ? categoryEntries.value.filter(entry => entry.categoryId !== 21) : [])
+watch(() => canViewModule('blog'), allowed => { if (allowed) void loadCategories() }, { immediate: true })
 </script>
 
 <template>

@@ -1,6 +1,6 @@
 package xyz.kuailemao.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import xyz.kuailemao.domain.dto.SearchTreeHoleDTO;
 import xyz.kuailemao.domain.dto.TreeHoleIsCheckDTO;
 import xyz.kuailemao.domain.entity.TreeHole;

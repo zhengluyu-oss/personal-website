@@ -14,6 +14,7 @@ import xyz.kuailemao.domain.entity.LoginUser;
 import xyz.kuailemao.domain.vo.AdminLoginChallengeVO;
 import xyz.kuailemao.service.AdminLoginChallengeService;
 import xyz.kuailemao.service.UserService;
+import xyz.kuailemao.service.AccountAuthenticationVersion;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -52,6 +53,8 @@ public class AdminLoginChallengeServiceImpl implements AdminLoginChallengeServic
     private RabbitTemplate rabbitTemplate;
     @Resource
     private UserService userService;
+    @Resource
+    private AccountAuthenticationVersion authenticationVersion;
 
     @Value("${spring.rabbitmq.routingKey.email}")
     private String routingKey;
@@ -75,6 +78,8 @@ public class AdminLoginChallengeServiceImpl implements AdminLoginChallengeServic
                 "userId", loginUser.getUser().getId().toString(),
                 "username", loginUser.getUsername(),
                 "codeHash", sha256(code),
+                "version", authenticationVersion.snapshotVersion(loginUser.getUser().getId()),
+                "credentials", authenticationVersion.credentialSnapshot(loginUser.getUser()),
                 "attempts", "0",
                 "client", clientAddress == null ? "unknown" : clientAddress
         ));
@@ -109,6 +114,7 @@ public class AdminLoginChallengeServiceImpl implements AdminLoginChallengeServic
             throw new BadCredentialsException(GENERIC_ERROR);
         }
         LoginUser user = (LoginUser) userService.loadUserByUsername(String.valueOf(challenge.get("username")));
+        validateAccountSnapshot(challenge, user);
         boolean admin = user.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
         if (!admin) throw new BadCredentialsException(GENERIC_ERROR);
         log.info("Administrator second-factor accepted: userId={}, client={}", challenge.get("userId"), clientAddress);
@@ -121,12 +127,24 @@ public class AdminLoginChallengeServiceImpl implements AdminLoginChallengeServic
         Map<String, String> challenge = challengeHash().entries(oldKey);
         if (challenge.isEmpty()) throw new BadCredentialsException(GENERIC_ERROR);
         LoginUser user = (LoginUser) userService.loadUserByUsername(String.valueOf(challenge.get("username")));
+        validateAccountSnapshot(challenge, user);
         boolean admin = user.getAuthorities().stream().anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
         if (!admin) throw new BadCredentialsException(GENERIC_ERROR);
         AdminLoginChallengeVO replacement = create(user, clientAddress);
         stringRedisTemplate.delete(oldKey);
         log.info("Administrator second-factor challenge resent: userId={}, client={}", user.getUser().getId(), clientAddress);
         return replacement;
+    }
+
+    private void validateAccountSnapshot(Map<String, String> challenge, LoginUser user) {
+        String version = challenge.get("version");
+        if (!java.util.Objects.equals(challenge.get("userId"), user.getUser().getId().toString())
+                || version == null
+                || !version.equals(authenticationVersion.snapshotVersion(user.getUser().getId()))
+                || !java.util.Objects.equals(challenge.get("credentials"), authenticationVersion.credentialSnapshot(user.getUser()))) {
+            throw new BadCredentialsException(GENERIC_ERROR);
+        }
+        user.setAuthenticationVersion(version);
     }
 
     private String sha256(String value) {

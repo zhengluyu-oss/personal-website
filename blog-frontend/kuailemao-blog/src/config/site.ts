@@ -13,10 +13,6 @@ export const PUBLIC_RESUME_URL = ''
 export const GITEE_URL = GITHUB_REPO_URL
 
 /** About / 欢迎页文案 */
-export const ABOUT_HEADLINE = '后端 / 全栈方向 · 求职中'
-export const ABOUT_TAGLINE = '用作品说话：技术笔记 · 项目复盘 · 持续学习'
-export const ABOUT_BIO =
-  '你好，我是郑陆宇。这里记录我在后端与全栈方向的学习与实践，包括项目拆解、问题排查与面试准备相关笔记。欢迎通过 GitHub 了解更多代码与项目。'
 export const WELCOME_TITLE = `欢迎来到${SITE_NAME}`
 export const WELCOME_SUBTITLE = '技术笔记 · 项目复盘 · 求职作品集'
 

@@ -13,6 +13,7 @@ import xyz.kuailemao.domain.entity.LoginLog;
 import xyz.kuailemao.mapper.LogMapper;
 import xyz.kuailemao.mapper.LoginLogMapper;
 import xyz.kuailemao.service.IpService;
+import xyz.kuailemao.utils.AuditDataProtection;
 
 import java.io.IOException;
 
@@ -62,6 +63,7 @@ public class LogQueueListener {
      */
     @RabbitListener(queues = RabbitConst.LOG_SYSTEM_QUEUE,concurrency = "5-10")
     public void handlerSystemLog(Log logEntity) {
+        AuditDataProtection.sanitizeQueuedLog(logEntity);
         log.info("--------------消费系统操作日志--------------");
         if (logMapper.insert(logEntity) > 0) {
             ipService.refreshIpDetailAsyncByLogId(logEntity.getId());

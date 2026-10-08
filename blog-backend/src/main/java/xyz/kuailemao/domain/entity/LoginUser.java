@@ -32,6 +32,11 @@ public class LoginUser implements UserDetails {
 
     private User user;
 
+    // Internal handoff only; never expose authentication-version material in API serialization.
+    @JSONField(serialize = false, deserialize = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private String authenticationVersion;
+
     //存储权限信息
     private List<String> permissions;
 

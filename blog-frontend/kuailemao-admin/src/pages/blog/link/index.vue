@@ -2,7 +2,7 @@
 import type { Ref, UnwrapRef } from 'vue'
 import { createVNode } from 'vue'
 import 'md-editor-v3/lib/style.css'
-import { MdPreview } from 'md-editor-v3'
+import SafeContentPreview from '~/components/SafeContentPreview.vue'
 import { Modal, message } from 'ant-design-vue'
 import { ExclamationCircleOutlined, MessageOutlined } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
@@ -232,7 +232,7 @@ const contentModel = reactive({
             关闭
           </a-button>
         </template>
-        <MdPreview v-model="contentModel.content" />
+        <SafeContentPreview :content="contentModel.content" />
       </a-modal>
     </template>
     <template #table-content>

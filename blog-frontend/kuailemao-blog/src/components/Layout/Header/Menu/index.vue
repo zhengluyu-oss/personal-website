@@ -15,12 +15,13 @@ import SvgIcon from "@/components/SvgIcon/index.vue";
 import {computed, ref, watch} from "vue";
 import {useRoute} from "vue-router";
 import {useBlogCategories} from "@/composables/useBlogCategories";
+import { canViewModule } from '@/composables/useSiteModuleAccess'
 
 const userStore = useUserStore()
 const useWebsite = useWebsiteStore()
 const dialogVisible = ref(false)
 const {categoryEntries, loadCategories} = useBlogCategories()
-const blogCategoryEntries = computed(() => categoryEntries.value.filter(entry => entry.categoryId !== 21))
+const blogCategoryEntries = computed(() => canViewModule('blog') ? categoryEntries.value.filter(entry => entry.categoryId !== 21) : [])
 const route = useRoute()
 const categoriesOpen = ref(false)
 const categoryToggle = ref<HTMLButtonElement>()
@@ -44,9 +45,7 @@ const logoutSub = () => {
   })
 }
 
-onMounted(() => {
-  loadCategories()
-})
+watch(() => canViewModule('blog'), allowed => { if (allowed) void loadCategories() }, { immediate: true })
 </script>
 
 <template>

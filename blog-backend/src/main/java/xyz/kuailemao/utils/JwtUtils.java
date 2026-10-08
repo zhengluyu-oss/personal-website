@@ -20,6 +20,9 @@ import xyz.kuailemao.mapper.RoleMapper;
 import xyz.kuailemao.mapper.RolePermissionMapper;
 import xyz.kuailemao.mapper.UserRoleMapper;
 import xyz.kuailemao.mapper.UserMapper;
+import xyz.kuailemao.service.AccountAuthenticationVersion;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.dao.DataAccessException;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -50,6 +53,9 @@ public class JwtUtils {
 
     @Resource
     private RedisCache redisCache;
+
+    @Resource
+    private AccountAuthenticationVersion authenticationVersion;
 
 
     /**
@@ -121,7 +127,7 @@ public class JwtUtils {
             Date expiresAt = verify.getExpiresAt();
             // 判断是否过期
             return new Date().after(expiresAt) ? null : verify;
-        } catch (JWTVerificationException e) {
+        } catch (JWTVerificationException | DataAccessException e) {
             return null;
         }
     }
@@ -136,6 +142,20 @@ public class JwtUtils {
      * @return String jwt
      */
     public String createJwt(String uuid, UserDetails details, Long id, String username) {
+        User account = userMapper.selectById(id);
+        if (account == null || !Objects.equals(account.getIsDisable(), 0)
+                || !Objects.equals(account.getIsDeleted(), 0)
+                || !Objects.equals(account.getPassword(), details.getPassword())) {
+            throw new BadCredentialsException("登录状态已失效，请重新登录");
+        }
+        String expected = null;
+        if (details instanceof LoginUser loginUser) {
+            if (!Objects.equals(loginUser.getUser().getEmail(), account.getEmail())) {
+                throw new BadCredentialsException("登录状态已失效，请重新登录");
+            }
+            expected = loginUser.getAuthenticationVersion();
+        }
+        String version = authenticationVersion.forCompletedLogin(id, expected);
         Algorithm algorithm = Algorithm.HMAC256(key);
         Date expire = expireTime(details);
         // 当前时间
@@ -144,7 +164,7 @@ public class JwtUtils {
                 .withJWTId(uuid)
                 .withClaim("id", id)
                 .withClaim("name", username)
-                .withClaim("credentialProof", credentialProof(id, details.getPassword()))
+                .withClaim("credentialProof", credentialProof(account, version))
 //                .withClaim("authorities", details.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList())
                 .withExpiresAt(expire)
                 .withIssuedAt(now)
@@ -203,22 +223,27 @@ public class JwtUtils {
         if (currentUser == null || !Objects.equals(currentUser.getIsDisable(), 0)
                 || !Objects.equals(currentUser.getIsDeleted(), 0)) return null;
         String suppliedProof = jwt.getClaim("credentialProof").asString();
+        final String version;
+        try { version = authenticationVersion.current(userId); }
+        catch (BadCredentialsException failure) { return null; }
+        if (version == null) return null;
         if (suppliedProof == null || !MessageDigest.isEqual(
                 suppliedProof.getBytes(StandardCharsets.UTF_8),
-                credentialProof(userId, currentUser.getPassword()).getBytes(StandardCharsets.UTF_8))) return null;
+                credentialProof(currentUser, version).getBytes(StandardCharsets.UTF_8))) return null;
         List<String> listStr = getAuthorities(userId);
         List<SimpleGrantedAuthority> collect = listStr.stream().map(SimpleGrantedAuthority::new).toList();
 
         return new LoginUser()
                 .setUser(new User().setId(userId).setUsername(currentUser.getUsername()))
+                .setAuthenticationVersion(version)
                 .setAuthorities(collect);
     }
 
-    private String credentialProof(Long userId, String passwordHash) {
+    private String credentialProof(User user, String version) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            String material = "jwt-credential-proof:v1:" + userId + ":" + Objects.toString(passwordHash, "");
+            String material = "jwt-credential-proof:v2:" + version + ":" + authenticationVersion.credentialSnapshot(user);
             return HexFormat.of().formatHex(mac.doFinal(material.getBytes(StandardCharsets.UTF_8)));
         } catch (GeneralSecurityException e) {
             throw new IllegalStateException("Unable to check token credentials", e);

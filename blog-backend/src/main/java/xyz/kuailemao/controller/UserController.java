@@ -81,6 +81,16 @@ public class UserController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private xyz.kuailemao.service.EmailChangeService emailChangeService;
+
+    @PreAuthorize("isAuthenticated()")
+    @AccessLimit(seconds = 60, maxCount = 3)
+    @PostMapping("/auth/email-change/start")
+    public ResponseResult<?> startEmailChange(@Valid @RequestBody EmailChangeStartDTO dto) {
+        return ResponseResult.success(emailChangeService.start(dto));
+    }
+
     @Operation(summary = "获取当前登录用户信息")
     @AccessLimit(seconds = 60, maxCount = 30)
     @GetMapping("/auth/info")

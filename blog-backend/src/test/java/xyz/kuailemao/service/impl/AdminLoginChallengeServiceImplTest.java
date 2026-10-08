@@ -16,6 +16,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import xyz.kuailemao.domain.entity.LoginUser;
 import xyz.kuailemao.domain.entity.User;
 import xyz.kuailemao.service.UserService;
+import xyz.kuailemao.service.AccountAuthenticationVersion;
 
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,7 @@ class AdminLoginChallengeServiceImplTest {
     @Mock private ValueOperations<String, String> valueOperations;
     @Mock private RabbitTemplate rabbitTemplate;
     @Mock private UserService userService;
+    @Mock private AccountAuthenticationVersion authenticationVersion;
 
     private AdminLoginChallengeServiceImpl service;
     private LoginUser administrator;
@@ -49,6 +51,9 @@ class AdminLoginChallengeServiceImplTest {
         ReflectionTestUtils.setField(service, "stringRedisTemplate", stringRedisTemplate);
         ReflectionTestUtils.setField(service, "rabbitTemplate", rabbitTemplate);
         ReflectionTestUtils.setField(service, "userService", userService);
+        ReflectionTestUtils.setField(service, "authenticationVersion", authenticationVersion);
+        org.mockito.Mockito.lenient().when(authenticationVersion.snapshotVersion(7L)).thenReturn("a".repeat(64));
+        org.mockito.Mockito.lenient().when(authenticationVersion.credentialSnapshot(any())).thenReturn("snapshot");
         ReflectionTestUtils.setField(service, "exchange", "email");
         ReflectionTestUtils.setField(service, "routingKey", "admin");
         User account = User.builder().id(7L).username("admin").password("original-hash").email("admin@example.com").build();
@@ -86,7 +91,7 @@ class AdminLoginChallengeServiceImplTest {
     @SuppressWarnings("unchecked")
     void verificationUsesOneAtomicRedisScriptAndCannotReuseConsumedChallenge() {
         when(stringRedisTemplate.<String, String>opsForHash()).thenReturn(hashOperations);
-        when(hashOperations.entries(anyString())).thenReturn(Map.of("username", "admin"));
+        when(hashOperations.entries(anyString())).thenReturn(Map.of("username", "admin", "userId", "7", "version", "a".repeat(64), "credentials", "snapshot"));
         when(stringRedisTemplate.execute(any(RedisScript.class), anyList(), any(), any())).thenReturn(1L, -1L);
         when(userService.loadUserByUsername("admin")).thenReturn(administrator);
 
@@ -137,5 +142,27 @@ class AdminLoginChallengeServiceImplTest {
         assertThrows(BadCredentialsException.class,
                 () -> service.verify("malformed", "000000", "203.0.113.2"));
         verify(userService, never()).loadUserByUsername(anyString());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void credentialChangeRejectsPendingVerificationAndResend() {
+        when(stringRedisTemplate.<String, String>opsForHash()).thenReturn(hashOperations);
+        when(hashOperations.entries(anyString())).thenReturn(Map.of("username", "admin", "userId", "7", "version", "a".repeat(64), "credentials", "old-snapshot"));
+        when(stringRedisTemplate.execute(any(RedisScript.class), anyList(), any(), any())).thenReturn(1L);
+        when(userService.loadUserByUsername("admin")).thenReturn(administrator);
+        assertThrows(BadCredentialsException.class, () -> service.verify("old", "123456", "203.0.113.2"));
+        assertThrows(BadCredentialsException.class, () -> service.resend("old", "203.0.113.2"));
+        verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), any(Object.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void rotatedVersionRejectsChallengeEvenWhenCredentialsReturnToOriginalValues() {
+        when(stringRedisTemplate.<String, String>opsForHash()).thenReturn(hashOperations);
+        when(hashOperations.entries(anyString())).thenReturn(Map.of("username", "admin", "userId", "7", "version", "b".repeat(64), "credentials", "snapshot"));
+        when(stringRedisTemplate.execute(any(RedisScript.class), anyList(), any(), any())).thenReturn(1L);
+        when(userService.loadUserByUsername("admin")).thenReturn(administrator);
+        assertThrows(BadCredentialsException.class, () -> service.verify("old", "123456", "203.0.113.2"));
     }
 }

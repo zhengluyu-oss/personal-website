@@ -14,6 +14,7 @@ import xyz.kuailemao.mapper.RoleMapper;
 import xyz.kuailemao.mapper.RolePermissionMapper;
 import xyz.kuailemao.mapper.UserMapper;
 import xyz.kuailemao.mapper.UserRoleMapper;
+import xyz.kuailemao.service.AccountAuthenticationVersion;
 
 import java.util.Date;
 import java.util.List;
@@ -46,6 +47,10 @@ class JwtUtilsSessionSafetyTest {
     private final PermissionMapper permissionMapper = mock(PermissionMapper.class);
 
     JwtUtilsSessionSafetyTest() {
+        AccountAuthenticationVersion versions = org.mockito.Mockito.spy(new AccountAuthenticationVersion());
+        org.mockito.Mockito.doReturn("a".repeat(64)).when(versions).current(USER_ID);
+        org.mockito.Mockito.doReturn("a".repeat(64)).when(versions).forCompletedLogin(org.mockito.ArgumentMatchers.eq(USER_ID), any());
+        ReflectionTestUtils.setField(jwtUtils, "authenticationVersion", versions);
         ReflectionTestUtils.setField(jwtUtils, "key", SIGNING_KEY);
         ReflectionTestUtils.setField(jwtUtils, "expire", 7);
         ReflectionTestUtils.setField(jwtUtils, "redisCache", redisCache);
@@ -92,6 +97,7 @@ class JwtUtilsSessionSafetyTest {
 
     @Test
     void missingDisabledDeletedAndIncompleteUsersCannotBecomeAuthenticated() {
+        when(userMapper.selectById(USER_ID)).thenReturn(activeUser());
         DecodedJWT jwt = jwtForUser();
         User disabled = activeUser().setIsDisable(1);
         User deleted = activeUser().setIsDeleted(1);
@@ -104,7 +110,7 @@ class JwtUtilsSessionSafetyTest {
             assertNull(jwtUtils.toUser(jwt));
         }
 
-        verify(userMapper, times(5)).selectById(USER_ID);
+        verify(userMapper, times(6)).selectById(USER_ID);
         verifyNoInteractions(userRoleMapper, roleMapper, rolePermissionMapper, permissionMapper);
     }
 
