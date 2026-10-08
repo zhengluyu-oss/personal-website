@@ -235,6 +235,13 @@ function changePage(page: number) {
 .topic-nav a.is-active { border-color: rgba(38,94,154,.12); background: var(--brand-accent-soft); color: var(--brand-accent-strong); }
 .topic-nav sup { margin-left: .32rem; color: var(--brand-ink-faint); font-family: "Share TechMono", monospace; font-size: .68em; font-weight: 700; line-height: 1; transform: translateY(-.28em); }
 .journal-content, .blog-state, .blog-skeleton { width: min(calc(100% - 2rem), 72rem); margin-inline: auto; }
+@media (min-width: 901px) {
+  .journal-content, .blog-state, .blog-skeleton {
+    width: min(calc(100vw - 4rem), 90rem);
+    margin-inline: 50% 0;
+    transform: translateX(-50%);
+  }
+}
 .journal-content { padding: clamp(2rem, 5vw, 4.5rem) 0 5rem; }
 .featured-story { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; overflow: hidden; border-radius: var(--brand-radius-lg); background: var(--brand-surface); box-shadow: 0 22px 70px rgba(24,55,91,.12); cursor: pointer; }
 .featured-story:focus-visible { outline: 3px solid var(--journal-accent); outline-offset: 4px; }
