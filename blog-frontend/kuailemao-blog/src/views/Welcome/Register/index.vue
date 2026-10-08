@@ -3,7 +3,8 @@ import {computed, reactive, ref} from "vue";
 import {useRouter} from "vue-router";
 import {EditPen, Lock, Message, User} from "@element-plus/icons-vue";
 import {ElMessage} from "element-plus";
-import {sendEmail} from "@/apis/email";
+import {sendEmail, confirmEmailDelivery} from "@/apis/email";
+import {onBeforeUnmount} from "vue";
 import {register} from "@/apis/user";
 
 // 邮件发送冷却时间
@@ -64,27 +65,31 @@ const rules = {
   ]
 }
 
-function askCode() {
-  if (isEmailValid) {
-    coldTime.value = 60
-    sendEmail(form.email, "register").then(res => {
-      if (res.code === 200) {
-        ElMessage.success(`验证码已发送到邮箱：${form.email}，请注意查收`)
-        const intervalId = setInterval(() => {
-          if (coldTime.value === 0) {
-            clearInterval(intervalId);
-          } else {
-            coldTime.value--;
-          }
-        }, 1000)
-      } else {
-        ElMessage.warning(res.msg)
-        coldTime.value = 0
-      }
-    })
-  } else {
-    ElMessage.warning('请输入正确的电子邮件')
-  }
+const sending = ref(false)
+const deliveryController = new AbortController()
+let cooldownTimer: ReturnType<typeof setInterval> | undefined
+onBeforeUnmount(() => {
+  deliveryController.abort()
+  if (cooldownTimer) clearInterval(cooldownTimer)
+})
+async function askCode() {
+  if (!isEmailValid.value || sending.value || coldTime.value > 0) return
+  const email = form.email
+  sending.value = true
+  coldTime.value = 60
+  cooldownTimer = setInterval(() => {
+    coldTime.value = Math.max(0, coldTime.value - 1)
+    if (coldTime.value === 0) clearInterval(cooldownTimer)
+  }, 1000)
+  try {
+    const result: any = await sendEmail(email, "register")
+    if (result.code !== 200) throw new Error(result.msg || '发送请求未提交，请稍后重试')
+    await confirmEmailDelivery(result.data?.taskId, deliveryController.signal)
+    ElMessage.success(`验证码已发送到邮箱：${email}，请注意查收`)
+  } catch (error) {
+    if (!deliveryController.signal.aborted)
+      ElMessage.error(error instanceof Error ? error.message : '发送请求未完成，请稍后重试')
+  } finally { sending.value = false }
 }
 
 // 判断邮箱是否正确
@@ -165,8 +170,8 @@ function registerBtn() {
               </el-input>
             </el-col>
             <el-col :span="5">
-              <el-button type="success" @click="askCode" :disabled="!isEmailValid || coldTime != 0">
-                {{ coldTime > 0 ? `请稍后 ${coldTime} 秒` : '获取验证码' }}
+              <el-button type="success" @click="askCode" :loading="sending" :disabled="sending || !isEmailValid || coldTime != 0">
+                {{ sending ? '正在发送…' : coldTime > 0 ? `请稍后 ${coldTime} 秒` : '获取验证码' }}
               </el-button>
             </el-col>
           </el-row>

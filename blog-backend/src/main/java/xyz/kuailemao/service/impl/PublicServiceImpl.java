@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import xyz.kuailemao.constants.RedisConst;
 import xyz.kuailemao.service.PublicService;
+import xyz.kuailemao.service.EmailDeliveryService;
+import java.util.List;
 import xyz.kuailemao.utils.RedisCache;
 
 import java.util.Date;
@@ -24,6 +26,8 @@ public class PublicServiceImpl implements PublicService {
 
     @Resource
     private RedisCache redisCache;
+
+    @Resource private EmailDeliveryService emailDeliveryService;
 
     @Resource
     private RabbitTemplate rabbitTemplate;
@@ -51,9 +55,10 @@ public class PublicServiceImpl implements PublicService {
             redisCache.setCacheObject(RedisConst.VERIFY_CODE + type + RedisConst.SEPARATOR + email, verifyCode, RedisConst.VERIFY_CODE_EXPIRATION, TimeUnit.MINUTES);
             // 发送邮件
             Map<String, Object> senEmail = Map.of("email", email, "code", verifyCode, "type", type);
-            rabbitTemplate.convertAndSend(exchange, routingKey, senEmail);
-
-            return "验证码已发送，请注意查收！";
+            String taskId = emailDeliveryService.create(1, List.of(emailDeliveryService.valueCleanup(
+                    RedisConst.VERIFY_CODE + type + RedisConst.SEPARATOR + email)));
+            emailDeliveryService.publish(taskId, senEmail);
+            return taskId;
         }
     }
 
