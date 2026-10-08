@@ -5,6 +5,8 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 import org.springframework.amqp.rabbit.support.ListenerExecutionFailedException;
 import org.springframework.stereotype.Component;
+import jakarta.annotation.Resource;
+import xyz.kuailemao.service.EmailDeliveryService;
 
 /**
  * @author kuailemao
@@ -16,6 +18,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class RabbitListenerErrorHandler implements MessageRecoverer, org.springframework.amqp.rabbit.listener.api.RabbitListenerErrorHandler {
 
+    @Resource private EmailDeliveryService emailDeliveryService;
+
     @Override
     public Object handleError(Message message, com.rabbitmq.client.Channel channel,
                               org.springframework.messaging.Message<?> message1, ListenerExecutionFailedException e) throws Exception {
@@ -25,6 +29,8 @@ public class RabbitListenerErrorHandler implements MessageRecoverer, org.springf
     }
     @Override
     public void recover(Message message, Throwable cause) {
+        Object taskId = message.getMessageProperties().getHeaders().get(EmailDeliveryService.TASK_HEADER);
+        if (taskId instanceof String id) emailDeliveryService.fail(id);
         // 恢复消息，例如将消息发送到死信队列
         log.error("Queue retries exhausted; payload and original exception omitted");
     }

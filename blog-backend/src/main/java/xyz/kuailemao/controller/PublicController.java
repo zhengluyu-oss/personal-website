@@ -17,6 +17,8 @@ import xyz.kuailemao.annotation.LogAnnotation;
 import xyz.kuailemao.constants.LogConst;
 import xyz.kuailemao.domain.response.ResponseResult;
 import xyz.kuailemao.service.PublicService;
+import xyz.kuailemao.service.EmailDeliveryService;
+import java.util.Map;
 import xyz.kuailemao.utils.ControllerUtils;
 
 /**
@@ -34,6 +36,8 @@ public class PublicController {
     @Resource
     private PublicService publicService;
 
+    @Resource private EmailDeliveryService emailDeliveryService;
+
     /**
      * 邮件发送
      */
@@ -45,11 +49,18 @@ public class PublicController {
     @AccessLimit(seconds = 60, maxCount = 1)
     @LogAnnotation(module="邮件发送",operation= LogConst.EMAIL_SEND)
     @GetMapping("/ask-code")
-    public ResponseResult<String> askVerifyCode(
+    public ResponseResult<Map<String, String>> askVerifyCode(
             @RequestParam @Email String email,
             @RequestParam @Pattern(regexp = "(register|reset|resetEmail)",message = "邮箱类型错误" ) String type
     ) {
-        return ControllerUtils.messageHandler(() -> publicService.registerEmailVerifyCode(type, email));
+        return ResponseResult.success(Map.of("taskId", publicService.registerEmailVerifyCode(type, email)), "发送请求已提交");
+    }
+
+    @GetMapping("/email-delivery")
+    @AccessLimit(seconds = 60, maxCount = 60)
+    public ResponseResult<EmailDeliveryService.Status> emailDelivery(
+            @RequestParam @Pattern(regexp = "[0-9a-f]{64}") String taskId) {
+        return ResponseResult.success(emailDeliveryService.status(taskId));
     }
 
 }

@@ -33,6 +33,9 @@ import xyz.kuailemao.mapper.UserMapper;
 import xyz.kuailemao.utils.DateUtils;
 import xyz.kuailemao.utils.RedisCache;
 import xyz.kuailemao.utils.TimeUtils;
+import xyz.kuailemao.service.EmailDeliveryService;
+import org.springframework.mail.MailAuthenticationException;
+import org.springframework.mail.MailParseException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +51,8 @@ import java.util.concurrent.TimeUnit;
 @Component
 @Slf4j
 public class EmailQueueListener {
+
+    @Resource private EmailDeliveryService emailDeliveryService;
 
     @Resource
     private JavaMailSender mailSender;
@@ -86,6 +91,25 @@ public class EmailQueueListener {
     @RabbitListener(queues = RabbitConst.MAIL_QUEUE,
             errorHandler = "rabbitListenerErrorHandler",
             containerFactory = "rabbitListenerContainerFactory")
+    public void handleDelivery(Map<String, Object> data,
+            @Header(name = EmailDeliveryService.TASK_HEADER, required = false) String taskId,
+            @Header(name = EmailDeliveryService.DELIVERY_HEADER, required = false) String deliveryId) {
+        if (taskId == null) { handlerMapMessage(data); return; }
+        if (deliveryId == null || !emailDeliveryService.claim(taskId, deliveryId)) return;
+        try {
+            handlerMapMessage(data);
+        } catch (MailAuthenticationException | MailParseException permanentFailure) {
+            emailDeliveryService.fail(taskId);
+            log.error("Verification email rejected: taskId={}, reason=mail_configuration", taskId);
+            return;
+        } catch (RuntimeException transientFailure) {
+            emailDeliveryService.retry(taskId, deliveryId);
+            throw transientFailure;
+        }
+        // A status-store failure after SMTP acceptance must not reset the claim and resend the mail.
+        emailDeliveryService.sent(taskId, deliveryId);
+    }
+
     public void handlerMapMessage(Map<String, Object> data) {
         String email = (String) data.get("email");
         String code = (String) data.get("code");

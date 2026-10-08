@@ -7,6 +7,7 @@ import {
 import { delayTimer } from '@v-c/utils'
 import { AxiosError } from 'axios'
 import { loginApi, resendAdminLoginApi, verifyAdminLoginApi } from '~/api/common/login'
+import { confirmEmailDelivery, EmailDeliveryError } from '~/api/common/email'
 import { getQueryParam } from '~/utils/tools'
 import type { LoginMobileParams, LoginParams } from '~@/api/common/login'
 import pageBubble from '@/utils/page-bubble'
@@ -31,6 +32,26 @@ const resetCounter = 60
 const submitLoading = shallowRef(false)
 const errorAlert = shallowRef(false)
 const secondFactorError = shallowRef('')
+const deliveryMessage = shallowRef('')
+let deliveryController: AbortController | undefined
+async function confirmDelivery(taskId?: string) {
+  deliveryController?.abort()
+  const controller = new AbortController()
+  deliveryController = controller
+  deliveryMessage.value = '验证码正在发送，请稍候'
+  try {
+    await confirmEmailDelivery(taskId, controller.signal)
+    deliveryMessage.value = `验证码已发送至 ${challenge.maskedEmail}`
+    message.success('验证码已发送，请查收邮件')
+  } catch (error) {
+    if (controller.signal.aborted) return
+    const text = error instanceof Error ? error.message : '暂未确认发送结果，请稍后重试'
+    if (error instanceof EmailDeliveryError && ['FAILED', 'EXPIRED'].includes(error.status)) clearChallenge()
+    deliveryMessage.value = text
+    secondFactorError.value = text
+    message.error(text)
+  }
+}
 const challenge = reactive({ id: '', maskedEmail: '', code: '', expiresIn: 0, resendAfter: 0 })
 const awaitingSecondFactor = computed(() => Boolean(challenge.id))
 let challengeTimer: ReturnType<typeof setInterval> | undefined
@@ -75,8 +96,8 @@ async function submit() {
       secondFactorError.value = ''
       startChallengeTimer()
       loginModel.password = undefined
+      await confirmDelivery(data.taskId)
       submitLoading.value = false
-      notification.info({ message: '需要邮箱验证', description: `验证码已发送至 ${challenge.maskedEmail}` })
       return
     }
     await finishLogin(data?.token, data?.expire)
@@ -111,7 +132,7 @@ async function resendSecondFactor() {
     challenge.resendAfter = data.resendAfter || 60
     challenge.code = ''
     startChallengeTimer()
-    message.success('验证码已重新发送')
+    await confirmDelivery(data.taskId)
   }
   catch (e) {
     handleLoginError(e, 'secondFactor')
@@ -192,6 +213,8 @@ function getLoginErrorMessage(e: unknown) {
 }
 
 function clearChallenge() {
+  deliveryController?.abort()
+  deliveryMessage.value = ''
   if (challengeTimer) {
     clearInterval(challengeTimer)
     challengeTimer = undefined
@@ -296,7 +319,7 @@ onBeforeUnmount(() => {
                 </a-form-item>
               </template>
               <template v-else-if="awaitingSecondFactor">
-                <a-alert class="mb-4" type="info" show-icon :message="`验证码已发送至 ${challenge.maskedEmail}`" />
+                <a-alert class="mb-4" type="info" show-icon :message="deliveryMessage || '请查收邮箱验证码'" />
                 <a-alert v-if="secondFactorError" class="mb-4" type="error" show-icon :message="secondFactorError" />
                 <a-form-item>
                   <a-input
