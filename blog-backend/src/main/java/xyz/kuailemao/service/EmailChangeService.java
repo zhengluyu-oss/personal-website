@@ -63,10 +63,11 @@ public class EmailChangeService {
     @Resource private AccountAuthenticationVersion authenticationVersion;
     @Resource private PasswordEncoder passwordEncoder;
     @Resource private RabbitTemplate rabbitTemplate;
+    @Resource private EmailDeliveryService emailDeliveryService;
     @Value("${spring.rabbitmq.exchange.email}") private String exchange;
     @Value("${spring.rabbitmq.routingKey.email}") private String routingKey;
 
-    public record Challenge(String challengeId, int expiresIn, boolean oldEmailRequired, String maskedOldEmail, int provider) {}
+    public record Challenge(String challengeId, int expiresIn, boolean oldEmailRequired, String maskedOldEmail, int provider, String taskId) {}
 
     public Challenge start(EmailChangeStartDTO dto) {
         User user = authenticatedAccount();
@@ -82,6 +83,7 @@ public class EmailChangeService {
         String id = random();
         String code = code(), oldCode = oldRequired ? code() : "";
         String key = key(id);
+        String taskId;
         try {
             if (!Boolean.TRUE.equals(stringRedisTemplate.opsForValue().setIfAbsent(
                     PREFIX + "cooldown:" + user.getId(), "1", Duration.ofSeconds(60)))) throw invalid();
@@ -92,13 +94,14 @@ public class EmailChangeService {
                     "oldRequired", oldRequired ? "1" : "0", "attempts", "0",
                     "newCode", codeHash(id, code), "oldCode", oldRequired ? codeHash(id, oldCode) : "-");
             if (!Long.valueOf(1).equals(created)) throw invalid();
-            sendCode(email, code);
-            if (oldRequired) sendCode(user.getEmail(), oldCode);
+            taskId = emailDeliveryService.create(oldRequired ? 2 : 1, List.of(new EmailDeliveryService.Cleanup(key, "*")));
+            sendCode(taskId, email, code);
+            if (oldRequired) sendCode(taskId, user.getEmail(), oldCode);
         } catch (RuntimeException failure) {
             try { stringRedisTemplate.delete(key); } catch (RuntimeException ignored) { /* Fail closed. */ }
             throw invalid();
         }
-        return new Challenge(id, 300, oldRequired, oldRequired ? mask(user.getEmail()) : "", provider);
+        return new Challenge(id, 300, oldRequired, oldRequired ? mask(user.getEmail()) : "", provider, taskId);
     }
 
     public int requiredProvider(String id) {
@@ -178,8 +181,8 @@ public class EmailChangeService {
         return SecurityUtils.getUserRoles().contains("ROLE_ADMIN")
                 || (user.getRegisterType() != 0 && user.getEmail() != null && !user.getEmail().isBlank());
     }
-    private void sendCode(String email, String code) {
-        rabbitTemplate.convertAndSend(exchange, routingKey, Map.of("email", email, "code", code, "type", "resetEmail"));
+    private void sendCode(String taskId, String email, String code) {
+        emailDeliveryService.publish(taskId, Map.of("email", email, "code", code, "type", "resetEmail"));
     }
     private static String mask(String email) { int at = email.indexOf('@'); return at < 1 ? "***" : email.substring(0, 1) + "***" + email.substring(at); }
     private static String code() { return String.format(Locale.ROOT, "%06d", RANDOM.nextInt(1_000_000)); }

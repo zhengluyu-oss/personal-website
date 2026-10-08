@@ -1,4 +1,15 @@
 import http from "@/utils/http.ts";
+import { waitForEmailDelivery } from '../../../../shared/email-delivery'
+
+export { EmailDeliveryError } from '../../../../shared/email-delivery'
+
+export function confirmEmailDelivery(taskId: string | undefined, signal?: AbortSignal) {
+    return waitForEmailDelivery(taskId, async (id, requestSignal) => {
+        const result: any = await http.get('/public/email-delivery', { params: { taskId: id }, signal: requestSignal, timeout: 10000 })
+        if (result.code !== 200 || !result.data) throw new Error('发送状态暂时不可用')
+        return result.data
+    }, { signal })
+}
 
 /**
  * 发送邮件

@@ -15,6 +15,7 @@ import xyz.kuailemao.domain.vo.AdminLoginChallengeVO;
 import xyz.kuailemao.service.AdminLoginChallengeService;
 import xyz.kuailemao.service.UserService;
 import xyz.kuailemao.service.AccountAuthenticationVersion;
+import xyz.kuailemao.service.EmailDeliveryService;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -51,6 +52,7 @@ public class AdminLoginChallengeServiceImpl implements AdminLoginChallengeServic
     private StringRedisTemplate stringRedisTemplate;
     @Resource
     private RabbitTemplate rabbitTemplate;
+    @Resource private EmailDeliveryService emailDeliveryService;
     @Resource
     private UserService userService;
     @Resource
@@ -85,11 +87,20 @@ public class AdminLoginChallengeServiceImpl implements AdminLoginChallengeServic
         ));
         stringRedisTemplate.expire(key, RedisConst.ADMIN_LOGIN_CHALLENGE_MINUTES, TimeUnit.MINUTES);
         stringRedisTemplate.opsForValue().set(resendKey, "1", RedisConst.ADMIN_LOGIN_RESEND_SECONDS, TimeUnit.SECONDS);
-        rabbitTemplate.convertAndSend(exchange, routingKey, Map.of("email", email, "code", code, "type", "adminLogin"));
+        String taskId;
+        try {
+            taskId = emailDeliveryService.create(1, List.of(new EmailDeliveryService.Cleanup(key, "*")));
+            emailDeliveryService.publish(taskId, Map.of("email", email, "code", code, "type", "adminLogin"));
+        } catch (RuntimeException failure) {
+            stringRedisTemplate.delete(List.of(key, resendKey));
+            throw new BadCredentialsException("验证码发送失败，请稍后重试");
+        }
         log.info("Administrator second-factor challenge created: userId={}, client={}", loginUser.getUser().getId(), clientAddress);
-        return new AdminLoginChallengeVO(challengeId, maskEmail(email),
+        AdminLoginChallengeVO result = new AdminLoginChallengeVO(challengeId, maskEmail(email),
                 RedisConst.ADMIN_LOGIN_CHALLENGE_MINUTES * 60,
                 RedisConst.ADMIN_LOGIN_RESEND_SECONDS, true);
+        result.setTaskId(taskId);
+        return result;
     }
 
     @Override

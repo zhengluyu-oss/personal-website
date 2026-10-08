@@ -6,6 +6,7 @@ import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.core.MessagePostProcessor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
@@ -50,6 +51,12 @@ class EmailChangeServiceIntegrationTest {
         service = new EmailChangeService();
         ReflectionTestUtils.setField(service,"userMapper",users); ReflectionTestUtils.setField(service,"stringRedisTemplate",redis);
         ReflectionTestUtils.setField(service,"authenticationVersion",versions); ReflectionTestUtils.setField(service,"passwordEncoder",passwords);
+        EmailDeliveryService delivery = new EmailDeliveryService();
+        ReflectionTestUtils.setField(delivery,"stringRedisTemplate",redis);
+        ReflectionTestUtils.setField(delivery,"rabbitTemplate",mail);
+        ReflectionTestUtils.setField(delivery,"exchange","qa");
+        ReflectionTestUtils.setField(delivery,"routingKey","qa");
+        ReflectionTestUtils.setField(service,"emailDeliveryService",delivery);
         ReflectionTestUtils.setField(service,"rabbitTemplate",mail); ReflectionTestUtils.setField(service,"exchange","qa"); ReflectionTestUtils.setField(service,"routingKey","qa");
         user = new User().setId(ThreadLocalRandom.current().nextLong(1_000_000_000L,Long.MAX_VALUE)).setRegisterType(0)
                 .setEmail("old@example.invalid").setPassword("hash").setIsDeleted(0).setIsDisable(0);
@@ -60,7 +67,7 @@ class EmailChangeServiceIntegrationTest {
         login = new LoginUser(user).setAuthenticationVersion(versions.forCompletedLogin(user.getId(),null)).setAuthorities(List.of());
         authenticate(false);
         doAnswer(invocation -> { Map<String,String> event=invocation.getArgument(2); codes.put(event.get("email"),event.get("code")); return null; })
-                .when(mail).convertAndSend(eq("qa"),eq("qa"),any(Object.class));
+                .when(mail).convertAndSend(eq("qa"),eq("qa"),any(Object.class), any(MessagePostProcessor.class));
     }
     @AfterEach void cleanup() {
         SecurityContextHolder.clearContext();
