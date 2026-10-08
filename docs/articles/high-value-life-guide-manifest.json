@@ -1,0 +1,314 @@
+{
+  "source_commit": "a18ee40519ed34562ac12a8dc88e053a9c8a9973",
+  "articles": [
+    {
+      "key": "A01",
+      "path": "book/01-不要早死.md",
+      "title": "高性价比人生指南｜01 不要早死",
+      "source_sha256": "1fd4b0b18cf45aed74854f921a43777db34b766c23f7cf5d5548f0228cfda250",
+      "content_bytes": 109404
+    },
+    {
+      "key": "A02",
+      "path": "book/02-不要慢慢死.md",
+      "title": "高性价比人生指南｜02 不要慢慢死",
+      "source_sha256": "eac8ceecb692545e7cc5a3bebe92113af12a4c8bda178368cfab8fb9e88424fc",
+      "content_bytes": 97953
+    },
+    {
+      "key": "A03",
+      "path": "book/03-不要浪费精力.md",
+      "title": "高性价比人生指南｜03 不要浪费精力",
+      "source_sha256": "bac45f118a108c48c2ae44f115b355018aabdc57338980514aefdd2d1dda0f8b",
+      "content_bytes": 52826
+    },
+    {
+      "key": "A04",
+      "path": "book/04-不要浪费时间.md",
+      "title": "高性价比人生指南｜04 不要浪费时间",
+      "source_sha256": "241eb81b9701229b218bf861569515b9218a4a0633b43199c73e4f6e0f03f59e",
+      "content_bytes": 29928
+    },
+    {
+      "key": "A05",
+      "path": "book/05-不要浪费钱.md",
+      "title": "高性价比人生指南｜05 不要浪费钱",
+      "source_sha256": "7499ae401d5b448eaff2bcea86797cfffb1715031cdd922457b97ab3b55cda0a",
+      "content_bytes": 128020
+    },
+    {
+      "key": "A06",
+      "path": "book/06-反面清单.md",
+      "title": "高性价比人生指南｜06 反面清单",
+      "source_sha256": "73c143e6b79647b7384d89e74956272196c057216fb1b7ee4238d9d7eaeb7871",
+      "content_bytes": 97474
+    },
+    {
+      "key": "A07",
+      "path": "book/07-没钱的时候怎么活.md",
+      "title": "高性价比人生指南｜07 没钱的时候怎么活",
+      "source_sha256": "47e7e4afe9ac0ee05917ae6bbc614840cef1642482b0d5aa2fb7d33f35359f28",
+      "content_bytes": 60398
+    },
+    {
+      "key": "A08",
+      "path": "book/08-别把自己搭进去.md",
+      "title": "高性价比人生指南｜08 别把自己搭进去",
+      "source_sha256": "66010bfa9319469630c919cbfe517e46f945f24394718ec1a1289e651984734f",
+      "content_bytes": 145800
+    },
+    {
+      "key": "A09",
+      "path": "book/09-普通人容易踩的法律红线.md",
+      "title": "高性价比人生指南｜09 普通人容易踩的法律红线",
+      "source_sha256": "3c091f884538b160c48abd1972a6dbdac3d0ad49233b30901e2a3927f18b97bd",
+      "content_bytes": 88971
+    },
+    {
+      "key": "A10",
+      "path": "book/10-恋爱和结婚划不划算.md",
+      "title": "高性价比人生指南｜10 恋爱和结婚划不划算",
+      "source_sha256": "4dff208cc159e33057b0852b753330907ef4ce9ea5c36175a3f809a8c7f32132",
+      "content_bytes": 50569
+    },
+    {
+      "key": "A11",
+      "path": "book/11-程序员和技术人容易踩的红线.md",
+      "title": "高性价比人生指南｜11 程序员和技术人容易踩的红线",
+      "source_sha256": "0ec98f1aceb0e7730b8d7f05cca579f4c4bc52c428eb7737b6a105ce4226bfae",
+      "content_bytes": 51715
+    },
+    {
+      "key": "A12",
+      "path": "book/12-创业与做生意.md",
+      "title": "高性价比人生指南｜12 创业与做生意",
+      "source_sha256": "47e8a1e577eb066c3dc9e09bbd7f4efd027d49a65f41e99a4d34d2ea16e87afe",
+      "content_bytes": 72952
+    },
+    {
+      "key": "A13",
+      "path": "book/13-紧急情况.md",
+      "title": "高性价比人生指南｜13 紧急情况",
+      "source_sha256": "c2f44d4c49b51999836285e750dfd90966ad3a76ca033077ca7d2bcb939639c8",
+      "content_bytes": 117240
+    },
+    {
+      "key": "A14",
+      "path": "book/14-账号与信息安全.md",
+      "title": "高性价比人生指南｜14 账号与信息安全",
+      "source_sha256": "f04d7246f757cee9c2ca62cb8b03da737f5a1dfaeaac8cdd941afa883fca0b71",
+      "content_bytes": 20847
+    },
+    {
+      "key": "A15",
+      "path": "book/15-租房与买房.md",
+      "title": "高性价比人生指南｜15 租房与买房",
+      "source_sha256": "cfd59b286cc796b40a865917181c45d3b462ee751216d692eb57d54aa1e29b30",
+      "content_bytes": 13668
+    },
+    {
+      "key": "A16",
+      "path": "book/16-得了慢性病之后怎么活.md",
+      "title": "高性价比人生指南｜16 得了慢性病之后怎么活",
+      "source_sha256": "8b98b3bfd607adb875685284358e582effd270e11879563727036b091d793b8f",
+      "content_bytes": 20445
+    },
+    {
+      "key": "A17",
+      "path": "book/17-家里有老人.md",
+      "title": "高性价比人生指南｜17 家里有老人",
+      "source_sha256": "34c6280095c2d7be80107889c26459ae54163d10d6cebb7c2ca9f44552626bd2",
+      "content_bytes": 25344
+    },
+    {
+      "key": "A18",
+      "path": "book/18-养孩子划不划算.md",
+      "title": "高性价比人生指南｜18 养孩子划不划算",
+      "source_sha256": "c21c15080d55639e4c4aa944a3cfb25d44ec088a0dcbfa7b6d7cff27cf0fb77d",
+      "content_bytes": 8093
+    },
+    {
+      "key": "A19",
+      "path": "book/19-在职离职和工伤.md",
+      "title": "高性价比人生指南｜19 在职离职和工伤",
+      "source_sha256": "044b2f34609d4299dce40caeac90bd5c5a89a2df49d1a87096bee70adda0c553",
+      "content_bytes": 47890
+    },
+    {
+      "key": "A20",
+      "path": "book/20-刚出生的孩子怎么带.md",
+      "title": "高性价比人生指南｜20 刚出生的孩子怎么带",
+      "source_sha256": "f39cc2f4f42967806a4fd39f26242b90a5b15d933c6f58fa6c9bf1e565dfa8f0",
+      "content_bytes": 32048
+    },
+    {
+      "key": "A21",
+      "path": "book/21-出国旅行与境外安全.md",
+      "title": "高性价比人生指南｜21 出国旅行与境外安全",
+      "source_sha256": "7247bbb00094138ed54ed9cbd7379e823857a714b5ad27288590f572e37e1e7d",
+      "content_bytes": 23548
+    },
+    {
+      "key": "A22",
+      "path": "book/22-怎么放松.md",
+      "title": "高性价比人生指南｜22 怎么放松",
+      "source_sha256": "c5fa12e3c76a5490e22d1bc0d7f7a819c8ddccf557a89ec9b363d3d4a56732d4",
+      "content_bytes": 20816
+    },
+    {
+      "key": "A23",
+      "path": "book/23-学什么技能划算.md",
+      "title": "高性价比人生指南｜23 学什么技能划算",
+      "source_sha256": "e2791884c8f3a82e4b5ae8eeb46a26a68457e091607236fa08e66dce39cadbfe",
+      "content_bytes": 55641
+    },
+    {
+      "key": "A24",
+      "path": "book/24-看病.md",
+      "title": "高性价比人生指南｜24 看病",
+      "source_sha256": "1eebc843950149b7d0d6b4c765dafda80ef7482ab82fd0265044b263dc61f24e",
+      "content_bytes": 34266
+    },
+    {
+      "key": "A25",
+      "path": "book/25-人走了以后要办什么.md",
+      "title": "高性价比人生指南｜25 人走了以后要办什么",
+      "source_sha256": "6d12358bb7111d71a5232c9171819512642e20b116b3b557d7afee6bc46063a2",
+      "content_bytes": 24202
+    },
+    {
+      "key": "A26",
+      "path": "book/26-做一个网站或平台.md",
+      "title": "高性价比人生指南｜26 做一个网站或平台",
+      "source_sha256": "97172402244d928c066373536b7fe60d617eb120f1279dd6ca5484a8ee2e761a",
+      "content_bytes": 35311
+    },
+    {
+      "key": "A27",
+      "path": "book/27-怀孕和生产.md",
+      "title": "高性价比人生指南｜27 怀孕和生产",
+      "source_sha256": "e5abb7cff204fa8fd9181e08877dd397cd5d83d1886bbb961835d772d2e88a1c",
+      "content_bytes": 29434
+    },
+    {
+      "key": "A28",
+      "path": "book/28-别为了外形把身体搞坏.md",
+      "title": "高性价比人生指南｜28 别为了外形把身体搞坏",
+      "source_sha256": "0d18647b709bd82cbefbb2023a88158cfd3c98af67337df5fcd63b153d6f0299",
+      "content_bytes": 25043
+    },
+    {
+      "key": "A29",
+      "path": "book/29-遭遇重大打击之后.md",
+      "title": "高性价比人生指南｜29 遭遇重大打击之后",
+      "source_sha256": "aacc73504b31afc474cb5422c4120e169f147794c798ccee961d7f2ec1452c4d",
+      "content_bytes": 34096
+    },
+    {
+      "key": "A30",
+      "path": "book/30-上学以后的孩子.md",
+      "title": "高性价比人生指南｜30 上学以后的孩子",
+      "source_sha256": "6d6d44b70b8aab981cfeccb80563fea3ac4b5010c11576897aee90104d8b4cc6",
+      "content_bytes": 52962
+    },
+    {
+      "key": "A31",
+      "path": "book/31-十八岁之后有哪几条路.md",
+      "title": "高性价比人生指南｜31 十八岁之后有哪几条路",
+      "source_sha256": "1ca370a1bb3e39220fbd449f800d73b348624959cc529e49818b6beb7c932ffc",
+      "content_bytes": 70419
+    },
+    {
+      "key": "A32",
+      "path": "book/32-出国留学.md",
+      "title": "高性价比人生指南｜32 出国留学",
+      "source_sha256": "acbd92ae8a167adbd62fcde09f5142af09bf58795f53bfcb85cbdb27c414b899",
+      "content_bytes": 18938
+    },
+    {
+      "key": "A33",
+      "path": "book/33-残疾之后怎么活.md",
+      "title": "高性价比人生指南｜33 残疾之后怎么活",
+      "source_sha256": "8f8141036a7828c443bb4b81f63693d3acfd3145bc902eb5fc74fd5a1e442f73",
+      "content_bytes": 53215
+    },
+    {
+      "key": "A34",
+      "path": "book/34-家里的常备药别吃出事.md",
+      "title": "高性价比人生指南｜34 家里的常备药别吃出事",
+      "source_sha256": "bc8a3a817494b566c85cb9af2823af6f12fd820cb004cb43cdda8cdd9d5e4e17",
+      "content_bytes": 27691
+    },
+    {
+      "key": "A35",
+      "path": "docs/做平台要办哪些证.md",
+      "title": "高性价比人生指南｜附录 · 做平台要办哪些证",
+      "source_sha256": "864dd649fbce7479cd71daca3b9f2dd5c9eae1982a0385ed02d1ec1c762d298b",
+      "content_bytes": 10071
+    },
+    {
+      "key": "A36",
+      "path": "docs/刚确诊慢性病之后.md",
+      "title": "高性价比人生指南｜附录 · 刚确诊慢性病之后",
+      "source_sha256": "d3b2ec2a428c70eb81e88da06490b12a876e011a68a7e21cc51989a4a152dd99",
+      "content_bytes": 6672
+    },
+    {
+      "key": "A37",
+      "path": "docs/孩子出生前后要办的事.md",
+      "title": "高性价比人生指南｜附录 · 孩子出生前后要办的事",
+      "source_sha256": "ac6afa28dd16963438a180f12a54a11b6d87409006982ef69dd76d7395d7091c",
+      "content_bytes": 6744
+    },
+    {
+      "key": "A38",
+      "path": "docs/家庭应急装备清单.md",
+      "title": "高性价比人生指南｜附录 · 家庭应急装备清单",
+      "source_sha256": "8305917604fc4d3a499f5aa63cd02eb06a17df1250708781ab170e4ba46a629e",
+      "content_bytes": 14826
+    },
+    {
+      "key": "A39",
+      "path": "docs/引用对照.md",
+      "title": "高性价比人生指南｜附录 · 引用对照",
+      "source_sha256": "90333f1cfaec2ca98b33837204b1a1584bbdc6e61b176891c205cbe4f12a425a",
+      "content_bytes": 266179
+    },
+    {
+      "key": "A40",
+      "path": "docs/换工作、换城市之前.md",
+      "title": "高性价比人生指南｜附录 · 换工作、换城市之前",
+      "source_sha256": "200e2765babde44f3c0a5c0fd01a804484d5ac9d10f7a19b12bb6cecc38d8a8d",
+      "content_bytes": 12781
+    },
+    {
+      "key": "A41",
+      "path": "docs/生物钟和夜班.md",
+      "title": "高性价比人生指南｜附录 · 生物钟和夜班",
+      "source_sha256": "885badb8a8e087b2bac742ddf54a257287702bd7b7ae8a9523ad3f35229a2ef1",
+      "content_bytes": 11738
+    },
+    {
+      "key": "A42",
+      "path": "docs/结婚划不划算.md",
+      "title": "高性价比人生指南｜附录 · 结婚划不划算",
+      "source_sha256": "b8d597fb06b36161cb240e6a6a22789910a5a8b795f303fcc1d00cd3827e53c4",
+      "content_bytes": 20897
+    },
+    {
+      "key": "A43",
+      "path": "docs/被裁了之后先做什么.md",
+      "title": "高性价比人生指南｜附录 · 被裁了之后先做什么",
+      "source_sha256": "073b25ca4a28f9aa923f1ad4d115aa4e751a0bfa6540f39307d96f4db0092958",
+      "content_bytes": 6581
+    },
+    {
+      "key": "A44",
+      "path": "docs/遇到陌生人出事该不该停.md",
+      "title": "高性价比人生指南｜附录 · 遇到陌生人出事该不该停",
+      "source_sha256": "7bca81423990df6b655057bcdc5abc6a452021c07ac1e45cdb5e055367333a36",
+      "content_bytes": 9027
+    }
+  ],
+  "index_title": "高性价比人生指南｜阅读目录"
+}
