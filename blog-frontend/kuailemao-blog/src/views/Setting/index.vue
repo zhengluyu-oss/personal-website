@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import {ElMessage, FormRules, UploadInstance} from 'element-plus'
-import {Plus, User, Select, Message, Refresh, Unlock} from '@element-plus/icons-vue'
+import {ElMessage, UploadInstance} from 'element-plus'
+import {Plus, User, Select, Message} from '@element-plus/icons-vue'
 
 import type {UploadProps} from 'element-plus'
 import useUserStore from "@/store/modules/user.ts";
-import {updateEmail, updateThirdEmail, updateUserAccount} from "@/apis/user";
-import {sendEmail} from "@/apis/email";
+import {updateUserAccount} from "@/apis/user";
+import EmailSecuritySettings from './EmailSecuritySettings.vue';
 
 
 const uploadRef = ref<UploadInstance>()
@@ -20,12 +20,6 @@ const accountForm = ref<any>({
 const avatarImg = ref()
 
 const userStore = useUserStore()
-
-const emailForm = reactive({
-  email: '',
-  code: '',
-  password: '',
-})
 
 function updateUser() {
   baseFormRef.value.validate((isValid: boolean) => {
@@ -92,7 +86,6 @@ onMounted(() => {
       accountForm.value = userStore.userInfo
       avatarImg.value = userStore.userInfo.avatar
       firstImg.value = userStore.userInfo.avatar
-      emailForm.email = userStore.userInfo.email
     }
   });
 })
@@ -109,7 +102,6 @@ const validateUsername = (_: any, value: any, callback: any) => {
 }
 
 const baseFormRef = ref()
-const emailFormRef = ref()
 
 const nicknameRules = {
   nickname: [
@@ -118,117 +110,11 @@ const nicknameRules = {
   ]
 }
 
-const emailRules: FormRules = {
-  email: [
-    {required: true, message: '请输入邮件地址', trigger: 'blur'},
-    {type: 'email', message: '请输入合法的电子邮件地址', trigger: ['blur', 'change']}
-  ],
-  code: [
-    {required: true, message: '请输入获取的验证码', trigger: 'blur'},
-  ]
-}
-
-const centerDialogVisible = ref(false)
-
-function updateEmailFunc(){
-  if (emailForm.password === ''){
-    ElMessage.warning('密码不能为空')
-    return
-  }
-  updateEmail(emailForm).then((resp: any) => {
-    if(resp.code == 200){
-      ElMessage.success('邮件地址更新成功')
-      emailForm.code = ''
-      userStore.getInfo()
-      centerDialogVisible.value = false
-    }else ElMessage.error(resp.msg)
-  })
-}
-
-// 更新邮件
-function modifyEmail(){
-  emailFormRef.value.validate((isValid: boolean) => {
-    if (isValid) {
-      centerDialogVisible.value = true
-    } else ElMessage.warning('请完整填写信息')
-  })
-}
-
-// 三方登录绑定邮箱
-function thirdPartyLoginEmail(){
-  emailFormRef.value.validate((isValid: boolean) => {
-    if (isValid) {
-      emailForm.password = '第三方登录'
-      // 发送请求
-      updateThirdEmail(emailForm).then((resp: any) => {
-        if(resp.code == 200){
-          ElMessage.success('邮件地址更新成功')
-          emailForm.code = ''
-          userStore.getInfo()
-        }else ElMessage.error(resp.msg)
-      })
-    } else ElMessage.warning('请完整填写信息')
-  })
-}
-
-// 判断邮箱是否正确
-const isEmailValid = computed(() => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(emailForm.email))
-
-// 邮件发送验证码冷却时间
-const coldTime = ref(0)
-
-/**
- * 获取验证码
- */
-function getEmailCode(){
-  if (emailForm.email === userStore.userInfo?.email){
-    ElMessage.warning('邮件地址未更改')
-    return
-  }
-  if(isEmailValid){
-    coldTime.value = 60
-    sendEmail(emailForm.email, 'resetEmail').then((resp: any) => {
-      if (resp.code == 200) {
-        ElMessage.success(`验证码已发送到邮箱：${emailForm.email}，请注意查收`)
-        const intervalId = setInterval(() => {
-          if (coldTime.value === 0) {
-            clearInterval(intervalId);
-          } else {
-            coldTime.value--;
-          }
-        }, 1000)
-      } else {
-        ElMessage.error(resp.msg)
-        coldTime.value = 0
-      }
-    })
-  }
-}
 </script>
 
 <template>
   <Header/>
   <div class="flex justify-center items-center">
-    <el-dialog
-        v-model="centerDialogVisible"
-        title="帐号安全验证"
-        width="500"
-        align-center
-    >
-      <span class="font-bold">你正在进行敏感操作, 继续操作前请验证您的身份</span>
-      <div class="mt-6">
-        <span class="font-bold">密码验证</span>
-        <el-input v-model="emailForm.password" type="password" placeholder="请输入密码"/>
-      </div>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="centerDialogVisible = false">关闭</el-button>
-          <el-button type="primary" @click="updateEmailFunc" :icon="Refresh">
-            更新邮件
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
     <div class="md:mt-16 mt-10 2xl:w-[100rem] w-full flex md:flex-row flex-col justify-center">
       <div class="md:w-1/2 w-full">
         <div class="bg_card box_show w-full p-5 rounded shadow-slate-300" >
@@ -298,38 +184,7 @@ function getEmailCode(){
           </div>
           <span style="color: gray;font-size: 0.8rem">在这里可以修改或绑定的电子邮箱信息，绑定后可以开启邮箱提醒！</span>
           <el-divider style="margin-top: 0.5rem"/>
-          <div class="flex justify-center">
-            <div class="w-full mb-5">
-              <div class="flex justify-center mx-6">
-                <el-form
-                    label-position="top"
-                    label-width="auto"
-                    class="w-full mt-5"
-                    :model="emailForm"
-                    ref="emailFormRef"
-                    :rules="emailRules"
-                >
-                  <el-form-item label="电子邮件" prop="email">
-                    <el-input placeholder="请输入电子邮件" v-model="emailForm.email"/>
-                  </el-form-item>
-                  <el-form-item prop="code">
-                    <div class="flex w-full">
-                      <el-input placeholder="请获取验证码" v-model="emailForm.code"/>
-                      <el-button type="success" @click="getEmailCode" plain class="ml-2" :disabled="!isEmailValid || coldTime != 0">
-                        {{ coldTime > 0 ? `请稍后 ${coldTime} 秒` : '获取验证码' }}
-                      </el-button>
-                    </div>
-                  </el-form-item>
-                </el-form>
-              </div>
-              <template v-if="userStore.userInfo?.registerType === 0" >
-                <el-button class="mx-6" :icon="Unlock" type="success" @click="modifyEmail">安全验证</el-button>
-              </template>
-              <template v-else>
-                <el-button class="mx-6" :icon="Message" type="success" @click="thirdPartyLoginEmail">确定</el-button>
-              </template>
-            </div>
-          </div>
+          <EmailSecuritySettings />
         </div>
       </div>
       <div class="md:ml-10 md:w-[20rem] w-full p-5 " style="min-height: 20px">

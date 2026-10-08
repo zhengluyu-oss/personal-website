@@ -1,6 +1,6 @@
 package xyz.kuailemao.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.baomidou.mybatisplus.spring.service.IService;
 import org.springframework.web.multipart.MultipartFile;
 import xyz.kuailemao.domain.dto.DeletePhotoOrAlbumDTO;
 import xyz.kuailemao.domain.dto.PhotoAlbumDTO;

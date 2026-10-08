@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { Ref, UnwrapRef } from 'vue'
 import { createVNode } from 'vue'
-import 'md-editor-v3/lib/style.css'
-import { MdPreview } from 'md-editor-v3'
+import SafeContentPreview from '~/components/SafeContentPreview.vue'
 import { Modal, message } from 'ant-design-vue'
 import { ExclamationCircleOutlined, MessageOutlined } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
@@ -32,6 +31,7 @@ const state = reactive<{
 interface DataType {
   id: string
   content: string
+  type: number
 }
 
 const loading = ref(false)
@@ -162,6 +162,7 @@ function onDelete(ids?: string[]) {
 const contentModel = reactive({
   show: false,
   content: '',
+  type: 0,
 })
 
 // 查看
@@ -170,7 +171,9 @@ function viewFunc(id?: string) {
     id = state.selectedRowKeys[0] as string
 
   contentModel.show = true
-  contentModel.content = tabData.value.find((item: any) => item.id === id)?.content as string
+  const selected = tabData.value.find(item => item.id === id)
+  contentModel.content = selected?.content ?? '收藏内容已不可用'
+  contentModel.type = selected?.type ?? 0
 }
 </script>
 
@@ -242,7 +245,7 @@ function viewFunc(id?: string) {
             关闭
           </a-button>
         </template>
-        <MdPreview v-model="contentModel.content" />
+        <SafeContentPreview :content="contentModel.content" :markdown="contentModel.type === 1" />
       </a-modal>
     </template>
     <template #table-content>
