@@ -1,10 +1,11 @@
 export const BLOG_PAGE_SIZE = 9
-export const BLOG_PAGE_SIZES = [9, 18, 36] as const
+export const BLOG_MAX_PAGE_SIZE = 100
 
 export function parseBlogPageSize(value: unknown) {
-  const raw = Array.isArray(value) ? value[0] : value
+  const raw = value
+  if (typeof raw !== 'string' || !/^[1-9]\d*$/.test(raw)) return BLOG_PAGE_SIZE
   const size = Number(raw)
-  return typeof raw === 'string' && BLOG_PAGE_SIZES.some(option => option === size) ? size : BLOG_PAGE_SIZE
+  return Number.isSafeInteger(size) && size <= BLOG_MAX_PAGE_SIZE ? size : BLOG_PAGE_SIZE
 }
 
 export function blogPageSizeQuery(size: number) {
