@@ -1,4 +1,20 @@
 export const BLOG_PAGE_SIZE = 9
+export const BLOG_PAGE_SIZES = [9, 18, 36] as const
+
+export function parseBlogPageSize(value: unknown) {
+  const raw = Array.isArray(value) ? value[0] : value
+  const size = Number(raw)
+  return typeof raw === 'string' && BLOG_PAGE_SIZES.some(option => option === size) ? size : BLOG_PAGE_SIZE
+}
+
+export function blogPageSizeQuery(size: number) {
+  return size === BLOG_PAGE_SIZE ? undefined : String(size)
+}
+
+export function isCanonicalBlogPageSize(value: unknown) {
+  if (value == null) return true
+  return typeof value === 'string' && value === blogPageSizeQuery(parseBlogPageSize(value))
+}
 
 export function parseBlogPage(value: unknown) {
   const raw = Array.isArray(value) ? value[0] : value

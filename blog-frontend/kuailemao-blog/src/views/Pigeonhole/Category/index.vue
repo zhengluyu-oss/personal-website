@@ -9,7 +9,7 @@ import { buildCategorySlugEntries, resolveCategorySlug } from '@/utils/category-
 import { setSeoMeta } from '@/utils/seo'
 import { normalizeBlogFeed } from '@/utils/blog-feed'
 import { resolveCategoryHero } from '@/utils/category-hero'
-import { BLOG_PAGE_SIZE, blogPageCount, blogPageQuery, clampBlogPage, isCanonicalBlogPage, parseBlogPage } from '@/utils/blog-pagination'
+import { BLOG_PAGE_SIZES, blogPageCount, blogPageQuery, blogPageSizeQuery, clampBlogPage, isCanonicalBlogPage, isCanonicalBlogPageSize, parseBlogPage, parseBlogPageSize } from '@/utils/blog-pagination'
 
 interface CategoryItem {
   id: number
@@ -43,7 +43,9 @@ const remainingArticles = computed(() => articles.value)
 const totalArticles = computed(() => categories.value.reduce((sum, item) => sum + Number(item.articleCount || 0), 0))
 const activeCategories = computed(() => categories.value.filter(item => Number(item.articleCount) > 0))
 const currentPage = computed(() => parseBlogPage(route.query.page))
-const totalPages = computed(() => blogPageCount(listTotal.value))
+const pageSize = computed(() => parseBlogPageSize(route.query.pageSize))
+const listPageSize = computed(() => pageSize.value - 1)
+const totalPages = computed(() => blogPageCount(listTotal.value, listPageSize.value))
 
 function normalizeArticle(item: any): BlogArticle {
   return {
@@ -64,11 +66,16 @@ const displayDate = (value?: string) => value?.slice(0, 10).replace(/-/g, '.') |
 const openArticle = (id: number | string) => router.push(`/blog/articles/${id}`)
 
 async function bootstrap() {
-  if (!isCanonicalBlogPage(route.query.page)) {
-    await router.replace({ query: { ...route.query, page: undefined } })
+  if (!isCanonicalBlogPage(route.query.page) || !isCanonicalBlogPageSize(route.query.pageSize)) {
+    await router.replace({ query: {
+      ...route.query,
+      page: isCanonicalBlogPage(route.query.page) ? route.query.page : undefined,
+      pageSize: isCanonicalBlogPageSize(route.query.pageSize) ? route.query.pageSize : undefined,
+    } })
     return
   }
   const requestedPage = currentPage.value
+  const requestedListPageSize = listPageSize.value
   const version = ++requestVersion
   loading.value = true
   loadError.value = false
@@ -94,7 +101,7 @@ async function bootstrap() {
         description: `浏览“${entry.category.categoryName}”主题下的技术记录、实践经验与项目复盘。`,
         keywords: `${entry.category.categoryName},技术博客,项目实践,郑陆宇`,
       })
-      const res = await getBlogFeed(entry.categoryId, requestedPage, BLOG_PAGE_SIZE)
+      const res = await getBlogFeed(entry.categoryId, requestedPage, requestedListPageSize)
       if (version !== requestVersion) return
       const feed = normalizeBlogFeed(res.code === 200 ? res.data : undefined)
       featuredArticle.value = feed.featuredArticle ? normalizeArticle(feed.featuredArticle) : undefined
@@ -102,7 +109,7 @@ async function bootstrap() {
       feedTotal.value = feed.total
       listTotal.value = feed.listTotal
     } else {
-      const res = await getBlogFeed(undefined, requestedPage, BLOG_PAGE_SIZE)
+      const res = await getBlogFeed(undefined, requestedPage, requestedListPageSize)
       if (version !== requestVersion) return
       const feed = normalizeBlogFeed(res.code === 200 ? res.data : undefined)
       featuredArticle.value = feed.featuredArticle ? normalizeArticle(feed.featuredArticle) : undefined
@@ -110,7 +117,7 @@ async function bootstrap() {
       feedTotal.value = feed.total
       listTotal.value = feed.listTotal
     }
-    const validPage = clampBlogPage(requestedPage, listTotal.value)
+    const validPage = clampBlogPage(requestedPage, listTotal.value, requestedListPageSize)
     if (validPage !== requestedPage) {
       await router.replace({ query: { ...route.query, page: blogPageQuery(validPage) } })
       return
@@ -124,11 +131,17 @@ async function bootstrap() {
 }
 
 onMounted(bootstrap)
-watch(() => [route.params.slug, route.query.page], bootstrap)
+watch(() => [route.params.slug, route.query.page, route.query.pageSize], bootstrap)
 
 function changePage(page: number) {
   if (page === currentPage.value) return
   router.push({ query: { ...route.query, page: blogPageQuery(page) } })
+}
+
+function changePageSize(event: Event) {
+  const size = Number((event.target as HTMLSelectElement).value)
+  if (size === pageSize.value) return
+  router.push({ query: { ...route.query, page: undefined, pageSize: blogPageSizeQuery(size) } })
 }
 </script>
 
@@ -196,11 +209,16 @@ function changePage(page: number) {
                 </div>
               </article>
             </div>
-            <nav v-if="totalPages > 1" class="article-pagination" aria-label="文章分页">
-              <el-pagination
+            <nav v-if="feedTotal > 0" class="article-pagination" aria-label="文章分页">
+              <label class="article-pagination__size" for="blog-page-size">每页显示
+                <select id="blog-page-size" :value="pageSize" @change="changePageSize">
+                  <option v-for="size in BLOG_PAGE_SIZES" :key="size" :value="size">{{ size }} 篇</option>
+                </select>
+              </label>
+              <el-pagination v-if="totalPages > 1"
                 background
                 :current-page="currentPage"
-                :page-size="BLOG_PAGE_SIZE"
+                :page-size="listPageSize"
                 :total="listTotal"
                 :pager-count="5"
                 layout="prev, pager, next"
@@ -277,6 +295,9 @@ function changePage(page: number) {
 .article-card footer { display: flex; justify-content: space-between; margin-top: 1.1rem; color: var(--brand-ink-faint); font-size: .72rem; }
 .article-card footer b { color: var(--journal-accent); }
 .article-pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: clamp(2rem, 4vw, 3.5rem); }
+.article-pagination__size { display: inline-flex; align-items: center; gap: .5rem; color: var(--brand-ink-soft); font-size: .82rem; white-space: nowrap; }
+.article-pagination__size select { min-height: 2.25rem; padding: .35rem .7rem; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); background: var(--brand-surface); color: var(--brand-ink); font: inherit; cursor: pointer; }
+.article-pagination__size select:focus-visible { outline: 2px solid var(--journal-accent); outline-offset: 2px; }
 .article-pagination__status { color: var(--brand-ink-faint); font-family: "Share TechMono", monospace; font-size: .72rem; white-space: nowrap; }
 .article-pagination :deep(.el-pager li), .article-pagination :deep(button) { border: 1px solid var(--brand-line); background: var(--brand-surface) !important; color: var(--brand-ink-soft); }
 .article-pagination :deep(.el-pager li.is-active) { border-color: var(--journal-accent); background: var(--journal-accent) !important; color: #fff; }
