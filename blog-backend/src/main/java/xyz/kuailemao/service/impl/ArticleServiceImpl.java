@@ -126,24 +126,28 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
-    public BlogFeedVO listBlogFeed(Long categoryId, Integer pageNum, Integer pageSize) {
+    public BlogFeedVO listBlogFeed(Long categoryId, Integer pageNum, Integer pageSize, String keyword) {
+        String titleKeyword = StringUtils.trimToEmpty(keyword);
+        boolean searching = !titleKeyword.isEmpty();
         LambdaQueryWrapper<Article> scope = new LambdaQueryWrapper<Article>()
                 .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
                 .eq(categoryId != null, Article::getCategoryId, categoryId)
+                .apply(searching, "LOCATE({0}, article_title) > 0", titleKeyword)
                 .orderByDesc(Article::getCreateTime)
                 .orderByDesc(Article::getId);
 
         Long total = articleMapper.selectCount(new LambdaQueryWrapper<Article>()
                 .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
-                .eq(categoryId != null, Article::getCategoryId, categoryId));
-        Article featured = resolveFeaturedArticle(categoryId);
+                .eq(categoryId != null, Article::getCategoryId, categoryId)
+                .apply(searching, "LOCATE({0}, article_title) > 0", titleKeyword));
+        Article featured = searching ? null : resolveFeaturedArticle(categoryId);
 
         Page<Article> page = new Page<>(pageNum, pageSize);
         if (featured != null) scope.ne(Article::getId, featured.getId());
         articleMapper.selectPage(page, scope);
 
         ArticleVO featuredVO = featured == null ? null : toArticleVOs(List.of(featured)).get(0);
-        long listTotal = Math.max(0L, total - (featured == null ? 0L : 1L));
+        long listTotal = searching ? total : Math.max(0L, total - (featured == null ? 0L : 1L));
         return new BlogFeedVO(featuredVO, toArticleVOs(page.getRecords()), total, listTotal);
     }
 

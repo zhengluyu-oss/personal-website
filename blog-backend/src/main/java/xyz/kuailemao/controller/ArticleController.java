@@ -104,9 +104,10 @@ public class ArticleController {
             @RequestParam(required = false) Long categoryId,
             @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码不能小于1") Integer pageNum,
             @RequestParam(defaultValue = "9") @Min(value = 1, message = "每页数量不能小于1")
-            @Max(value = 100, message = "每页数量不能超过100") Integer pageSize
+            @Max(value = 100, message = "每页数量不能超过100") Integer pageSize,
+            @RequestParam(required = false) @Length(max = 50, message = "标题关键词不能超过50字") String keyword
     ) {
-        return ControllerUtils.messageHandler(() -> articleService.listBlogFeed(categoryId, pageNum, pageSize));
+        return ControllerUtils.messageHandler(() -> articleService.listBlogFeed(categoryId, pageNum, pageSize, keyword));
     }
 
     @Operation(summary = "获取推荐的文章信息")
