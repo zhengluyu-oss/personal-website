@@ -44,10 +44,14 @@ const totalArticles = computed(() => categories.value.reduce((sum, item) => sum 
 const activeCategories = computed(() => categories.value.filter(item => Number(item.articleCount) > 0))
 const currentPage = computed(() => parseBlogPage(route.query.page))
 const pageSize = computed(() => parseBlogPageSize(route.query.pageSize))
+const keyword = computed(() => typeof route.query.q === 'string' ? route.query.q.trim().slice(0, 50) : '')
+const keywordDraft = ref(keyword.value)
+const keywordError = ref('')
 const pageSizeDraft = ref(String(pageSize.value))
 const pageSizeError = ref('')
 const totalPages = computed(() => blogPageCount(listTotal.value, pageSize.value))
 watch(pageSize, size => { pageSizeDraft.value = String(size); pageSizeError.value = '' })
+watch(keyword, value => { keywordDraft.value = value; keywordError.value = '' })
 
 function normalizeArticle(item: any): BlogArticle {
   return {
@@ -68,16 +72,18 @@ const displayDate = (value?: string) => value?.slice(0, 10).replace(/-/g, '.') |
 const openArticle = (id: number | string) => router.push(`/blog/articles/${id}`)
 
 async function bootstrap() {
-  if (!isCanonicalBlogPage(route.query.page) || !isCanonicalBlogPageSize(route.query.pageSize)) {
+  if (!isCanonicalBlogPage(route.query.page) || !isCanonicalBlogPageSize(route.query.pageSize) || (route.query.q != null && route.query.q !== (keyword.value || undefined))) {
     await router.replace({ query: {
       ...route.query,
       page: isCanonicalBlogPage(route.query.page) ? route.query.page : undefined,
       pageSize: isCanonicalBlogPageSize(route.query.pageSize) ? route.query.pageSize : undefined,
+      q: keyword.value || undefined,
     } })
     return
   }
   const requestedPage = currentPage.value
   const requestedPageSize = pageSize.value
+  const requestedKeyword = keyword.value || undefined
   const version = ++requestVersion
   loading.value = true
   loadError.value = false
@@ -103,7 +109,7 @@ async function bootstrap() {
         description: `浏览“${entry.category.categoryName}”主题下的技术记录、实践经验与项目复盘。`,
         keywords: `${entry.category.categoryName},技术博客,项目实践,郑陆宇`,
       })
-      const res = await getBlogFeed(entry.categoryId, requestedPage, requestedPageSize)
+      const res = await getBlogFeed(entry.categoryId, requestedPage, requestedPageSize, requestedKeyword)
       if (version !== requestVersion) return
       const feed = normalizeBlogFeed(res.code === 200 ? res.data : undefined)
       featuredArticle.value = feed.featuredArticle ? normalizeArticle(feed.featuredArticle) : undefined
@@ -111,7 +117,7 @@ async function bootstrap() {
       feedTotal.value = feed.total
       listTotal.value = feed.listTotal
     } else {
-      const res = await getBlogFeed(undefined, requestedPage, requestedPageSize)
+      const res = await getBlogFeed(undefined, requestedPage, requestedPageSize, requestedKeyword)
       if (version !== requestVersion) return
       const feed = normalizeBlogFeed(res.code === 200 ? res.data : undefined)
       featuredArticle.value = feed.featuredArticle ? normalizeArticle(feed.featuredArticle) : undefined
@@ -133,7 +139,23 @@ async function bootstrap() {
 }
 
 onMounted(bootstrap)
-watch(() => [route.params.slug, route.query.page, route.query.pageSize], bootstrap)
+watch(() => [route.params.slug, route.query.page, route.query.pageSize, route.query.q], bootstrap)
+
+function applyTitleFilter() {
+  const value = keywordDraft.value.trim()
+  if (value.length > 50) {
+    keywordError.value = '标题关键词不能超过50字'
+    return
+  }
+  keywordError.value = ''
+  router.push({ query: { ...route.query, page: undefined, q: value || undefined } })
+}
+
+function clearTitleFilter() {
+  keywordDraft.value = ''
+  keywordError.value = ''
+  router.push({ query: { ...route.query, page: undefined, q: undefined } })
+}
 
 function changePage(page: number) {
   if (page === currentPage.value) return
@@ -168,7 +190,7 @@ function changePageSize() {
               <p class="blog-hero__intro">{{ heroCopy.description }}</p>
             </div>
             <div class="blog-hero__stats" aria-label="博客数据">
-              <strong>{{ activeSlug ? feedTotal : totalArticles }}</strong><span>篇公开文章</span><small>{{ activeCategories.length }} 个持续更新的主题</small>
+              <strong>{{ activeSlug ? (activeCategory?.articleCount ?? feedTotal) : totalArticles }}</strong><span>篇公开文章</span><small>{{ activeCategories.length }} 个持续更新的主题</small>
             </div>
           </header>
 
@@ -185,8 +207,8 @@ function changePageSize() {
           <section v-else-if="loadError" class="blog-state">
             <strong>内容暂时没有加载成功</strong><p>请检查网络后重新尝试。</p><button type="button" @click="bootstrap">重新加载</button>
           </section>
-          <section v-else-if="featuredArticle" class="journal-content">
-            <article class="featured-story" tabindex="0" @click="openArticle(featuredArticle.id)" @keydown.enter="openArticle(featuredArticle.id)">
+          <section v-else-if="featuredArticle || keyword || articles.length" class="journal-content">
+            <article v-if="featuredArticle" class="featured-story" tabindex="0" @click="openArticle(featuredArticle.id)" @keydown.enter="openArticle(featuredArticle.id)">
               <div class="featured-story__cover">
                 <template v-if="featuredArticle.articleCover">
                   <img class="story-cover__backdrop" :src="featuredArticle.articleCover" alt="" aria-hidden="true">
@@ -202,8 +224,14 @@ function changePageSize() {
             </article>
 
             <div class="section-heading">
-              <div><p>LATEST NOTES</p><h2>最近更新</h2></div>
+              <div><p>LATEST NOTES</p><h2>最近更新</h2><span v-if="keyword" class="article-match-count">标题包含“{{ keyword }}”的文章：{{ listTotal }} 篇</span></div>
               <div class="article-controls">
+                <form class="article-controls__search" role="search" @submit.prevent="applyTitleFilter">
+                  <label for="blog-title-filter">标题筛选</label>
+                  <input id="blog-title-filter" v-model="keywordDraft" type="search" maxlength="50" placeholder="输入标题关键词" :aria-invalid="Boolean(keywordError)" @input="keywordError = ''">
+                  <button type="submit">搜索</button>
+                  <button v-if="keyword" type="button" @click="clearTitleFilter">清除</button>
+                </form>
                 <form class="article-controls__size" novalidate @submit.prevent="changePageSize">
                   <label for="blog-page-size">每页显示</label>
                   <input id="blog-page-size" v-model="pageSizeDraft" type="number" min="1" :max="BLOG_MAX_PAGE_SIZE" step="1" inputmode="numeric" :aria-invalid="Boolean(pageSizeError)" @input="pageSizeError = ''">
@@ -221,10 +249,12 @@ function changePageSize() {
                     @current-change="changePage"
                   />
                 </nav>
-                <span class="article-pagination__status">第 {{ currentPage }} / {{ totalPages }} 页</span>
+                <span v-if="listTotal" class="article-pagination__status">第 {{ currentPage }} / {{ totalPages }} 页</span>
                 <span v-if="pageSizeError" class="article-controls__error" role="alert">{{ pageSizeError }}</span>
+                <span v-if="keywordError" class="article-controls__error" role="alert">{{ keywordError }}</span>
               </div>
             </div>
+            <div v-if="keyword && !listTotal" class="blog-state"><strong>没有找到标题包含“{{ keyword }}”的文章</strong><p>试试其他关键词，或清除筛选查看全部文章。</p><button type="button" @click="clearTitleFilter">清除筛选</button></div>
             <div class="article-grid">
               <article v-for="article in remainingArticles" :key="article.id" class="article-card" tabindex="0" @click="openArticle(article.id)" @keydown.enter="openArticle(article.id)">
                 <div class="article-card__cover">
@@ -297,6 +327,7 @@ function changePageSize() {
 .section-heading h2 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.8rem); letter-spacing: -.045em; }
 .section-heading a { color: var(--brand-ink-soft); font-size: .8rem; font-weight: 700; text-decoration: none; }
 .section-heading a:hover { color: var(--journal-accent); }
+.article-match-count { display: block; margin-top: .4rem; color: var(--brand-ink-soft); font-size: .8rem; }
 .article-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; }
 .article-card { overflow: hidden; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-lg); background: var(--brand-surface); cursor: pointer; transition: transform .24s ease, border-color .24s ease, box-shadow .24s ease; }
 .article-card:hover { transform: translateY(-4px); border-color: rgba(38,94,154,.35); box-shadow: 0 18px 45px rgba(24,55,91,.1); }
@@ -310,6 +341,11 @@ function changePageSize() {
 .article-card footer { display: flex; justify-content: space-between; margin-top: 1.1rem; color: var(--brand-ink-faint); font-size: .72rem; }
 .article-card footer b { color: var(--journal-accent); }
 .article-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .5rem .85rem; }
+.article-controls__search { display: inline-flex; align-items: center; flex-wrap: wrap; gap: .4rem; color: var(--brand-ink-soft); font-size: .82rem; }
+.article-controls__search input { width: min(14rem, 50vw); min-height: 2.25rem; padding: .35rem .65rem; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); background: var(--brand-surface); color: var(--brand-ink); font: inherit; }
+.article-controls__search input:focus-visible { outline: 2px solid var(--journal-accent); outline-offset: 2px; }
+.article-controls__search button { min-height: 2.25rem; padding: .35rem .7rem; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); background: var(--brand-surface); color: var(--brand-ink); font: inherit; cursor: pointer; }
+.article-controls__search button:hover { border-color: var(--journal-accent); color: var(--journal-accent); }
 .article-controls__size { display: inline-flex; align-items: center; gap: .4rem; color: var(--brand-ink-soft); font-size: .82rem; white-space: nowrap; }
 .article-controls__size input { width: 4.5rem; min-height: 2.25rem; padding: .35rem .55rem; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); background: var(--brand-surface); color: var(--brand-ink); font: inherit; text-align: center; }
 .article-controls__size input:focus-visible { outline: 2px solid var(--journal-accent); outline-offset: 2px; }
