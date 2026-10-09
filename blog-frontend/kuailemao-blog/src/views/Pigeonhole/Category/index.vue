@@ -9,7 +9,7 @@ import { buildCategorySlugEntries, resolveCategorySlug } from '@/utils/category-
 import { setSeoMeta } from '@/utils/seo'
 import { normalizeBlogFeed } from '@/utils/blog-feed'
 import { resolveCategoryHero } from '@/utils/category-hero'
-import { BLOG_MAX_PAGE_SIZE, blogPageCount, blogPageQuery, blogPageSizeQuery, clampBlogPage, isCanonicalBlogPage, isCanonicalBlogPageSize, parseBlogPage, parseBlogPageSize } from '@/utils/blog-pagination'
+import { BLOG_PAGE_SIZES, blogPageCount, blogPageQuery, blogPageSizeQuery, clampBlogPage, isCanonicalBlogPage, isCanonicalBlogPageSize, parseBlogPage, parseBlogPageSize } from '@/utils/blog-pagination'
 
 interface CategoryItem {
   id: number
@@ -44,10 +44,8 @@ const totalArticles = computed(() => categories.value.reduce((sum, item) => sum 
 const activeCategories = computed(() => categories.value.filter(item => Number(item.articleCount) > 0))
 const currentPage = computed(() => parseBlogPage(route.query.page))
 const pageSize = computed(() => parseBlogPageSize(route.query.pageSize))
-const pageSizeDraft = ref(String(pageSize.value))
-const pageSizeError = ref('')
-const totalPages = computed(() => blogPageCount(listTotal.value, pageSize.value))
-watch(pageSize, size => { pageSizeDraft.value = String(size); pageSizeError.value = '' })
+const listPageSize = computed(() => pageSize.value - 1)
+const totalPages = computed(() => blogPageCount(listTotal.value, listPageSize.value))
 
 function normalizeArticle(item: any): BlogArticle {
   return {
@@ -77,7 +75,7 @@ async function bootstrap() {
     return
   }
   const requestedPage = currentPage.value
-  const requestedPageSize = pageSize.value
+  const requestedListPageSize = listPageSize.value
   const version = ++requestVersion
   loading.value = true
   loadError.value = false
@@ -103,7 +101,7 @@ async function bootstrap() {
         description: `浏览“${entry.category.categoryName}”主题下的技术记录、实践经验与项目复盘。`,
         keywords: `${entry.category.categoryName},技术博客,项目实践,郑陆宇`,
       })
-      const res = await getBlogFeed(entry.categoryId, requestedPage, requestedPageSize)
+      const res = await getBlogFeed(entry.categoryId, requestedPage, requestedListPageSize)
       if (version !== requestVersion) return
       const feed = normalizeBlogFeed(res.code === 200 ? res.data : undefined)
       featuredArticle.value = feed.featuredArticle ? normalizeArticle(feed.featuredArticle) : undefined
@@ -111,7 +109,7 @@ async function bootstrap() {
       feedTotal.value = feed.total
       listTotal.value = feed.listTotal
     } else {
-      const res = await getBlogFeed(undefined, requestedPage, requestedPageSize)
+      const res = await getBlogFeed(undefined, requestedPage, requestedListPageSize)
       if (version !== requestVersion) return
       const feed = normalizeBlogFeed(res.code === 200 ? res.data : undefined)
       featuredArticle.value = feed.featuredArticle ? normalizeArticle(feed.featuredArticle) : undefined
@@ -119,7 +117,7 @@ async function bootstrap() {
       feedTotal.value = feed.total
       listTotal.value = feed.listTotal
     }
-    const validPage = clampBlogPage(requestedPage, listTotal.value, requestedPageSize)
+    const validPage = clampBlogPage(requestedPage, listTotal.value, requestedListPageSize)
     if (validPage !== requestedPage) {
       await router.replace({ query: { ...route.query, page: blogPageQuery(validPage) } })
       return
@@ -140,18 +138,9 @@ function changePage(page: number) {
   router.push({ query: { ...route.query, page: blogPageQuery(page) } })
 }
 
-function changePageSize() {
-  const raw = String(pageSizeDraft.value).trim()
-  const size = Number(raw)
-  if (!/^[1-9]\d*$/.test(raw) || !Number.isSafeInteger(size) || size > BLOG_MAX_PAGE_SIZE) {
-    pageSizeError.value = `请输入 1–${BLOG_MAX_PAGE_SIZE} 的整数`
-    return
-  }
-  pageSizeError.value = ''
-  if (size === pageSize.value) {
-    pageSizeDraft.value = String(size)
-    return
-  }
+function changePageSize(event: Event) {
+  const size = Number((event.target as HTMLSelectElement).value)
+  if (size === pageSize.value) return
   router.push({ query: { ...route.query, page: undefined, pageSize: blogPageSizeQuery(size) } })
 }
 </script>
@@ -203,27 +192,6 @@ function changePageSize() {
 
             <div class="section-heading">
               <div><p>LATEST NOTES</p><h2>最近更新</h2></div>
-              <div class="article-controls">
-                <form class="article-controls__size" novalidate @submit.prevent="changePageSize">
-                  <label for="blog-page-size">每页显示</label>
-                  <input id="blog-page-size" v-model="pageSizeDraft" type="number" min="1" :max="BLOG_MAX_PAGE_SIZE" step="1" inputmode="numeric" :aria-invalid="Boolean(pageSizeError)" @input="pageSizeError = ''">
-                  <span>篇</span>
-                  <button type="submit">确定</button>
-                </form>
-                <nav v-if="totalPages > 1" class="article-pagination" aria-label="文章分页">
-                  <el-pagination
-                    background
-                    :current-page="currentPage"
-                    :page-size="pageSize"
-                    :total="listTotal"
-                    :pager-count="5"
-                    layout="prev, pager, next"
-                    @current-change="changePage"
-                  />
-                </nav>
-                <span class="article-pagination__status">第 {{ currentPage }} / {{ totalPages }} 页</span>
-                <span v-if="pageSizeError" class="article-controls__error" role="alert">{{ pageSizeError }}</span>
-              </div>
             </div>
             <div class="article-grid">
               <article v-for="article in remainingArticles" :key="article.id" class="article-card" tabindex="0" @click="openArticle(article.id)" @keydown.enter="openArticle(article.id)">
@@ -241,6 +209,23 @@ function changePageSize() {
                 </div>
               </article>
             </div>
+            <nav v-if="feedTotal > 0" class="article-pagination" aria-label="文章分页">
+              <label class="article-pagination__size" for="blog-page-size">每页显示
+                <select id="blog-page-size" :value="pageSize" @change="changePageSize">
+                  <option v-for="size in BLOG_PAGE_SIZES" :key="size" :value="size">{{ size }} 篇</option>
+                </select>
+              </label>
+              <el-pagination v-if="totalPages > 1"
+                background
+                :current-page="currentPage"
+                :page-size="listPageSize"
+                :total="listTotal"
+                :pager-count="5"
+                layout="prev, pager, next"
+                @current-change="changePage"
+              />
+              <span class="article-pagination__status">第 {{ currentPage }} / {{ totalPages }} 页</span>
+            </nav>
           </section>
           <section v-else class="blog-state"><strong>{{ activeCategory ? `“${activeCategory.categoryName}”下暂时没有文章` : '第一篇文章正在路上' }}</strong><p>{{ activeCategory ? '可以浏览其他主题，或稍后再回来看看。' : '这里将用于记录技术实践、项目复盘与持续学习。' }}</p></section>
       </main>
@@ -309,14 +294,10 @@ function changePageSize() {
 .article-card p { min-height: 4.8em; margin: .7rem 0 0; color: var(--brand-ink-soft); font-size: .82rem; line-height: 1.6; }
 .article-card footer { display: flex; justify-content: space-between; margin-top: 1.1rem; color: var(--brand-ink-faint); font-size: .72rem; }
 .article-card footer b { color: var(--journal-accent); }
-.article-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .5rem .85rem; }
-.article-controls__size { display: inline-flex; align-items: center; gap: .4rem; color: var(--brand-ink-soft); font-size: .82rem; white-space: nowrap; }
-.article-controls__size input { width: 4.5rem; min-height: 2.25rem; padding: .35rem .55rem; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); background: var(--brand-surface); color: var(--brand-ink); font: inherit; text-align: center; }
-.article-controls__size input:focus-visible { outline: 2px solid var(--journal-accent); outline-offset: 2px; }
-.article-controls__size button { min-height: 2.25rem; padding: .35rem .7rem; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); background: var(--brand-surface); color: var(--brand-ink); font: inherit; cursor: pointer; }
-.article-controls__size button:hover { border-color: var(--journal-accent); color: var(--journal-accent); }
-.article-controls__error { flex-basis: 100%; color: #b42318; font-size: .76rem; text-align: right; }
-.article-pagination { display: flex; align-items: center; justify-content: center; }
+.article-pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin-top: clamp(2rem, 4vw, 3.5rem); }
+.article-pagination__size { display: inline-flex; align-items: center; gap: .5rem; color: var(--brand-ink-soft); font-size: .82rem; white-space: nowrap; }
+.article-pagination__size select { min-height: 2.25rem; padding: .35rem .7rem; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); background: var(--brand-surface); color: var(--brand-ink); font: inherit; cursor: pointer; }
+.article-pagination__size select:focus-visible { outline: 2px solid var(--journal-accent); outline-offset: 2px; }
 .article-pagination__status { color: var(--brand-ink-faint); font-family: "Share TechMono", monospace; font-size: .72rem; white-space: nowrap; }
 .article-pagination :deep(.el-pager li), .article-pagination :deep(button) { border: 1px solid var(--brand-line); background: var(--brand-surface) !important; color: var(--brand-ink-soft); }
 .article-pagination :deep(.el-pager li.is-active) { border-color: var(--journal-accent); background: var(--journal-accent) !important; color: #fff; }
@@ -329,6 +310,5 @@ function changePageSize() {
 @keyframes shimmer { to { background-position-x: -200%; } }
 @media (max-width: 900px) { .article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .featured-story { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 640px) { .blog-hero { grid-template-columns: 1fr; gap: 2rem; width: calc(100vw - .75rem); padding: 2.75rem 1.35rem; border-radius: 0 0 var(--brand-radius-lg) var(--brand-radius-lg); } .blog-hero h1 { display: block; max-width: 10ch; font-size: clamp(2.45rem, 12vw, 3.5rem); line-height: 1.06; } .blog-hero h1 span { display: block; } .blog-hero__intro { margin-top: 1.1rem; font-size: .9rem; line-height: 1.7; } .blog-hero__stats { display: grid; grid-template-columns: auto 1fr; column-gap: 1rem; align-items: end; min-width: 0; padding: 1.15rem 0 0; border-top: 1px solid rgba(255,255,255,.2); border-left: 0; } .blog-hero__stats strong { font-size: 2.8rem; } .blog-hero__stats small { grid-column: 2; } .topic-nav-shell { width: 100vw; } .topic-nav { flex-wrap: nowrap; justify-content: flex-start; gap: .5rem; width: 100%; padding: 1rem .75rem; overflow-x: auto; overscroll-behavior-inline: contain; scroll-padding-inline: .75rem; scroll-snap-type: x proximity; scrollbar-width: none; } .topic-nav::-webkit-scrollbar { display: none; } .topic-nav a { min-height: 2.6rem; padding: .62rem .88rem; font-size: .9rem; scroll-snap-align: start; } .article-grid, .blog-skeleton { grid-template-columns: 1fr; } .section-heading { align-items: flex-start; flex-direction: column; } .article-card h3, .article-card p { min-height: auto; } .article-pagination { flex-direction: column; gap: .65rem; width: 100%; overflow: hidden; } .article-pagination :deep(.el-pagination) { max-width: 100%; } .article-pagination :deep(.el-pager li:nth-child(n+5):not(:last-child)) { display: none; } }
-@media (max-width: 640px) { .article-controls { justify-content: flex-start; width: 100%; } .article-controls__error { text-align: left; } .article-pagination { width: auto; } }
 @media (prefers-reduced-motion: reduce) { .article-card { transition: none; } .blog-skeleton div { animation: none; } }
 </style>
