@@ -1,11 +1,13 @@
 package xyz.kuailemao.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import xyz.kuailemao.domain.entity.Article;
@@ -24,7 +26,10 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,6 +45,9 @@ class ArticleServiceImplFeaturedTest {
 
     @BeforeEach
     void setUp() {
+        com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
+                new org.apache.ibatis.builder.MapperBuilderAssistant(new com.baomidou.mybatisplus.core.MybatisConfiguration(), ""),
+                Article.class);
         com.baomidou.mybatisplus.core.metadata.TableInfoHelper.initTableInfo(
                 new org.apache.ibatis.builder.MapperBuilderAssistant(new com.baomidou.mybatisplus.core.MybatisConfiguration(), ""),
                 xyz.kuailemao.domain.entity.ArticleTag.class);
@@ -61,7 +69,7 @@ class ArticleServiceImplFeaturedTest {
         when(articleMapper.selectById(2L)).thenReturn(featured);
         stubFeedQueries(ordinary, 2L);
 
-        BlogFeedVO result = service.listBlogFeed(null, 1, 20);
+        BlogFeedVO result = service.listBlogFeed(null, 1, 20, null);
 
         assertNotNull(result.getFeaturedArticle());
         assertEquals(2L, result.getFeaturedArticle().getId());
@@ -80,7 +88,7 @@ class ArticleServiceImplFeaturedTest {
         when(articleMapper.selectOne(any())).thenReturn(latest);
         stubFeedQueries(null, 1L);
 
-        BlogFeedVO result = service.listBlogFeed(null, 1, 20);
+        BlogFeedVO result = service.listBlogFeed(null, 1, 20, null);
 
         assertEquals(4L, result.getFeaturedArticle().getId());
         assertEquals(1L, result.getTotal());
@@ -101,7 +109,7 @@ class ArticleServiceImplFeaturedTest {
         when(categoryMapper.selectBatchIds(any())).thenReturn(List.of(category));
         when(articleTagMapper.selectList(any())).thenReturn(List.of());
 
-        BlogFeedVO result = service.listBlogFeed(8L, 1, 20);
+        BlogFeedVO result = service.listBlogFeed(8L, 1, 20, null);
 
         assertEquals(5L, result.getFeaturedArticle().getId());
         assertEquals(1L, result.getTotal());
@@ -125,7 +133,7 @@ class ArticleServiceImplFeaturedTest {
         when(categoryMapper.selectBatchIds(any())).thenReturn(List.of(category));
         when(articleTagMapper.selectList(any())).thenReturn(List.of());
 
-        BlogFeedVO result = service.listBlogFeed(8L, 1, 20);
+        BlogFeedVO result = service.listBlogFeed(8L, 1, 20, null);
 
         assertEquals(6L, result.getFeaturedArticle().getId());
     }
@@ -137,7 +145,7 @@ class ArticleServiceImplFeaturedTest {
         when(articleMapper.selectOne(any())).thenReturn(latest);
         stubFeedQueries(null, 1L);
 
-        BlogFeedVO result = service.listBlogFeed(null, 1, 20);
+        BlogFeedVO result = service.listBlogFeed(null, 1, 20, null);
 
         assertEquals(7L, result.getFeaturedArticle().getId());
     }
@@ -149,12 +157,30 @@ class ArticleServiceImplFeaturedTest {
         when(articleMapper.selectCount(any())).thenReturn(0L);
         when(articleMapper.selectPage(any(Page.class), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BlogFeedVO result = service.listBlogFeed(null, 1, 20);
+        BlogFeedVO result = service.listBlogFeed(null, 1, 20, null);
 
         assertNull(result.getFeaturedArticle());
         assertEquals(List.of(), result.getArticles());
         assertEquals(0L, result.getTotal());
         assertEquals(0L, result.getListTotal());
+    }
+
+    @Test
+    void titleSearchCountsMatchesAndTreatsSqlWildcardAsLiteral() {
+        Article match = article(9L, 1L, 1, "100% 完成");
+        stubFeedQueries(match, 1L);
+
+        BlogFeedVO result = service.listBlogFeed(null, 1, 9, "%");
+
+        assertNull(result.getFeaturedArticle());
+        assertEquals(1L, result.getTotal());
+        assertEquals(1L, result.getListTotal());
+        assertEquals(List.of(9L), result.getArticles().stream().map(item -> item.getId()).toList());
+        verify(websiteInfoMapper, never()).selectById(any());
+        ArgumentCaptor<LambdaQueryWrapper<Article>> query = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(articleMapper).selectCount(query.capture());
+        assertTrue(query.getValue().getSqlSegment().contains("LOCATE"));
+        assertTrue(query.getValue().getParamNameValuePairs().containsValue("%"));
     }
 
     private void stubFeedQueries(Article ordinary, long total) {
