@@ -25,7 +25,7 @@ public interface ArticleService extends IService<Article> {
     PageVO<List<ArticleVO>> listAllArticle(Integer pageNum, Integer pageSize);
 
     /** 博客聚合页或分类页的显式主推荐与普通文章列表。 */
-    BlogFeedVO listBlogFeed(Long categoryId, Integer pageNum, Integer pageSize);
+    BlogFeedVO listBlogFeed(Long categoryId, Integer pageNum, Integer pageSize, String keyword);
 
     /** 后台主推荐文章候选项。 */
     List<ArticleOptionVO> listPublishedArticleOptions(Long categoryId, String keyword);

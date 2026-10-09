@@ -24,7 +24,7 @@ class ArticleControllerPaginationValidationTest {
     static void setUp() throws NoSuchMethodException {
         factory = Validation.buildDefaultValidatorFactory();
         validator = factory.getValidator();
-        blogFeed = ArticleController.class.getMethod("blogFeed", Long.class, Integer.class, Integer.class);
+        blogFeed = ArticleController.class.getMethod("blogFeed", Long.class, Integer.class, Integer.class, String.class);
         backList = ArticleController.class.getMethod("listArticle", Integer.class, Integer.class);
     }
 
@@ -35,13 +35,13 @@ class ArticleControllerPaginationValidationTest {
 
     @Test
     void acceptsValidPublicAndAdminPagination() {
-        assertTrue(validate(blogFeed, new Object[]{null, 1, 9}).isEmpty());
+        assertTrue(validate(blogFeed, new Object[]{null, 1, 9, "文章"}).isEmpty());
         assertTrue(validate(backList, new Object[]{1, 50}).isEmpty());
     }
 
     @Test
     void rejectsPageNumberBelowOne() {
-        assertMessage(validate(blogFeed, new Object[]{null, 0, 9}), "页码不能小于1");
+        assertMessage(validate(blogFeed, new Object[]{null, 0, 9, null}), "页码不能小于1");
     }
 
     @Test
@@ -51,7 +51,12 @@ class ArticleControllerPaginationValidationTest {
 
     @Test
     void rejectsPageSizeAboveOneHundred() {
-        assertMessage(validate(blogFeed, new Object[]{null, 1, 101}), "每页数量不能超过100");
+        assertMessage(validate(blogFeed, new Object[]{null, 1, 101, null}), "每页数量不能超过100");
+    }
+
+    @Test
+    void rejectsTitleKeywordAboveFiftyCharacters() {
+        assertMessage(validate(blogFeed, new Object[]{null, 1, 9, "文".repeat(51)}), "标题关键词不能超过50字");
     }
 
     private Set<ConstraintViolation<ArticleController>> validate(Method method, Object[] parameters) {
