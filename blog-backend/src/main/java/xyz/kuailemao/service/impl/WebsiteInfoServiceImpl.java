@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import xyz.kuailemao.constants.SQLConst;
+import xyz.kuailemao.config.OssProperties;
 import xyz.kuailemao.constants.WebsiteInfoConst;
 import xyz.kuailemao.domain.dto.StationmasterInfoDTO;
 import xyz.kuailemao.domain.dto.WebsiteInfoDTO;
@@ -52,6 +53,9 @@ public class WebsiteInfoServiceImpl extends ServiceImpl<WebsiteInfoMapper, Websi
     @Resource
     private CommentMapper commentMapper;
 
+    @Resource
+    private OssProperties ossProperties;
+
     @Transactional
     @Override
     public ResponseResult<String> uploadImageInsertOrUpdate(UploadEnum uploadEnum, MultipartFile avatar, Integer type) {
@@ -83,9 +87,17 @@ public class WebsiteInfoServiceImpl extends ServiceImpl<WebsiteInfoMapper, Websi
 
     @Override
     public WebsiteInfoVO selectWebsiteInfo() {
-        WebsiteInfoVO websiteInfoVO = this.getById(WebsiteInfoConst.WEBSITE_INFO_ID).asViewObject(WebsiteInfoVO.class);
+        WebsiteInfo current = this.getById(WebsiteInfoConst.WEBSITE_INFO_ID);
+        WebsiteInfoVO websiteInfoVO = current == null ? null : current.asViewObject(WebsiteInfoVO.class);
         // 运行时长
         if (StringUtils.isNotNull(websiteInfoVO)) {
+            if (current.getHeroVideoKey() != null
+                    && !current.getHeroVideoKey().isBlank()
+                    && ossProperties.getMediaDomain() != null
+                    && ossProperties.getMediaDomain().startsWith("https://")) {
+                websiteInfoVO.setHeroVideoUrl(ossProperties.getMediaDomain().replaceAll("/+$", "")
+                        + "/" + current.getHeroVideoKey());
+            }
             if (websiteInfoVO.getBlogFeaturedArticleId() != null) {
                 Article featured = articleMapper.selectById(websiteInfoVO.getBlogFeaturedArticleId());
                 if (featured != null && Objects.equals(featured.getStatus(), SQLConst.PUBLIC_ARTICLE)) {

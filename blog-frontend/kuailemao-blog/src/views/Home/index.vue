@@ -14,6 +14,6 @@ import Main from '@/views/Home/Main/index.vue'
 
 <style scoped lang="scss">
 .portfolio-home{width:100%;padding-top:4.5rem;background:var(--brand-canvas);color:var(--brand-ink)}
-.hero-stage{width:min(calc(100% - 4rem),76rem);margin:auto}
-@media(max-width:767px){.portfolio-home{padding-top:4rem}.hero-stage{width:calc(100% - 2rem)}}
+.hero-stage{width:100%;margin:auto}
+@media(max-width:767px){.portfolio-home{padding-top:4rem}}
 </style>

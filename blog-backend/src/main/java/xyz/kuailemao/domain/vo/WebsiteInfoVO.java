@@ -38,6 +38,7 @@ public class WebsiteInfoVO {
     private String heroSecondaryUrl;
     private String heroAsideLabel;
     private String heroAsideText;
+    private String heroVideoUrl;
     //头部通知
     private String headerNotification;
     //侧面公告

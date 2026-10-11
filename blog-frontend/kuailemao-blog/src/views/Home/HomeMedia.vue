@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 const props = withDefaults(defineProps<{ src?: string; alt: string; eager?: boolean; emptyText?: string }>(), { emptyText: '暂无封面' })
+const emit = defineEmits<{ (event: 'settled'): void }>()
 const failed = ref(false)
 const pending = ref(true)
 const attempt = ref(0)
@@ -12,7 +13,7 @@ function retry() { attempt.value++; failed.value = false; pending.value = true }
   <div class="home-media">
     <img v-if="src && !failed" :key="src + ':' + attempt" :src="src" :alt="alt"
       :loading="eager ? 'eager' : 'lazy'" :fetchpriority="eager ? 'high' : 'auto'" decoding="async"
-      @load="pending = false" @error="failed = true; pending = false">
+      @load="pending = false; emit('settled')" @error="failed = true; pending = false; emit('settled')">
     <div v-if="!src || failed" class="media-status" role="status">
       <p>{{ failed ? '图片暂时无法显示' : emptyText }}</p>
       <button v-if="failed" type="button" @click="retry">重新加载图片</button>
