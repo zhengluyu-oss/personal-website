@@ -32,4 +32,7 @@ public class OssProperties {
      * 可选自定义访问域名，例如 https://image.example.com
      */
     private String domain = "";
+
+    /** 首页视频专用 HTTPS 自定义域名（直连 OSS，不经过博客服务器）。 */
+    private String mediaDomain = "";
 }

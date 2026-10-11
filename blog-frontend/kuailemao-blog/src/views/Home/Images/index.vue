@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, reactive } from 'vue'
+import { onBeforeUnmount, onMounted, reactive, watch } from 'vue'
 import { backGetBanners } from '@/apis/website'
 import { createHomeResource, firstBanner, loadHomeResource } from '@/utils/home-content'
 import HomeMedia from '../HomeMedia.vue'
 
 const banner = reactive(createHomeResource<string>())
+const emit = defineEmits<{ (event: 'ready'): void }>()
+let notified = false
+const markReady = () => { if (!notified) { notified = true; emit('ready') } }
+watch(() => [banner.status, banner.data], () => {
+  if (banner.status === 'error' || (banner.status === 'success' && !banner.data)) markReady()
+})
 let active = true
 const load = () => loadHomeResource(banner, async () => firstBanner((await backGetBanners()).data), () => active)
 onMounted(load)
@@ -13,7 +19,7 @@ onBeforeUnmount(() => { active = false })
 
 <template>
   <div class="hero-image">
-    <HomeMedia :src="banner.data || ''" alt="郑陆宇个人主页介绍图片" eager
+    <HomeMedia :src="banner.data || ''" alt="郑陆宇个人主页介绍图片" eager @settled="markReady"
       :empty-text="banner.status === 'loading' || banner.status === 'idle' ? '首页图片加载中' : '首页图片暂未显示'" />
     <button v-if="banner.status === 'error'" class="banner-retry" type="button" @click="load">重新获取首页图片</button>
   </div>

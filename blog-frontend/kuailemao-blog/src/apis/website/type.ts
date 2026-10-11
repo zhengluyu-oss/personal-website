@@ -16,6 +16,7 @@ export default interface WebsiteInfo {
     heroSecondaryUrl?: string;
     heroAsideLabel?: string;
     heroAsideText?: string;
+    heroVideoUrl?: string;
     headerNotification: string;
     sidebarAnnouncement: string;
     recordInfo: string;
