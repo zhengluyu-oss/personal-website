@@ -175,6 +175,8 @@ spring:
 #  bucket-name:
 #  # 可选。填写后返回 URL 使用该域名，例如 https://image.example.com
 #  domain:
+#  # 视频直连 OSS 的 HTTPS 自定义域名；默认域名可能强制下载
+#  media-domain: https://media.zhengluyu.com
 
 # Development/default profile documentation. application-prod.yml overrides these to false.
 springdoc:
