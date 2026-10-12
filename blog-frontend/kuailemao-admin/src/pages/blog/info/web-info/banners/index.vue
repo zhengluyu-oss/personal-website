@@ -77,8 +77,8 @@ async function uploadVideo(file: File) {
     videoError.value = '仅支持 MP4 文件'
     return
   }
-  if (file.size < 1 || file.size > 8 * 1024 * 1024) {
-    videoError.value = '视频大小不能超过 8 MiB'
+  if (file.size < 1 || file.size > 100_000_000) {
+    videoError.value = '视频大小不能超过 100 MB'
     return
   }
   videoBusy.value = true
@@ -97,7 +97,7 @@ async function uploadVideo(file: File) {
       onUploadProgress: event => {
         if (event.total) videoProgress.value = Math.round(event.loaded * 95 / event.total)
       },
-      timeout: 120_000,
+      timeout: 30 * 60_000,
     })
     const saved = await confirmHeroVideo(ticket.objectKey)
     if (saved.code !== 200) throw new Error(saved.msg || '视频确认失败')
@@ -198,7 +198,7 @@ function sortOrderFunc(_: DraggableEvent) {
 
 <template>
   <a-card title="首页背景视频" class="hero-video-card">
-    <p>上传 MP4，最大 8 MiB。推荐 H.264、无音轨、5–12 秒循环素材。首页会先显示下方第一张轮播图作为封面。</p>
+    <p>在这里选择 MP4 视频，最大 100 MB。推荐 H.264、无音轨、5–12 秒循环素材。首页会先显示下方第一张轮播图作为封面；上传期间请保持页面打开。</p>
     <video v-if="heroVideo.url" :src="heroVideo.url" controls preload="metadata" class="hero-video-preview" aria-label="当前首页背景视频" />
     <p v-else>目前未配置视频，首页将显示静态封面。</p>
     <div class="hero-video-actions">
@@ -208,7 +208,7 @@ function sortOrderFunc(_: DraggableEvent) {
     <a-progress v-if="videoBusy" :percent="videoProgress" size="small" />
     <p v-if="videoError" role="alert" class="hero-video-error">{{ videoError }}</p>
   </a-card>
-  <a-divider>首页轮播图</a-divider>
+  <a-divider>首页轮播图（下方“＋”仅用于上传图片）</a-divider>
   <div class="carousel">
     <div class="flex">
       <VueDraggable :disabled="disabled" ref="el" v-if="fileList" v-model="fileList" :onEnd="sortOrderFunc"
