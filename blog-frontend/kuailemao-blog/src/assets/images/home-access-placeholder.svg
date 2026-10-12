@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="抽象山峦占位画面">
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#17314b"/><stop offset=".58" stop-color="#375777"/><stop offset="1" stop-color="#8a9aab"/></linearGradient>
+    <linearGradient id="ridge" x2="0" y2="1"><stop stop-color="#244661"/><stop offset="1" stop-color="#10283e"/></linearGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h1600v900H0z"/>
+  <circle cx="1230" cy="225" r="118" fill="#c1d6e4" opacity=".45"/>
+  <path fill="#54718b" d="M0 660 210 510 390 610 660 380 940 630 1180 455 1440 650 1600 545v355H0z"/>
+  <path fill="url(#ridge)" d="M0 760 280 615 505 725 835 500 1150 740 1380 590 1600 715v185H0z"/>
+  <path fill="#10283e" d="M0 850 340 720 620 850 990 690 1320 850 1600 755v145H0z"/>
+</svg>
