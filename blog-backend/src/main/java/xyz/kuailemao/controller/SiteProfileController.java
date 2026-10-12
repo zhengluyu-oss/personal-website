@@ -21,6 +21,6 @@ public class SiteProfileController {
         WebsiteInfoVO info = website.selectWebsiteInfo();
         return ResponseResult.success(new Profile(info.getWebmasterName(), info.getWebmasterAvatar(), info.getGithubLink(),
                 "后端 / 全栈方向 · 求职中", "用作品说话：技术笔记 · 项目复盘 · 持续学习",
-                "你好，我是郑陆宇。这里记录我在后端与全栈方向的学习与实践，包括项目拆解、问题排查与面试准备相关笔记。欢迎通过 GitHub 了解更多代码与项目。"));
+                "你好，我是陆屿。这里记录我在后端与全栈方向的学习与实践，包括项目拆解、问题排查与面试准备相关笔记。欢迎通过 GitHub 了解更多代码与项目。"));
     }
 }

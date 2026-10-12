@@ -19,7 +19,7 @@ onBeforeUnmount(() => { active = false })
 
 <template>
   <div class="hero-image">
-    <HomeMedia :src="banner.data || ''" alt="郑陆宇个人主页介绍图片" eager @settled="markReady"
+    <HomeMedia :src="banner.data || ''" alt="陆屿个人主页介绍图片" eager @settled="markReady"
       :empty-text="banner.status === 'loading' || banner.status === 'idle' ? '首页图片加载中' : '首页图片暂未显示'" />
     <button v-if="banner.status === 'error'" class="banner-retry" type="button" @click="load">重新获取首页图片</button>
   </div>
