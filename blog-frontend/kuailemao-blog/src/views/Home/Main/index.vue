@@ -48,18 +48,23 @@ onBeforeUnmount(() => { active = false })
     <section class="snapshot section-shell" aria-labelledby="snapshot-title">
       <h2 id="snapshot-title" class="sr-only">内容概览</h2>
       <dl>
-        <div v-if="canViewModule('blog')"><dt>公开文章</dt><dd>{{ homeCount(latest.status, latest.data?.total) }}</dd></div>
-        <div v-if="canViewModule('experience')"><dt>职业经历</dt><dd>{{ homeCount(work.status, work.data?.length) }}</dd></div>
-        <div v-if="current" class="snapshot-current"><dt>当前岗位</dt><dd>{{ current.roleTitle }}</dd></div>
+        <div><dt>公开文章</dt><dd>{{ canViewModule('blog') ? homeCount(latest.status, latest.data?.total) : '需授权' }}</dd></div>
+        <div><dt>职业经历</dt><dd>{{ canViewModule('experience') ? homeCount(work.status, work.data?.length) : '需授权' }}</dd></div>
+        <div v-if="canViewModule('experience') && current" class="snapshot-current"><dt>当前岗位</dt><dd>{{ current.roleTitle }}</dd></div>
+        <div v-else-if="!canViewModule('experience')" class="snapshot-current"><dt>当前岗位</dt><dd>需授权</dd></div>
       </dl>
     </section>
 
-    <section v-if="canViewModule('experience')" class="selected-work section-shell" aria-labelledby="work-title">
+    <section class="selected-work section-shell" aria-labelledby="work-title">
       <header class="section-header">
         <div><h2 id="work-title">工作经历</h2><p>在实际项目中积累开发与协作经验。</p></div>
         <RouterLink class="section-link" :to="PUBLIC_PATHS.experience">查看工作经历 <span aria-hidden="true">→</span></RouterLink>
       </header>
-      <div v-if="work.data?.length" class="work-list">
+      <div v-if="!canViewModule('experience')" class="restricted-preview" role="status">
+        <div class="work-skeleton" aria-hidden="true"><span /><span /></div>
+        <p>工作经历内容仅向获授权的账号开放。<RouterLink :to="PUBLIC_PATHS.experience">查看访问说明 →</RouterLink></p>
+      </div>
+      <div v-else-if="work.data?.length" class="work-list">
         <article v-for="item in work.data.slice(0, 2)" :key="item.id" class="work-entry">
           <RouterLink :to="experiencePath(item.id)" class="work-link" :class="{ 'work-link--compact': !summary(item) && !highlights(item).length }">
             <div class="work-role"><h3>{{ item.company }}</h3><p class="company">{{ item.roleTitle }}</p><p class="period">{{ period(item) }}</p></div>
@@ -77,11 +82,12 @@ onBeforeUnmount(() => { active = false })
       <p v-if="work.status === 'error'" class="module-message" role="status">工作经历暂未加载。<button type="button" @click="loadWork">重试经历</button></p>
     </section>
 
-    <section v-if="canViewModule('blog')" class="writing section-shell" aria-labelledby="writing-title">
+    <section class="writing section-shell" aria-labelledby="writing-title">
       <header class="section-header">
         <div><h2 id="writing-title">博客文章</h2><p>最近发布的技术笔记与项目复盘。</p></div>
         <RouterLink class="section-link" :to="PUBLIC_PATHS.blog">查看全部文章 <span aria-hidden="true">→</span></RouterLink>
       </header>
+      <template v-if="canViewModule('blog')">
       <div v-if="selection.featuredItems.length" class="featured-grid">
       <article v-for="featured in selection.featuredItems" :key="featured.id" class="featured-story">
         <RouterLink class="featured-link" :to="articlePath(featured.id)">
@@ -115,13 +121,19 @@ onBeforeUnmount(() => { active = false })
       <div v-else-if="pending(latest)" class="list-skeleton" role="status" aria-label="最新文章加载中"><span v-for="index in 4" :key="index" /></div>
       <p v-else-if="latest.status === 'success'" class="module-empty">{{ selection.featured ? '更多文章持续更新中。' : '暂时还没有公开文章。' }}</p>
       <p v-if="latest.status === 'error'" class="module-message" role="status">最新文章暂未加载。<button type="button" @click="loadArticles">重试文章</button></p>
+      </template>
+      <div v-else class="restricted-preview" role="status">
+        <div class="article-skeleton" aria-hidden="true"><div /><span /><span /></div>
+        <div class="list-skeleton" aria-hidden="true"><span v-for="index in 4" :key="index" /></div>
+        <p>博客文章仅向获授权的账号开放。<RouterLink :to="PUBLIC_PATHS.blog">查看访问说明 →</RouterLink></p>
+      </div>
     </section>
 
     <section class="closing section-shell" aria-labelledby="about-home-title">
-      <div><h2 id="about-home-title">继续了解郑陆宇</h2><p>查看完整介绍、技术方向与可公开的联系信息。</p></div>
+      <div><h2 id="about-home-title">{{ canViewModule('about') ? '继续了解郑陆宇' : '继续了解我' }}</h2><p>{{ canViewModule('about') ? '查看完整介绍、技术方向与可公开的联系信息。' : '个人介绍仅向获授权的账号开放。' }}</p></div>
       <nav class="closing-links" aria-label="关于与联系入口">
         <RouterLink class="section-link" :to="PUBLIC_PATHS.about">关于我 <span aria-hidden="true">→</span></RouterLink>
-        <a v-if="githubUrl" class="section-link" :href="githubUrl" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+        <a v-if="canViewModule('about') && githubUrl" class="section-link" :href="githubUrl" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
       </nav>
     </section>
   </div>
@@ -185,6 +197,9 @@ onBeforeUnmount(() => { active = false })
 .module-empty { padding: 2rem 1rem; color: var(--brand-ink-soft); font-size: 1rem; line-height: 1.8; }
 .module-empty h3 { margin: 0; color: var(--brand-ink); font-size: 1.15rem; }
 .module-empty p { margin: .6rem 0 0; }
+.restricted-preview > p { margin: 1rem 0 0; color: var(--brand-ink-soft); font-size: .95rem; line-height: 1.7; }
+.restricted-preview > p a { margin-left: .35rem; color: var(--brand-accent-strong); font-weight: 600; text-decoration: none; }
+.restricted-preview > p a:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 3px; }
 .article-skeleton { display: grid; grid-template-columns: 1.2fr 1fr; min-height: 22rem; background: var(--brand-surface); border: 1px solid var(--brand-line); border-radius: var(--brand-radius-md); overflow: hidden; }
 .article-skeleton div { background: var(--brand-canvas-soft); }
 .article-skeleton span { display: block; width: 70%; height: 1.25rem; margin: 2rem; background: var(--brand-canvas-soft); border-radius: .25rem; }
