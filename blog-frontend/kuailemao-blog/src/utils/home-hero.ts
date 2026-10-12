@@ -13,8 +13,8 @@ interface HeroConfig {
 }
 
 const DEFAULT_HERO = {
-  kicker: '郑陆宇 · 后端 / 全栈方向',
-  title: '你好，我是郑陆宇。',
+  kicker: '陆屿 · 后端 / 全栈方向',
+  title: '你好，我是陆屿。',
   subtitle: '专注后端与全栈开发，用技术笔记和项目复盘记录真实问题的解决过程。',
   description: '这里既是我的个人博客，也是持续更新的求职作品集。你可以从文章了解我的技术思考，从工作经历了解我的实践与协作。',
 }
@@ -40,7 +40,7 @@ export function resolveHomeHero(info?: HeroConfig) {
   const hasConfiguredAction = Boolean(primary || secondary)
 
   return {
-    identityName: info?.webmasterName?.trim() || '郑陆宇',
+    identityName: info?.webmasterName?.trim() || '陆屿',
     identityRole: '后端 / 全栈开发',
     kicker: info?.heroKicker?.trim() || DEFAULT_HERO.kicker,
     title: info?.heroTitle?.trim() || DEFAULT_HERO.title,

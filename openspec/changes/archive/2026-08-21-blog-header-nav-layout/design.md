@@ -1,6 +1,6 @@
 ## Context
 
-博客前台顶栏在 `kuailemao-blog` 的 `Header/Menu` 中实现。当前 `#blog-info` 固定约 `120px`，站名「郑陆宇的个人博客」易换行；`.menus_items` 使用 `justify-content: left` 且每项固定约 `100px`，导航整体贴在左侧，视觉上只占顶栏左侧约三分之一。右侧为主题切换与搜索等工具区。
+博客前台顶栏在 `kuailemao-blog` 的 `Header/Menu` 中实现。当前 `#blog-info` 固定约 `120px`，站名「陆屿的个人博客」易换行；`.menus_items` 使用 `justify-content: left` 且每项固定约 `100px`，导航整体贴在左侧，视觉上只占顶栏左侧约三分之一。右侧为主题切换与搜索等工具区。
 
 约束：只改展示层布局/样式；不改菜单项与路由；不引入后台 CMS 导航。
 

@@ -145,7 +145,7 @@ function updateWebsiteInfo() {
         <a-input v-model:value="formData.heroKicker" :maxlength="40" show-count placeholder="例如：PERSONAL JOURNAL · SINCE 2024" />
       </a-form-item>
       <a-form-item label="主标题">
-        <a-input v-model:value="formData.heroTitle" :maxlength="60" show-count placeholder="例如：你好，我是郑陆宇" />
+        <a-input v-model:value="formData.heroTitle" :maxlength="60" show-count placeholder="例如：你好，我是陆屿" />
       </a-form-item>
       <a-form-item label="副标题">
         <a-input v-model:value="formData.heroSubtitle" :maxlength="100" show-count placeholder="一句话说明你的身份与方向" />

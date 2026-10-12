@@ -45,7 +45,7 @@ createServer(async (req, res) => {
         if (apiPath === '/article/list' && scenario === 'single') data = { page: [article(1)], total: 1 }
         if (apiPath === '/article/recommend' && scenario === 'single') data = []
         if (apiPath === '/websiteInfo/front') {
-          Object.assign(data, { webmasterName: '郑陆宇', webmasterAvatar: '/blog-icon.svg' })
+          Object.assign(data, { webmasterName: '陆屿', webmasterAvatar: '/blog-icon.svg' })
           if (scenario === 'long') Object.assign(data, { heroTitle: '仅用于本地测试的较长中文首屏标题'.repeat(6), heroDescription: '完整保留配置内容。'.repeat(25), heroAsideText: 'https://example.test/' + 'long-path'.repeat(30) })
         }
         const companyMatch = apiPath.match(/^\/experience\/(\d+)$/)

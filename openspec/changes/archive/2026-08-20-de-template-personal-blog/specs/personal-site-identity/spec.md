@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Personal identity copy replaces template copy
-The blog frontend SHALL present webmaster-facing copy consistent with 郑陆宇 personal branding and MUST NOT display the template About prose that describes cultivation/xianxia roleplay or “中二Web全栈小白” as the primary self-introduction.
+The blog frontend SHALL present webmaster-facing copy consistent with 陆屿 personal branding and MUST NOT display the template About prose that describes cultivation/xianxia roleplay or “中二Web全栈小白” as the primary self-introduction.
 
 #### Scenario: About page shows personal intro
 - **WHEN** a visitor opens the About page
@@ -10,7 +10,7 @@ The blog frontend SHALL present webmaster-facing copy consistent with 郑陆宇 
 
 #### Scenario: Greeting text is personalized
 - **WHEN** the site shows time-based or welcome greeting strings from frontend utilities
-- **THEN** the text SHALL refer to the personal blog brand (郑陆宇 / configured site name)
+- **THEN** the text SHALL refer to the personal blog brand (陆屿 / configured site name)
 - **AND** it MUST NOT say “小张的个人博客” or other leftover template owner names
 
 ### Requirement: Template donation list is not shown by default

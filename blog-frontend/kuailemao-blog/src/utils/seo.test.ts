@@ -24,7 +24,7 @@ test('fixed SEO uses the completed navigation path for canonical', () => {
     applyFixedSeo('experience', '', '/experience')
     assert.equal(elements.find(element => element.rel === 'canonical')?.href,
       'https://www.zhengluyu.com/experience')
-    assert.equal((globalThis as any).document.title, '工作经历 | 郑陆宇')
+    assert.equal((globalThis as any).document.title, '工作经历 | 陆屿')
 
     ;(globalThis as any).window.location.pathname = '/experience/2'
     setSeoMeta({ title: '项目详情', description: '项目', keywords: '项目' })

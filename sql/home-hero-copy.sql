@@ -33,7 +33,7 @@ DROP PROCEDURE add_home_hero_column;
 
 UPDATE `sys_website_info`
 SET `hero_kicker` = COALESCE(NULLIF(`hero_kicker`, ''), 'PERSONAL JOURNAL · SINCE 2024'),
-    `hero_title` = COALESCE(NULLIF(`hero_title`, ''), '你好，我是郑陆宇'),
+    `hero_title` = COALESCE(NULLIF(`hero_title`, ''), '你好，我是陆屿'),
     `hero_subtitle` = COALESCE(NULLIF(`hero_subtitle`, ''), '一名持续构建、记录与分享的开发者'),
     `hero_description` = COALESCE(NULLIF(`hero_description`, ''), '在这里记录技术实践、项目复盘与成长轨迹，也分享那些值得被长期保存的思考。'),
     `hero_primary_text` = COALESCE(NULLIF(`hero_primary_text`, ''), '浏览文章'),
