@@ -18,6 +18,8 @@ import xyz.kuailemao.domain.response.ResponseResult;
 import xyz.kuailemao.mapper.WebsiteInfoMapper;
 
 import java.time.Duration;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
@@ -62,8 +64,9 @@ public class HomeHeroVideoService {
         conditions.addConditionItem(PolicyConditions.COND_CONTENT_TYPE, "video/mp4");
         conditions.addConditionItem(PolicyConditions.COND_CONTENT_LENGTH_RANGE, 1, MAX_BYTES);
         conditions.addConditionItem(PolicyConditions.COND_SUCCESS_ACTION_STATUS, "200");
-        String policy = ossClient.generatePostPolicy(new Date(System.currentTimeMillis() + TICKET_LIFETIME.toMillis()), conditions);
-        String signature = ossClient.calculatePostSignature(policy);
+        String policyJson = ossClient.generatePostPolicy(new Date(System.currentTimeMillis() + TICKET_LIFETIME.toMillis()), conditions);
+        String signature = ossClient.calculatePostSignature(policyJson);
+        String policy = Base64.getEncoder().encodeToString(policyJson.getBytes(StandardCharsets.UTF_8));
         redis.opsForValue().set(ticketKey(key), "pending", TICKET_LIFETIME.plusMinutes(2));
         return new UploadTicket("https://" + ossProperties.getBucketName() + "." +
                 ossProperties.getEndpoint().replaceFirst("^https?://", ""), key,
