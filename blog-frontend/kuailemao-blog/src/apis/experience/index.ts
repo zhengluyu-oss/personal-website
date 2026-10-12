@@ -26,6 +26,15 @@ export interface ExperienceProjectItem {
   orderNum:number; status?:number
 }
 
+export interface ExperienceOverview {
+  total: number
+  projectCounts: number[]
+}
+
+export function experienceOverview() {
+  return http({ url: '/experience-overview', method: 'get' })
+}
+
 export function experienceList() {
   return http({
     url: '/experience/list',

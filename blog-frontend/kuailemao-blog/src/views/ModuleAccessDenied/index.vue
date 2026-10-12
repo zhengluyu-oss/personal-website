@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { experienceOverview, type ExperienceOverview } from '@/apis/experience'
 import { moduleForPath, SITE_MODULES, type SiteModuleKey } from '@/utils/site-module-access'
 import { GET_TOKEN } from '@/utils/auth'
 
@@ -23,6 +24,23 @@ const names: Record<SiteModuleKey, string> = {
   shares: '网站分享', photos: '相册', about: '关于我',
 }
 const moduleName = computed(() => names[moduleKey.value])
+const overview = ref<ExperienceOverview | null>(null)
+const overviewFailed = ref(false)
+watch(moduleKey, async (key, _previous, onCleanup) => {
+  overview.value = null
+  overviewFailed.value = false
+  if (key !== 'experience') return
+  let active = true
+  onCleanup(() => { active = false })
+  try {
+    const response: any = await experienceOverview()
+    const data = response.data
+    if (response.code !== 200 || !Number.isInteger(data?.total) || data.total < 0
+      || !Array.isArray(data.projectCounts) || data.projectCounts.length !== data.total
+      || data.projectCounts.some((count: unknown) => !Number.isInteger(count) || (count as number) < 0)) throw new Error('Invalid overview')
+    if (active) overview.value = data
+  } catch { if (active) overviewFailed.value = true }
+}, { immediate: true })
 const retry = () => router.replace(target.value)
 </script>
 
@@ -65,10 +83,15 @@ const retry = () => router.replace(target.value)
           <button type="button" @click="retry">重新检查权限</button>
         </div>
       </div>
-      <div class="module-outline" :class="`module-outline--${moduleKey}`" aria-hidden="true">
+      <div class="module-outline" :class="`module-outline--${moduleKey}`" :aria-hidden="moduleKey !== 'experience'">
         <template v-if="moduleKey === 'experience'">
-          <div class="outline-heading"><span /><i /></div>
-          <div v-for="index in 2" :key="index" class="outline-card outline-card--work"><span /><div><i /><i /><i /></div></div>
+          <div class="count-heading"><span>经历目录</span><strong>{{ overview ? `${overview.total} 段经历` : overviewFailed ? '数量暂不可用' : '正在读取数量' }}</strong></div>
+          <ol v-if="overview?.projectCounts.length" class="count-list">
+            <li v-for="(count, index) in overview.projectCounts" :key="index"><span>{{ String(index + 1).padStart(2, '0') }}</span><b>第 {{ index + 1 }} 段经历<small>详情需授权</small></b><strong>{{ count }} <small>个项目</small></strong></li>
+          </ol>
+          <p v-else-if="overview" class="count-empty">目前还没有已发布的经历。</p>
+          <p v-else-if="overviewFailed" class="count-empty">数量暂时无法读取。</p>
+          <div v-else class="outline-card outline-card--work" aria-hidden="true"><span /><div><i /><i /><i /></div></div>
         </template>
         <template v-else-if="moduleKey === 'blog'">
           <div class="outline-heading"><span /><i /></div>
@@ -123,6 +146,10 @@ const retry = () => router.replace(target.value)
 .module-preview{padding-top:8.5rem;padding-bottom:5rem}.module-heading{padding-bottom:2rem;border-bottom:1px solid var(--brand-line)}
 .module-heading h1{margin:.65rem 0;font-size:clamp(2.5rem,5vw,4.25rem);line-height:1.1;letter-spacing:-.04em}.module-heading>p:last-child{margin:0;color:var(--brand-ink-soft);line-height:1.7}
 .module-preview>.access-message{margin:2rem 0}.module-outline{padding-top:1.5rem}
+.count-heading{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;padding-bottom:1rem;border-bottom:1px solid var(--brand-line)}
+.count-heading span{color:var(--brand-accent-strong);font-size:.8rem;font-weight:700;letter-spacing:.12em}.count-heading strong{font-size:1.25rem}
+.count-list{margin:0;padding:0;list-style:none}.count-list li{display:grid;grid-template-columns:3.5rem minmax(0,1fr) auto;align-items:center;gap:1rem;min-height:5.75rem;border-bottom:1px solid var(--brand-line)}
+.count-list li>span{color:var(--brand-accent-strong);font-family:Consolas,monospace;font-size:1.2rem}.count-list b{font-weight:650}.count-list b small{display:block;margin-top:.3rem;color:var(--brand-ink-soft);font-size:.8rem;font-weight:400}.count-list strong{color:var(--brand-accent-strong);white-space:nowrap}.count-list strong small{color:var(--brand-ink-soft);font-size:.8rem;font-weight:400}.count-empty{padding:1.5rem 0;color:var(--brand-ink-soft)}
 .outline-card--work{grid-template-columns:minmax(8rem,.35fr) 1fr}.outline-card--share{grid-template-columns:1fr 1fr;border:0;border-bottom:1px solid var(--brand-line);border-radius:0;background:transparent}
 .outline-card--about{grid-template-columns:minmax(12rem,.65fr) 1.35fr;min-height:24rem}.outline-card--about>span{aspect-ratio:1;max-height:20rem}
 .outline-gallery{display:grid;grid-template-columns:14rem 1fr;gap:1.5rem}.outline-gallery aside{display:grid;align-content:start;gap:1rem;padding:1.5rem;border:1px solid var(--brand-line);border-radius:var(--brand-radius-md);background:var(--brand-surface)}
