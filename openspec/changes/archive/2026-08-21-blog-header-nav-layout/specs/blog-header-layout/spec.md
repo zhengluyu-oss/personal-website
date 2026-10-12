@@ -4,9 +4,9 @@
 The blog frontend header SHALL display the configured website name on a single line at typical desktop widths and MUST NOT wrap the title into multiple lines solely due to an undersized title container.
 
 #### Scenario: Desktop header title does not wrap
-- **WHEN** a visitor views the blog on a desktop-width viewport with website name similar to「郑陆宇的个人博客」
+- **WHEN** a visitor views the blog on a desktop-width viewport with website name similar to「陆屿的个人博客」
 - **THEN** the header brand title SHALL appear on one line
-- **AND** the title text MUST NOT break into two lines such as「郑陆宇的个人」over「博客」
+- **AND** the title text MUST NOT break into two lines such as「陆屿的个人」over「博客」
 
 #### Scenario: Narrow viewports remain usable
 - **WHEN** the viewport is narrow enough that the site uses the existing mobile header pattern

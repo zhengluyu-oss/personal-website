@@ -1,7 +1,7 @@
 import type { LayoutSetting } from '~@/stores/app'
 
 export default {
-  'title': '郑陆宇 · 管理后台',
+  'title': '陆屿 · 管理后台',
   'theme': 'light',
   'logo': '/blog-icon.svg',
   'collapsed': false,

@@ -1,7 +1,7 @@
 ## 1. Header title (no wrap)
 
 - [x] 1.1 Adjust `#blog-info` in `Menu/index.vue`: remove undersized fixed width that forces wrap; use `white-space: nowrap` and auto width
-- [x] 1.2 Tune title font-size/max-width for medium desktop so「郑陆宇的个人博客」stays one line without colliding with nav
+- [x] 1.2 Tune title font-size/max-width for medium desktop so「陆屿的个人博客」stays one line without colliding with nav
 
 ## 2. Navigation spacing
 

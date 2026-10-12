@@ -47,7 +47,7 @@ async function load() {
     if (version !== requestVersion) return
     if (response.code !== 200 || !response.data) throw new Error('Experience unavailable')
     item.value = response.data
-    setSeoMeta({ title: `${response.data.company}工作经历 | 郑陆宇`, description: response.data.projectSummary || `${response.data.company}工作经历与项目实践`, keywords: `${response.data.company},${response.data.roleTitle},工作经历,项目经验` })
+    setSeoMeta({ title: `${response.data.company}工作经历 | 陆屿`, description: response.data.projectSummary || `${response.data.company}工作经历与项目实践`, keywords: `${response.data.company},${response.data.roleTitle},工作经历,项目经验` })
   } catch { if (version === requestVersion) notFound.value = true }
   finally { if (version === requestVersion) loading.value = false }
 }
