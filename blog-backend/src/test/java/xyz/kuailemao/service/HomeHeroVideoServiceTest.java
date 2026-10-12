@@ -16,6 +16,9 @@ import xyz.kuailemao.config.OssProperties;
 import xyz.kuailemao.domain.entity.WebsiteInfo;
 import xyz.kuailemao.mapper.WebsiteInfoMapper;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -43,9 +46,12 @@ class HomeHeroVideoServiceTest {
     }
 
     @Test void ticketUsesUniqueMp4KeyAndConstrainedPolicy() {
-        when(oss.generatePostPolicy(any(), any(PolicyConditions.class))).thenReturn("policy");
-        when(oss.calculatePostSignature("policy")).thenReturn("signature");
+        String policyJson = "{\"expiration\":\"2026-10-12T04:00:00.000Z\",\"conditions\":[]}";
+        when(oss.generatePostPolicy(any(), any(PolicyConditions.class))).thenReturn(policyJson);
+        when(oss.calculatePostSignature(policyJson)).thenReturn("signature");
         var ticket = service.issueTicket();
+        assertEquals(policyJson, new String(Base64.getDecoder().decode(ticket.policy()), StandardCharsets.UTF_8));
+        assertEquals("signature", ticket.signature());
         assertTrue(ticket.objectKey().matches("blog/home/hero-video/[0-9a-f-]{36}\\.mp4"));
         assertEquals("https://test-bucket.oss-cn-beijing.aliyuncs.com", ticket.uploadUrl());
         assertEquals(100_000_000L, HomeHeroVideoService.MAX_BYTES);
