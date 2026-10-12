@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive } from 'vue'
 import { getArticleList, getRecommendArticleList } from '@/apis/home'
-import { experienceList, type WorkExperienceItem } from '@/apis/experience'
+import { experienceList, experienceOverview, type ExperienceOverview, type WorkExperienceItem } from '@/apis/experience'
 import useWebsiteStore from '@/store/modules/website'
 import { PUBLIC_PATHS, routeWithId } from '@/router/paths'
 import { articleItems, articlePage, createHomeResource, homeCount, homeExcerpt, loadHomeResource, selectHomeArticles, type HomeArticle, type HomeResource } from '@/utils/home-content'
@@ -12,6 +12,7 @@ const website = useWebsiteStore()
 const latest = reactive(createHomeResource<ReturnType<typeof articlePage>>())
 const recommended = reactive(createHomeResource<HomeArticle[]>())
 const work = reactive(createHomeResource<WorkExperienceItem[]>())
+const overview = reactive(createHomeResource<ExperienceOverview>())
 let active = true
 const isActive = () => active
 const loadArticles = () => loadHomeResource(latest, async () => articlePage((await getArticleList(1, 6)).data), isActive)
@@ -20,6 +21,16 @@ const loadWork = () => loadHomeResource(work, async () => {
   const data = (await experienceList()).data
   if (!Array.isArray(data)) throw new Error('Invalid experience response')
   return [...data].sort((a, b) => b.isCurrent - a.isCurrent || String(b.startDate).localeCompare(String(a.startDate)))
+}, isActive)
+const loadOverview = () => loadHomeResource(overview, async () => {
+  const response: any = await experienceOverview()
+  const data = response.data
+  if (response.code !== 200 || !Number.isInteger(data?.total) || data.total < 0
+    || !Array.isArray(data.projectCounts) || data.projectCounts.length !== data.total
+    || data.projectCounts.some((count: unknown) => !Number.isInteger(count) || (count as number) < 0)) {
+    throw new Error('Invalid experience overview response')
+  }
+  return data as ExperienceOverview
 }, isActive)
 const selection = computed(() => selectHomeArticles(latest.data?.articles || [], recommended.data || []))
 const current = computed(() => work.data?.find(item => item.isCurrent === 1))
@@ -37,6 +48,7 @@ const githubUrl = computed(() => {
   return /^https?:\/\//i.test(url) ? url : ''
 })
 onMounted(() => {
+  void loadOverview()
   if (canViewModule('blog')) { void loadArticles(); void loadRecommendations() }
   if (canViewModule('experience')) void loadWork()
 })
@@ -49,7 +61,7 @@ onBeforeUnmount(() => { active = false })
       <h2 id="snapshot-title" class="sr-only">内容概览</h2>
       <dl>
         <div><dt>公开文章</dt><dd>{{ canViewModule('blog') ? homeCount(latest.status, latest.data?.total) : '需授权' }}</dd></div>
-        <div><dt>职业经历</dt><dd>{{ canViewModule('experience') ? homeCount(work.status, work.data?.length) : '需授权' }}</dd></div>
+        <div><dt>职业经历</dt><dd>{{ overview.data ? `${overview.data.total} 段` : canViewModule('experience') ? homeCount(work.status, work.data?.length) : '暂不可用' }}</dd></div>
         <div v-if="canViewModule('experience') && current" class="snapshot-current"><dt>当前岗位</dt><dd>{{ current.roleTitle }}</dd></div>
         <div v-else-if="!canViewModule('experience')" class="snapshot-current"><dt>当前岗位</dt><dd>需授权</dd></div>
       </dl>
@@ -60,14 +72,28 @@ onBeforeUnmount(() => { active = false })
         <div><h2 id="work-title">工作经历</h2><p>在实际项目中积累开发与协作经验。</p></div>
         <RouterLink class="section-link" :to="PUBLIC_PATHS.experience">查看工作经历 <span aria-hidden="true">→</span></RouterLink>
       </header>
-      <div v-if="!canViewModule('experience')" class="restricted-preview" role="status">
-        <div class="work-skeleton" aria-hidden="true"><span /><span /></div>
-        <p>工作经历内容仅向获授权的账号开放。<RouterLink :to="PUBLIC_PATHS.experience">查看访问说明 →</RouterLink></p>
+      <div v-if="!canViewModule('experience')" class="restricted-work" role="status">
+        <div class="restricted-work__intro">
+          <span class="restricted-work__mark">经历目录</span>
+          <strong>{{ overview.data ? `${overview.data.total} 段工作经历` : overview.status === 'error' ? '经历数量暂不可用' : '正在读取经历数量' }}</strong>
+          <p>这里展示已发布经历的数量。公司、岗位和项目详情需要授权后查看。</p>
+        </div>
+        <ol v-if="overview.data?.projectCounts.length" class="restricted-work__list">
+          <li v-for="(count, index) in overview.data.projectCounts" :key="index">
+            <span class="restricted-work__index">{{ String(index + 1).padStart(2, '0') }}</span>
+            <span class="restricted-work__label">第 {{ index + 1 }} 段经历<small>内容需授权</small></span>
+            <strong>{{ count }} <small>个项目</small></strong>
+          </li>
+        </ol>
+        <p v-else-if="overview.data" class="restricted-work__empty">目前还没有已发布的经历。</p>
+        <p v-else-if="overview.status === 'error'" class="restricted-work__empty">数量暂时无法读取。<button type="button" @click="loadOverview">重新加载</button></p>
+        <div v-else class="restricted-work__loading" aria-hidden="true"><span /><span /></div>
+        <RouterLink class="restricted-work__link" :to="PUBLIC_PATHS.experience">查看访问说明 <span aria-hidden="true">→</span></RouterLink>
       </div>
       <div v-else-if="work.data?.length" class="work-list">
-        <article v-for="item in work.data.slice(0, 2)" :key="item.id" class="work-entry">
+        <article v-for="(item, index) in work.data.slice(0, 2)" :key="item.id" class="work-entry">
           <RouterLink :to="experiencePath(item.id)" class="work-link" :class="{ 'work-link--compact': !summary(item) && !highlights(item).length }">
-            <div class="work-role"><h3>{{ item.company }}</h3><p class="company">{{ item.roleTitle }}</p><p class="period">{{ period(item) }}</p></div>
+            <div class="work-role"><h3>{{ item.company }}</h3><p class="company">{{ item.roleTitle }}</p><p class="period">{{ period(item) }}</p><p v-if="overview.data" class="work-project-count">{{ overview.data.projectCounts[index] }} 个项目</p></div>
             <div class="work-evidence">
               <p v-if="summary(item)" class="work-summary">{{ summary(item) }}</p>
               <ul v-if="highlights(item).length"><li v-for="line in highlights(item)" :key="line">{{ line }}</li></ul>
@@ -130,7 +156,7 @@ onBeforeUnmount(() => { active = false })
     </section>
 
     <section class="closing section-shell" aria-labelledby="about-home-title">
-      <div><h2 id="about-home-title">{{ canViewModule('about') ? '继续了解郑陆宇' : '继续了解我' }}</h2><p>{{ canViewModule('about') ? '查看完整介绍、技术方向与可公开的联系信息。' : '个人介绍仅向获授权的账号开放。' }}</p></div>
+      <div><h2 id="about-home-title">{{ canViewModule('about') ? '继续了解陆屿' : '继续了解我' }}</h2><p>{{ canViewModule('about') ? '查看完整介绍、技术方向与可公开的联系信息。' : '个人介绍仅向获授权的账号开放。' }}</p></div>
       <nav class="closing-links" aria-label="关于与联系入口">
         <RouterLink class="section-link" :to="PUBLIC_PATHS.about">关于我 <span aria-hidden="true">→</span></RouterLink>
         <a v-if="canViewModule('about') && githubUrl" class="section-link" :href="githubUrl" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
@@ -184,6 +210,7 @@ onBeforeUnmount(() => { active = false })
 .work-role .company { margin-top: .4rem; }
 .work-link--compact { grid-template-columns: 1fr; gap: .3rem; }
 .period { margin: .65rem 0 0; font-size: .9rem; color: var(--brand-ink-soft); }
+.work-project-count { display: inline-block; margin: .8rem 0 0; padding: .28rem .7rem; border: 1px solid var(--brand-line); border-radius: 999px; color: var(--brand-accent-strong); font-size: .84rem; font-weight: 650; }
 .work-summary { margin: 0 0 .6rem; font-size: 1rem; line-height: 1.75; }
 .work-evidence ul { padding-left: 1.1rem; margin: .6rem 0; color: var(--brand-ink-soft); font-size: .95rem; line-height: 1.8; list-style: disc; }
 .work-evidence .read-link { display: inline-block; margin-top: .6rem; }
@@ -207,6 +234,24 @@ onBeforeUnmount(() => { active = false })
 .list-skeleton span { height: 5rem; background: var(--brand-canvas-soft); border-radius: var(--brand-radius-sm); }
 .work-skeleton { display: grid; gap: 1rem; }
 .work-skeleton span { height: 10rem; background: var(--brand-canvas-soft); border-radius: var(--brand-radius-md); }
+.restricted-work { overflow: hidden; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-md); background: var(--brand-surface); }
+.restricted-work__intro { padding: 1.75rem 2rem 1.5rem; border-bottom: 1px solid var(--brand-line); background: linear-gradient(110deg, var(--brand-canvas-soft), var(--brand-surface) 75%); }
+.restricted-work__mark { display: block; margin-bottom: .65rem; color: var(--brand-accent-strong); font-size: .78rem; font-weight: 700; letter-spacing: .12em; }
+.restricted-work__intro strong { display: block; font-size: clamp(1.45rem, 2.5vw, 2rem); line-height: 1.3; }
+.restricted-work__intro p { max-width: 40rem; margin: .6rem 0 0; color: var(--brand-ink-soft); line-height: 1.7; }
+.restricted-work__list { margin: 0; padding: 0 2rem; list-style: none; }
+.restricted-work__list li { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr) auto; align-items: center; gap: 1rem; min-height: 5.75rem; border-bottom: 1px solid var(--brand-line); }
+.restricted-work__list li:last-child { border-bottom: 0; }
+.restricted-work__index { color: var(--brand-accent-strong); font-family: 'Share TechMono', Consolas, monospace; font-size: 1.25rem; }
+.restricted-work__label { font-weight: 650; }
+.restricted-work__label small { display: block; margin-top: .3rem; color: var(--brand-ink-soft); font-size: .8rem; font-weight: 400; }
+.restricted-work__list strong { color: var(--brand-accent-strong); font-size: 1.3rem; white-space: nowrap; }
+.restricted-work__list strong small { color: var(--brand-ink-soft); font-size: .78rem; font-weight: 500; }
+.restricted-work__empty { margin: 0; padding: 1.5rem 2rem; color: var(--brand-ink-soft); }
+.restricted-work__empty button { border: 0; background: transparent; color: var(--brand-accent-strong); font: inherit; font-weight: 650; cursor: pointer; }
+.restricted-work__loading { display: grid; gap: .75rem; padding: 1.5rem 2rem; }
+.restricted-work__loading span { width: 100%; height: 3rem; border-radius: var(--brand-radius-sm); background: var(--brand-canvas-soft); }
+.restricted-work__link { display: inline-flex; align-items: center; gap: .4rem; margin: .5rem 2rem 1.5rem; color: var(--brand-accent-strong); font-size: .9rem; font-weight: 650; text-decoration: none; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 4px; }
 button:hover { background: var(--brand-accent-soft); }
 @media (max-width: 767px) {
@@ -224,6 +269,12 @@ button:hover { background: var(--brand-accent-soft); }
   .featured-link h3 { font-size: 1.45rem; }
   .story-list, .list-skeleton { grid-template-columns: 1fr; column-gap: 0; }
   .work-link { grid-template-columns: 1fr; gap: .85rem; padding: 1.25rem; }
+  .restricted-work__intro { padding: 1.4rem 1.2rem; }
+  .restricted-work__list { padding: 0 1.2rem; }
+  .restricted-work__list li { grid-template-columns: 2.5rem minmax(0, 1fr) auto; gap: .45rem; }
+  .restricted-work__index { font-size: 1rem; }
+  .restricted-work__list strong { font-size: 1.1rem; }
+  .restricted-work__link { margin-left: 1.2rem; }
   .closing { flex-wrap: wrap; padding: 1.5rem 0 2rem; }
 }
 </style>
