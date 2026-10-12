@@ -26,9 +26,9 @@ import java.util.UUID;
 @Slf4j
 @Service
 public class HomeHeroVideoService {
-    public static final long MAX_BYTES = 8L * 1024 * 1024;
+    public static final long MAX_BYTES = 100_000_000L;
     private static final String PREFIX = "blog/home/hero-video/";
-    private static final Duration TICKET_LIFETIME = Duration.ofMinutes(5);
+    private static final Duration TICKET_LIFETIME = Duration.ofMinutes(30);
 
     @Resource private OSS ossClient;
     @Resource private OssProperties ossProperties;
@@ -79,7 +79,7 @@ public class HomeHeroVideoService {
             ObjectMetadata metadata = ossClient.getObjectMetadata(ossProperties.getBucketName(), key);
             if (metadata.getContentLength() < 1 || metadata.getContentLength() > MAX_BYTES
                     || !"video/mp4".equalsIgnoreCase(metadata.getContentType())) {
-                return ResponseResult.failure("视频格式或大小不符合要求，请上传不超过 8 MiB 的 MP4");
+                return ResponseResult.failure("视频格式或大小不符合要求，请上传不超过 100 MB 的 MP4");
             }
         } catch (RuntimeException exception) {
             log.warn("首页视频对象校验失败: {}", key, exception);

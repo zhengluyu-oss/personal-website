@@ -48,6 +48,7 @@ class HomeHeroVideoServiceTest {
         var ticket = service.issueTicket();
         assertTrue(ticket.objectKey().matches("blog/home/hero-video/[0-9a-f-]{36}\\.mp4"));
         assertEquals("https://test-bucket.oss-cn-beijing.aliyuncs.com", ticket.uploadUrl());
+        assertEquals(100_000_000L, HomeHeroVideoService.MAX_BYTES);
         assertEquals(HomeHeroVideoService.MAX_BYTES, ticket.maxBytes());
         ArgumentCaptor<PolicyConditions> conditions = ArgumentCaptor.forClass(PolicyConditions.class);
         verify(oss).generatePostPolicy(any(), conditions.capture());
@@ -85,7 +86,7 @@ class HomeHeroVideoServiceTest {
         String old = "blog/home/hero-video/22222222-2222-2222-2222-222222222222.mp4";
         when(values.get(anyString())).thenReturn("pending");
         ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(1024);
+        metadata.setContentLength(HomeHeroVideoService.MAX_BYTES);
         metadata.setContentType("video/mp4");
         when(oss.getObjectMetadata("test-bucket", key)).thenReturn(metadata);
         WebsiteInfo info = new WebsiteInfo();
