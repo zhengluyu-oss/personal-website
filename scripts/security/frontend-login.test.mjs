@@ -7,13 +7,26 @@ import { fileURLToPath } from 'node:url'
 const req = createRequire(new URL('../../blog-frontend/kuailemao-blog/package.json', import.meta.url))
 const adminReq = createRequire(new URL('../../blog-frontend/kuailemao-admin/package.json', import.meta.url))
 const { JSDOM } = adminReq('jsdom')
-const dom = new JSDOM('<html><body></body></html>')
-for (const key of ['window', 'document', 'Element', 'HTMLElement', 'SVGElement', 'Node', 'navigator'])
+const dom = new JSDOM('<html><body></body></html>', { url: 'https://blog.example' })
+for (const key of ['window', 'document', 'Element', 'HTMLElement', 'SVGElement', 'Node', 'navigator', 'localStorage', 'sessionStorage'])
   Object.defineProperty(globalThis, key, { configurable: true, value: dom.window[key] })
 const Vue = req('vue')
 const { parse, compileScript } = req('vue/compiler-sfc')
 const { build } = createRequire(req.resolve('vite/package.json'))('esbuild')
 const root = fileURLToPath(new URL('../../blog-frontend/kuailemao-blog/', import.meta.url))
+const authFixture = { store: Vue.reactive({ token: null }), warnings: [] }
+globalThis.__authFixture = authFixture
+const authBundle = await build({ entryPoints: [`${root}/src/utils/auth.ts`], bundle: true, write: false,
+  platform: 'node', format: 'cjs', plugins: [{ name: 'auth-fixtures', setup(b) {
+    b.onResolve({ filter: /^(element-plus|@)/ }, args => ({ path: args.path, namespace: 'auth-fixture' }))
+    b.onLoad({ filter: /.*/, namespace: 'auth-fixture' }, args => ({ loader: 'js', contents: args.path === 'element-plus'
+      ? 'export const ElMessage = { warning: message => globalThis.__authFixture.warnings.push(message) };'
+      : args.path === '@/const/Jwt' ? 'export const TOKEN_KEY = "Token";'
+        : 'export default () => globalThis.__authFixture.store;' }))
+  } }] })
+const authModule = { exports: {} }
+new Function('require', 'module', 'exports', authBundle.outputFiles[0].text)(req, authModule, authModule.exports)
+const { GET_TOKEN, SET_TOKEN, REMOVE_TOKEN } = authModule.exports
 const events = [], requests = []
 let loginResult, verifyResult, resolveInfo
 const store = Vue.reactive({ userInfo: undefined, token: null, getInfo: async () => {
@@ -97,7 +110,7 @@ test('real user store returns only after profile has updated and exposes failure
     platform: 'node', format: 'cjs', external: ['vue', 'pinia'], plugins: [{ name: 'user-boundaries', setup(b) {
       b.onResolve({ filter: /^@\// }, args => ({ path: args.path, namespace: 'fixture' }))
       b.onLoad({ filter: /.*/, namespace: 'fixture' }, args => ({ loader: 'js', contents: args.path.includes('auth')
-        ? 'export const GET_TOKEN = () => "synthetic";'
+        ? 'export const GET_TOKEN = () => "synthetic"; export const REMOVE_TOKEN = () => { globalThis.__authFixture.cleared = true };'
         : 'export const getUserInfo = () => globalThis.__userInfoRequest();' }))
     } }] })
   const userModule = { exports: {} }
@@ -112,4 +125,31 @@ test('real user store returns only after profile has updated and exposes failure
   const failed = user.getInfo()
   respond({ code: 1002, msg: 'not authenticated' })
   await assert.rejects(failed, /not authenticated/)
+  assert.equal(user.token, null)
+  assert.equal(user.userInfo, undefined)
+  assert.equal(globalThis.__authFixture.cleared, true)
+})
+
+test('frontend token storage validates data and replaces stale storage when login preference changes', () => {
+  localStorage.clear(); sessionStorage.clear(); authFixture.warnings.length = 0
+  localStorage.setItem('Token', 'broken-json')
+  assert.equal(GET_TOKEN(), null)
+  assert.equal(localStorage.getItem('Token'), null)
+
+  localStorage.setItem('Token', JSON.stringify({ token: 'expired', expire: '2000-01-01T00:00:00Z' }))
+  assert.equal(GET_TOKEN(), null)
+  assert.equal(authFixture.warnings.length, 1)
+
+  localStorage.setItem('Token', JSON.stringify({ token: 'old-token', expire: '2099-01-01T00:00:00Z' }))
+  SET_TOKEN('session-token', '2099-01-01T00:00:00Z', false)
+  assert.equal(localStorage.getItem('Token'), null)
+  assert.equal(sessionStorage.getItem('Token'), JSON.stringify({ token: 'session-token', expire: '2099-01-01T00:00:00Z' }))
+  assert.equal(GET_TOKEN(), 'session-token')
+  assert.equal(authFixture.store.token, 'session-token')
+
+  SET_TOKEN('remembered-token', '2099-01-01T00:00:00Z', true)
+  assert.equal(sessionStorage.getItem('Token'), null)
+  assert.equal(GET_TOKEN(), 'remembered-token')
+  REMOVE_TOKEN()
+  assert.equal(GET_TOKEN(), null)
 })
