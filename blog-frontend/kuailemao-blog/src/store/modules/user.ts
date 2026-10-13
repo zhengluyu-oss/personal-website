@@ -8,11 +8,12 @@ const useUserStore = defineStore('user', () => {
 
     // 获取用户信息
     const getInfo = async () => {
-        getUserInfo().then((res: any) => {
-            if (res.code === 200) {
-                userInfo.value = res.data
-            }
-        })
+        const res: any = await getUserInfo()
+        if (res.code === 200 && res.data) {
+            userInfo.value = res.data
+            return res.data
+        }
+        throw new Error(res.msg || '获取登录用户信息失败')
     }
 
     return {
