@@ -153,6 +153,12 @@ watch(formData, () => {
             菜单权限
           </template>
           <div>
+            <a-alert
+              class="menu-permission-guide"
+              type="info"
+              show-icon
+              message="此处控制该角色可进入的后台管理页面。博客前台首页、文章、相册等模块的可见范围，请在角色列表的“博客前台模块权限”中单独设置。"
+            />
             <a-checkbox v-model:checked="checked.a1" style="margin-right: 20px" @change="checkedFunc('a1')">
               展开/折叠
             </a-checkbox>
@@ -186,4 +192,5 @@ watch(formData, () => {
 :deep(.ant-form-item-label){
   width: 70px;
 }
+.menu-permission-guide { margin: 0 0 12px; }
 </style>
