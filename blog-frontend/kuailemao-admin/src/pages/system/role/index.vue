@@ -8,6 +8,7 @@ import SiteModuleAccess from './site-module-access.vue'
 import { roleDelete, roleInfoById, roleList, roleSearch, roleUpdateStatus } from '~/api/role'
 import { getMenusApi } from '~/api/common/menu.ts'
 import { buildTree } from '~/utils/tree.ts'
+import { ADMIN_PATHS } from '~/router/paths'
 
 const formState = reactive({
   roleName: undefined,
@@ -248,7 +249,10 @@ async function updateOrInsertRole(id?: string) {
       </a-form-item>
     </template>
     <template #operate-btn>
-      <a-button @click="moduleAccessOpen = true">前台模块访问</a-button>
+      <a-tooltip title="设置博客前台模块对游客和角色的可见范围">
+        <a-button @click="moduleAccessOpen = true">博客前台模块权限</a-button>
+      </a-tooltip>
+      <a-button @click="$router.push(ADMIN_PATHS.menus)">后台菜单配置</a-button>
       <a-button type="primary" @click="updateOrInsertRole()">
         <template #icon>
           <PlusOutlined />
@@ -275,6 +279,12 @@ async function updateOrInsertRole(id?: string) {
       </a-button>
     </template>
     <template #table-content>
+      <a-alert class="permission-guide" type="info" show-icon>
+        <template #message>
+          <span>这里管理角色及其后台菜单权限。博客前台模块权限（首页、博客、相册等）请使用上方“博客前台模块权限”；后台页面菜单与角色绑定可在编辑角色时设置。</span>
+          <a-button type="link" size="small" @click="$router.push(ADMIN_PATHS.menus)">前往菜单配置</a-button>
+        </template>
+      </a-alert>
       <a-table
         :columns="columns"
         :data-source="tabData"
@@ -333,5 +343,5 @@ async function updateOrInsertRole(id?: string) {
 </template>
 
 <style scoped lang="scss">
-
+.permission-guide { margin-bottom: 16px; }
 </style>

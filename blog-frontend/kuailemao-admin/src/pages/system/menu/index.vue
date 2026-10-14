@@ -7,6 +7,7 @@ import type {MenuData} from '~/layouts/basic-layout/typing.ts'
 import {MenuDataItem} from "~/pages/system/menu/type.ts";
 import modal from './modal.vue'
 import {message} from "ant-design-vue";
+import { ADMIN_PATHS } from '~/router/paths'
 
 defineExpose({h})
 
@@ -325,6 +326,12 @@ async function deleteMenu(id: string) {
       </div>
     </template>
     <template #table-content>
+      <a-alert class="menu-permission-guide" type="info" show-icon>
+        <template #message>
+          菜单配置决定后台管理页面及菜单结构；角色可访问范围在“用户与权限 → 角色”中配置。博客前台模块（首页、文章、相册等）有独立的可见权限设置。
+          <a-button type="link" size="small" @click="$router.push(ADMIN_PATHS.roles)">前往角色管理</a-button>
+        </template>
+      </a-alert>
       <div>
         <a-table
             :columns="columns"
@@ -396,4 +403,5 @@ async function deleteMenu(id: string) {
   justify-content: space-between;
   align-items: center;
 }
+.menu-permission-guide { margin-bottom: 16px; }
 </style>

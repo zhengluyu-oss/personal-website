@@ -48,10 +48,11 @@ function onFinishFailed(errorInfo: any) {
 </script>
 
 <template>
-  <page-container>
+  <page-container class="admin-list">
     <template #content>
       <template v-if="isShowForm">
         <a-form
+          class="admin-list__filters"
           ref="formRef"
           :model="formState"
           layout="inline"
@@ -77,11 +78,11 @@ function onFinishFailed(errorInfo: any) {
           </a-form-item>
         </a-form>
       </template>
-      <div class="middle_btn">
-        <div>
+      <div class="middle_btn admin-list__toolbar">
+        <div class="admin-list__actions">
           <slot name="operate-btn" />
         </div>
-        <div>
+        <div class="admin-list__tools">
           <template v-if="isList">
             <span>
               <a-tooltip title="隐藏搜索" @click="isShowForm = !isShowForm">
@@ -96,7 +97,7 @@ function onFinishFailed(errorInfo: any) {
           </template>
         </div>
       </div>
-      <div style="margin-top: 10px">
+      <div class="admin-list__table">
         <slot name="table-content" />
       </div>
     </template>
@@ -108,13 +109,58 @@ function onFinishFailed(errorInfo: any) {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.admin-list__filters {
+  padding: 16px 16px 6px;
+  margin-bottom: 14px;
+  border: 1px solid #e8edf3;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.admin-list__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-list__tools {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.admin-list__table {
+  min-width: 0;
+  margin-top: 12px;
+  overflow-x: auto;
 }
 
 ::v-deep(.ant-form-item){
   margin-bottom: 10px;
 }
 
-::v-deep(.ant-btn){
-  margin-right: 10px;
+@media (max-width: 640px) {
+  .admin-list__filters {
+    padding: 12px 12px 2px;
+  }
+
+  .admin-list__toolbar,
+  .admin-list__actions {
+    align-items: stretch;
+  }
+
+  .admin-list__actions {
+    width: 100%;
+  }
+
+  .admin-list__tools {
+    margin-left: auto;
+  }
 }
 </style>
