@@ -195,9 +195,9 @@ async function handleOpen() {
             <template #label>
               <a-tooltip placement="top">
                 <template #title>
-                  <span style="font-size: 0.9em">角色控制（不填写即表示所有用户可访问）</span>
+                  <span style="font-size: 0.9em">限制可访问此后台菜单的角色；不选择角色时按现有规则向所有用户开放</span>
                 </template>
-                <span>权限控制</span>
+                <span>后台访问角色</span>
               </a-tooltip>
             </template>
             <a-select
@@ -205,7 +205,7 @@ async function handleOpen() {
               style="width: 120px"
               mode="multiple"
               :options="roles"
-              placeholder="访问角色"
+              placeholder="选择可访问角色"
             />
           </a-form-item>
         </div>
