@@ -1,9 +1,9 @@
 import type { LayoutSetting } from '~@/stores/app'
 
 export default {
-  'title': '陆屿 · 管理后台',
+  'title': '管理后台',
   'theme': 'light',
-  'logo': '/blog-icon.svg',
+  'logo': '/blog-logo-luyu.png',
   'collapsed': false,
   'drawerVisible': false,
   'colorPrimary': '#d35f45',
