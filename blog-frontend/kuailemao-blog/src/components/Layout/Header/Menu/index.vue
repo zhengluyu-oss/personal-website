@@ -16,6 +16,8 @@ import {useRoute} from "vue-router";
 import {useBlogCategories} from "@/composables/useBlogCategories";
 import { canViewModule } from '@/composables/useSiteModuleAccess'
 import SessionRecovery from '../SessionRecovery.vue'
+import DiaryMenuEntry from '../DiaryMenuEntry.vue'
+import { confirmPrivateEditsBeforeLogout } from '@/utils/private-workspace'
 
 const userStore = useUserStore()
 const useWebsite = useWebsiteStore()
@@ -34,7 +36,8 @@ function blurCategories(event: FocusEvent) {
 const closeCategories = () => { categoriesOpen.value = false; categoryToggle.value?.focus() }
 watch(() => route.fullPath, () => { categoriesOpen.value = false })
 
-const logoutSub = () => {
+const logoutSub = async () => {
+  if (!await confirmPrivateEditsBeforeLogout()) return
   logout().then((res: any) => {
     if (res.code === 200) {
       userStore.clearSession()
@@ -159,6 +162,7 @@ watch(() => canViewModule('blog'), allowed => { if (allowed) void loadCategories
             <el-avatar style="margin-right: 3rem"
                        :src="userStore.userInfo?.avatar"></el-avatar>
             <template #dropdown>
+              <DiaryMenuEntry />
               <el-dropdown-item @click="router.push('/account')">
                 <template #default>
                   <el-icon>
