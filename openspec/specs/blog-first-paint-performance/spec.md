@@ -50,11 +50,11 @@ Requirements maintained by OpenSpec changes for blog-first-paint-performance.
 - **THEN** 系统仅在全部受跟踪请求结束后清除共享状态，且计数不会为负或永久残留
 
 ### Requirement: Banner 首图优先且稳定
-首页 SHALL 优先发现和加载当前唯一 Banner 首图，预留稳定展示尺寸，并在图片不可用时呈现与页面风格一致的降级背景。
+首页 SHALL 优先发现和加载当前唯一 Banner 首图，将其作为全屏视频首屏的静态封面，预留稳定展示尺寸，并在图片不可用时呈现与页面风格一致的降级背景。视频文件 MUST NOT 阻塞文案和按钮的初次呈现。
 
 #### Scenario: 正常加载 Banner
 - **WHEN** 浏览器打开首页且 Banner 地址有效
-- **THEN** 首图得到高优先级加载提示、展示区域在图片到达前已占位，加载过程不产生明显布局偏移
+- **THEN** 首图得到高优先级加载提示、展示区域在图片到达前已占位，加载过程不产生明显布局偏移；视频稍后可替换视觉层而不改变布局
 
 #### Scenario: Banner 加载失败
 - **WHEN** Banner 图片请求失败或超时
@@ -77,3 +77,14 @@ Requirements maintained by OpenSpec changes for blog-first-paint-performance.
 #### Scenario: 受控网络性能验证
 - **WHEN** 在冷缓存、移动端视口和约 3Mbps 下行带宽条件下执行首页检查
 - **THEN** 页面首次内容绘制不超过 2.5 秒、最大内容绘制不超过 4 秒且累计布局偏移不超过 0.1
+
+### Requirement: 首屏视频有条件加载
+首页 SHALL 仅在配置视频、首屏可见、用户未启用减少动态效果且浏览器未提示省流量时请求视频；视频 MUST 独立于首页初始 JS/CSS 资源预算，并 SHALL 在不可见时暂停。
+
+#### Scenario: 省流量或减少动态效果
+- **WHEN** 浏览器提示省流量或 `prefers-reduced-motion: reduce`
+- **THEN** 首页仅显示静态封面，不为自动播放下载视频主体
+
+#### Scenario: 视频未能开始播放
+- **WHEN** 视频请求、解码或自动播放失败
+- **THEN** 首屏保留封面与可用文案，不显示空白视频层或永久加载状态
