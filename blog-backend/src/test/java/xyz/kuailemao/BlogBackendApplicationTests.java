@@ -4,8 +4,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
+import xyz.kuailemao.config.Bean.CreateBean;
+import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+// Minimal real Spring assembly: external infrastructure is tested in explicit opt-in suites.
+@SpringBootTest(classes = CreateBean.class, webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@ActiveProfiles("test")
 class BlogBackendApplicationTests {
 
     @Autowired
@@ -13,9 +18,12 @@ class BlogBackendApplicationTests {
 
 
     @Test
-    void contextLoads() throws Exception {
-//        String encode = passwordEncoder.encode("123456");
-//        System.out.println(encode);
+    void contextLoads() {
+        assertNotNull(passwordEncoder);
+        String encoded = passwordEncoder.encode("isolated-test-password");
+        assertNotEquals("isolated-test-password", encoded);
+        assertTrue(passwordEncoder.matches("isolated-test-password", encoded));
+        assertFalse(passwordEncoder.matches("different-password", encoded));
     }
 
 }
