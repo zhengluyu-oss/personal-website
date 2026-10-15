@@ -176,7 +176,16 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoMapper, Photo> implements
     @Transactional
     @Override
     public ResponseResult<Void> deletePhotoOrAlbum(DeletePhotoOrAlbumDTO deletePhotoOrAlbum) {
-        if (Objects.equals(deletePhotoOrAlbum.getType(), AlbumOrPhotoEnum.ALBUM.getCode())) {
+        if (deletePhotoOrAlbum == null || deletePhotoOrAlbum.getId() == null || deletePhotoOrAlbum.getId() <= 0) {
+            return ResponseResult.failure("相册或照片编号无效");
+        }
+        Photo photo = photoMapper.selectById(deletePhotoOrAlbum.getId());
+        if (photo == null) return ResponseResult.failure("相册或照片不存在");
+        if (!Objects.equals(photo.getType(), deletePhotoOrAlbum.getType())
+                || !Objects.equals(photo.getParentId(), deletePhotoOrAlbum.getParentId())) {
+            return ResponseResult.failure("相册或照片信息已变化，请刷新后重试");
+        }
+        if (Objects.equals(photo.getType(), AlbumOrPhotoEnum.ALBUM.getCode())) {
             // 是否存在子相册
             if (photoMapper.selectCount(new LambdaQueryWrapper<Photo>().eq(Photo::getParentId, deletePhotoOrAlbum.getId())) > 0) {
                 return ResponseResult.failure("删除失败，该相册下存在子相册或照片");
@@ -187,14 +196,14 @@ public class PhotoServiceImpl extends ServiceImpl<PhotoMapper, Photo> implements
             }
             return ResponseResult.failure();
         } else {
-            // 查询照片名称
-            Photo photo = photoMapper.selectById(deletePhotoOrAlbum.getId());
-            // 查询父相册
-            if (StringUtils.isNotNull(photo.getParentId())) {
-                Photo album = photoMapper.selectById(deletePhotoOrAlbum.getParentId());
-                fileUploadUtils.deleteFile(UploadEnum.PHOTO_ALBUM.getDir() + album.getName() + "/", fileUploadUtils.getFileName(photo.getUrl()));
-            } else {
-                fileUploadUtils.deleteFile(UploadEnum.PHOTO_ALBUM.getDir(), fileUploadUtils.getFileName(photo.getUrl()));
+            if (!Objects.equals(photo.getType(), AlbumOrPhotoEnum.PHOTO.getCode())) {
+                return ResponseResult.failure("照片类型无效");
+            }
+            try {
+                if (!fileUploadUtils.deleteTrustedFile(photo.getUrl(), UploadEnum.PHOTO_ALBUM.getDir()))
+                    return ResponseResult.failure("照片存储清理失败，记录已保留，请稍后重试");
+            } catch (IllegalArgumentException invalidKey) {
+                return ResponseResult.failure("照片存储地址无效，记录已保留");
             }
             if (photoMapper.deleteById(deletePhotoOrAlbum.getId()) > 0) {
                 return ResponseResult.success();
