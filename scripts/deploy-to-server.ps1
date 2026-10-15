@@ -288,141 +288,22 @@ try {
     Write-Step "Upload archive"
     Invoke-SftpResumable $archivePath $remoteArchive
 
-    Write-Step "Remote extract & place files"
-    # Upload a real bash script — joining "then/else" with "; " breaks bash ("then;").
-    $remotePlaceSh = @"
-#!/bin/bash
-set -euo pipefail
-REMOTE_APP='$RemoteApp'
-REMOTE_BLOG='$RemoteBlog'
-REMOTE_ADMIN='$RemoteAdmin'
-REMOTE_NGINX_SITE='$RemoteNginxSite'
-NGINX_BACKUP='/etc/nginx/zhengluyu-blog.codex-backup'
-REMOTE_ARCHIVE='$remoteArchive'
-UNIT='$SystemdUnit'
-# Require explicit production + external configuration before placing any files.
-UNIT_START=`$(systemctl show "`$UNIT" --property=ExecStart --value)
-printf '%s' "`$UNIT_START" | grep -Eq -- '--spring.profiles.active=prod([ ;}]|$)' || { echo PROD_PROFILE_REQUIRED; exit 1; }
-printf '%s' "`$UNIT_START" | grep -q -- '--spring.config.additional-location=file:/' || { echo EXTERNAL_CONFIG_REQUIRED; exit 1; }
-unset UNIT_START
-mkdir -p "`$REMOTE_APP" "`$REMOTE_BLOG" "`$REMOTE_ADMIN"
-TMPDIR=`$(mktemp -d /tmp/zhengluyu-deploy-XXXXXX)
-tar -xzf "`$REMOTE_ARCHIVE" -C "`$TMPDIR"
-if [ -d "`$TMPDIR/app" ]; then
-  cp -f "`$TMPDIR/app/"*.jar "`$REMOTE_APP"/
-fi
-if [ -d "`$TMPDIR/blog" ]; then
-  rm -rf "`${REMOTE_BLOG}.previous"
-  if [ -d "`$REMOTE_BLOG" ]; then mv "`$REMOTE_BLOG" "`${REMOTE_BLOG}.previous"; fi
-  mkdir -p "`$REMOTE_BLOG"
-  cp -a "`$TMPDIR/blog/." "`$REMOTE_BLOG"/
-fi
-if [ -d "`$TMPDIR/admin" ]; then
-  rm -rf "`${REMOTE_ADMIN}.previous"
-  if [ -d "`$REMOTE_ADMIN" ]; then mv "`$REMOTE_ADMIN" "`${REMOTE_ADMIN}.previous"; fi
-  mkdir -p "`$REMOTE_ADMIN"
-  cp -a "`$TMPDIR/admin/." "`$REMOTE_ADMIN"/
-fi
-if [ -f "`$TMPDIR/nginx/zhengluyu-blog" ]; then
-  cp -f "`$REMOTE_NGINX_SITE" "`$NGINX_BACKUP"
-  cp -f "`$TMPDIR/nginx/zhengluyu-blog" "`$REMOTE_NGINX_SITE"
-fi
-rm -rf "`$TMPDIR" "`$REMOTE_ARCHIVE"
-echo REMOTE_PLACE_OK
-"@
-    $remotePlaceSh = $remotePlaceSh -replace "`r`n", "`n"
-    $localPlaceSh = Join-Path $env:TEMP "zhengluyu-place-$stamp.sh"
-    [System.IO.File]::WriteAllText($localPlaceSh, $remotePlaceSh)
+    Write-Step "Place, verify and recover the selected release components"
+    # Pass values as positional arguments using strict shell-safe characters. Never interpolate shell code.
+    $releaseValues = @($remoteArchive, $RemoteApp, $RemoteBlog, $RemoteAdmin, $RemoteNginxSite, $SystemdUnit, ($Selected -join ','), 'www.zhengluyu.com')
+    foreach ($value in $releaseValues) {
+        if ($value -notmatch '^[a-zA-Z0-9_./,@-]+$') { throw "Unsafe remote release argument" }
+    }
+    $releaseScript = Join-Path $ScriptDir 'deploy-release.sh'
+    $remoteRelease = "/tmp/zhengluyu-release-$stamp.sh"
+    Invoke-Scp $releaseScript $remoteRelease
     try {
-        Invoke-Scp $localPlaceSh "/tmp/zhengluyu-place-$stamp.sh"
-        Invoke-Ssh "bash /tmp/zhengluyu-place-$stamp.sh"
-        Invoke-Ssh "rm -f /tmp/zhengluyu-place-$stamp.sh"
+        $quotedValues = @($releaseValues | ForEach-Object { "'$_'" })
+        Invoke-Ssh ("bash '$remoteRelease' " + ($quotedValues -join ' '))
     }
     finally {
-        Remove-Item $localPlaceSh -Force -ErrorAction SilentlyContinue
-    }
-
-    Write-Step "Validate, reload and verify remote release"
-    $remoteRestartSh = @"
-#!/bin/bash
-set -euo pipefail
-UNIT='$SystemdUnit'
-REMOTE_BLOG='$RemoteBlog'
-REMOTE_NGINX_SITE='$RemoteNginxSite'
-NGINX_BACKUP='/etc/nginx/zhengluyu-blog.codex-backup'
-rollback() {
-  trap - ERR
-  echo DEPLOYMENT_ROLLBACK
-  if [ -d "`${REMOTE_BLOG}.previous" ]; then
-    rm -rf "`$REMOTE_BLOG"
-    mv "`${REMOTE_BLOG}.previous" "`$REMOTE_BLOG"
-  fi
-  if [ -d "/home/wwwroot/zhengluyu-website/admin.previous" ]; then
-    rm -rf "/home/wwwroot/zhengluyu-website/admin"
-    mv "/home/wwwroot/zhengluyu-website/admin.previous" "/home/wwwroot/zhengluyu-website/admin"
-  fi
-  if [ -f "`$NGINX_BACKUP" ]; then
-    cp -f "`$NGINX_BACKUP" "`$REMOTE_NGINX_SITE"
-  fi
-  nginx -t && nginx -s reload
-}
-trap rollback ERR
-if command -v systemctl >/dev/null 2>&1 && systemctl cat "`${UNIT}.service" >/dev/null 2>&1; then
-  systemctl restart "`$UNIT"
-  # Wait until the new jar process is healthy enough to answer blog-feed.
-  for i in `$(seq 1 30); do
-    code=`$(curl -s -o /dev/null -w '%{http_code}' --connect-timeout 2 --max-time 4 'http://127.0.0.1:8001/article/blog-feed?pageNum=1&pageSize=1' || true)
-    if [ "`$code" = "200" ]; then
-      echo SYSTEMD_RESTARTED
-      break
-    fi
-    sleep 2
-    if [ "`$i" -eq 30 ]; then
-      echo SYSTEMD_RESTART_TIMEOUT
-      systemctl --no-pager --full status "`$UNIT" || true
-      exit 1
-    fi
-  done
-else
-  echo SYSTEMD_SKIPPED
-fi
-if command -v nginx >/dev/null 2>&1; then
-  nginx -t
-  nginx -s reload
-  echo NGINX_RELOADED
-else
-  exit 1
-fi
-HTML=`$(curl -fsS --resolve 'www.zhengluyu.com:443:127.0.0.1' https://www.zhengluyu.com/)
-ASSET=`$(printf '%s' "`$HTML" | grep -oE '/js/[^" ]+\.js' | head -n 1)
-test -n "`$ASSET"
-echo "HEALTH_ASSET=`$ASSET"
-HEADERS=''
-for ATTEMPT in 1 2 3 4 5; do
-  HEADERS=`$(curl -fsS -D - -o /dev/null --resolve 'www.zhengluyu.com:443:127.0.0.1' -H 'Accept-Encoding: gzip' "https://www.zhengluyu.com`${ASSET}")
-  if printf '%s\n' "`$HEADERS" | grep -qi '^Content-Encoding: gzip'; then break; fi
-  sleep 1
-done
-printf '%s\n' "`$HEADERS"
-printf '%s\n' "`$HEADERS" | grep -qi '^Content-Encoding: gzip'
-printf '%s\n' "`$HEADERS" | grep -qi '^Cache-Control: .*immutable'
-curl -fsS --resolve 'www.zhengluyu.com:443:127.0.0.1' https://www.zhengluyu.com/api/websiteInfo/front >/dev/null
-trap - ERR
-# 保留一版静态资源，为部署前已打开的页面继续提供旧哈希分包。
-# 下一次部署会先删除并重新生成该目录，因此磁盘占用不会持续累积。
-rm -f "`$NGINX_BACKUP"
-echo REMOTE_HEALTH_OK
-"@
-    $remoteRestartSh = $remoteRestartSh -replace "`r`n", "`n"
-    $localRestartSh = Join-Path $env:TEMP "zhengluyu-restart-$stamp.sh"
-    [System.IO.File]::WriteAllText($localRestartSh, $remoteRestartSh)
-    try {
-        Invoke-Scp $localRestartSh "/tmp/zhengluyu-restart-$stamp.sh"
-        Invoke-Ssh "bash /tmp/zhengluyu-restart-$stamp.sh"
-        Invoke-Ssh "rm -f /tmp/zhengluyu-restart-$stamp.sh"
-    }
-    finally {
-        Remove-Item $localRestartSh -Force -ErrorAction SilentlyContinue
+        # The remote release retains its own manifest/backups on failure for manual recovery.
+        Invoke-Ssh "rm -f '$remoteRelease'"
     }
 
     Write-Step "Done"
@@ -430,7 +311,7 @@ echo REMOTE_HEALTH_OK
     Write-Host "  App dir  : $RemoteApp"
     Write-Host "  Blog dir : $RemoteBlog"
     Write-Host "  Admin dir: $RemoteAdmin"
-    Write-Host "  Note: if SYSTEMD_SKIPPED / NGINX_SKIPPED, install services then re-run or restart manually."
+    Write-Host "  Release verification completed; exactly one previous frontend is retained."
 }
 finally {
     if (Test-Path $stageRoot) { Remove-Item $stageRoot -Recurse -Force -ErrorAction SilentlyContinue }
