@@ -62,6 +62,7 @@ declare module 'vue' {
     ScrollParallax: typeof import('./../components/ScrollParallax/index.vue')['default']
     Search: typeof import('./../components/Search/index.vue')['default']
     SearchList: typeof import('./../components/Music/list/components/search-list.vue')['default']
+    SessionRecovery: typeof import('./../components/Layout/Header/SessionRecovery.vue')['default']
     SideBar: typeof import('./../components/Layout/SideBar/index.vue')['default']
     SpecialTitle: typeof import('./../components/Music/list/components/special-title.vue')['default']
     SvgIcon: typeof import('./../components/SvgIcon/index.vue')['default']

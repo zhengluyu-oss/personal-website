@@ -7,7 +7,6 @@ import {
   Link, Setting, Promotion, ArrowDownBold, Close, PictureFilled, UserFilled
 } from "@element-plus/icons-vue";
 import {logout} from "@/apis/user"
-import {REMOVE_TOKEN} from "@/utils/auth.ts";
 import useUserStore from "@/store/modules/user.ts"
 import router from "@/router";
 import useWebsiteStore from "@/store/modules/website.ts";
@@ -16,6 +15,7 @@ import {computed, ref, watch} from "vue";
 import {useRoute} from "vue-router";
 import {useBlogCategories} from "@/composables/useBlogCategories";
 import { canViewModule } from '@/composables/useSiteModuleAccess'
+import SessionRecovery from '../SessionRecovery.vue'
 
 const userStore = useUserStore()
 const useWebsite = useWebsiteStore()
@@ -37,8 +37,7 @@ watch(() => route.fullPath, () => { categoriesOpen.value = false })
 const logoutSub = () => {
   logout().then((res: any) => {
     if (res.code === 200) {
-      REMOVE_TOKEN()
-      userStore.userInfo = undefined
+      userStore.clearSession()
       ElMessage.success('退出登录成功')
       router.push('/')
     }
@@ -135,7 +134,8 @@ watch(() => canViewModule('blog'), allowed => { if (allowed) void loadCategories
         </button>
       </div>
       <div class="user-info">
-        <div v-if="!userStore.userInfo">
+        <SessionRecovery v-if="userStore.token && !userStore.userInfo" />
+        <div v-else-if="!userStore.userInfo">
           <el-tooltip
               class="box-item"
               effect="light"
