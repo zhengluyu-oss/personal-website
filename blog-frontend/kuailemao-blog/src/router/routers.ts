@@ -208,6 +208,12 @@ export const constantRouter = [
             }
         ]
     },
+    {
+        path: '/diary',
+        component: () => import('@/views/Diary/index.vue'),
+        name: 'diary',
+        meta: { title: '我的日记', private: true },
+    },
     // 设置
     {
         path: PUBLIC_PATHS.account,
