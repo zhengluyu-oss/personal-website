@@ -65,7 +65,20 @@ PY
     if [[ $asset == *.js ]]; then kind='(application|text)/(javascript|x-javascript)'; else kind='text/css'; fi
     grep -Eqi "^Content-Type: *$kind" "$WORK/headers"
     grep -qi '^Cache-Control: .*immutable' "$WORK/headers"
-    grep -qi '^Content-Encoding: *gzip' "$WORK/headers"
+    if ! grep -qi '^Content-Encoding: *gzip' "$WORK/headers"; then
+      # nginx intentionally leaves responses below gzip_min_length (1024) uncompressed.
+      python3 - "$WORK/headers" <<'PY'
+import sys
+headers={}
+for line in open(sys.argv[1],encoding='iso-8859-1'):
+    if ':' in line:
+        key,value=line.split(':',1)
+        headers.setdefault(key.strip().lower(),[]).append(value.strip())
+sizes=headers.get('content-length',[])
+assert 'content-encoding' not in headers, 'unexpected asset encoding'
+assert len(sizes)==1 and sizes[0].isascii() and sizes[0].isdigit() and int(sizes[0])<1024, 'large or unknown-size asset lacks gzip'
+PY
+    fi
   done < "$WORK/assets"
 }
 recover() {

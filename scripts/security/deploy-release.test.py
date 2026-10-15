@@ -31,7 +31,12 @@ else:
         write(value('-D'),'Content-Type: text/html\nCache-Control: no-cache, no-store\n')
     else:
         kind='text/html' if bad else ('text/css' if url.endswith('.css') else 'application/javascript')
-        write(value('-D'),'Content-Type: '+kind+'\nCache-Control: public, immutable\nContent-Encoding: gzip\n')
+        mode=os.environ.get('QA_FAIL','')
+        encoding={'small_asset':'Content-Length: 64\n',
+                  'uncompressed_asset':'Content-Length: 2048\n',
+                  'unknown_size_asset':'',
+                  'unexpected_encoding':'Content-Length: 64\nContent-Encoding: br\n'}.get(mode,'Content-Encoding: gzip\n')
+        write(value('-D'),'Content-Type: '+kind+'\nCache-Control: public, immutable\n'+encoding)
 '''
 
 class Release(unittest.TestCase):
@@ -116,6 +121,16 @@ exec /usr/bin/cp "$@"
     def test_html_disguised_as_asset_fails_and_restores_custom_admin(self):
         r=self.run_release('admin','asset'); self.assertEqual(r.returncode,1,r.stdout); self.old_untouched_front()
         self.assertNotIn('systemctl',(self.root/'actions').read_text())
+    def test_small_identity_assets_below_nginx_threshold_are_accepted(self):
+        r=self.run_release('admin','small_asset'); self.assertEqual(r.returncode,0,r.stdout)
+        self.assertEqual((self.admin/'index.html').read_text(),'new-admin')
+        self.assertNotIn('systemctl',(self.root/'actions').read_text())
+    def test_large_or_unknown_size_identity_assets_and_unrequested_encoding_recover(self):
+        for failure in ('uncompressed_asset','unknown_size_asset','unexpected_encoding'):
+            with self.subTest(failure=failure):
+                if (self.stage/'admin').exists(): shutil.rmtree(self.stage/'admin')
+                r=self.run_release('admin',failure); self.assertEqual(r.returncode,1,r.stdout)
+                self.assertIn('DEPLOYMENT_RECOVERED',r.stdout); self.old_untouched_front()
     def test_recovery_failure_is_distinct_and_keeps_manifest(self):
         r=self.run_release('backend','recovery'); self.assertEqual(r.returncode,2,r.stdout)
         self.assertIn('RECOVERY_FAILED',r.stdout); self.assertTrue(list(self.root.glob('luyu-release-backup-*/manifest.tsv')))
