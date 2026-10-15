@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.annotation.Order;
-import org.springframework.data.redis.RedisConnectionFailureException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -24,6 +24,7 @@ import xyz.kuailemao.enums.BlackListPolicy;
 import xyz.kuailemao.enums.RespEnum;
 import xyz.kuailemao.mapper.BlackListMapper;
 import xyz.kuailemao.service.BlackListService;
+import xyz.kuailemao.service.AccessWindowService;
 import xyz.kuailemao.utils.IpUtils;
 import xyz.kuailemao.utils.RedisCache;
 import xyz.kuailemao.utils.SecurityUtils;
@@ -50,7 +51,8 @@ public class AccessLimitInterceptor implements HandlerInterceptor {
     @Resource
     private BlackListMapper blackListMapper;
 
-    private static final String EXPIRE_TIME_KEY_PREFIX = "expire_time_";
+    @Resource
+    private AccessWindowService accessWindowService;
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object handler) {
@@ -71,21 +73,9 @@ public class AccessLimitInterceptor implements HandlerInterceptor {
             String key = "limit:" + method + ":" + uri + ":" + ip;
 
             try {
-                // 固定过期时间
-                String expireTimeKey = EXPIRE_TIME_KEY_PREFIX + key;
-
-                // 从Redis中获取过期时间，保证访问时间与封禁时间一直
-                Long expireTime = redisCache.getCacheObject(expireTimeKey);
-
-                // redis 进行自增
-                Long count = redisCache.increment(key, 1L);
-
-                if (count == 1) {
-                    // 第一次访问，设置过期时间
-                    redisCache.expire(key, seconds, TimeUnit.SECONDS);
-                    expireTime = System.currentTimeMillis();
-                    redisCache.setCacheObject(expireTimeKey, expireTime);
-                }
+                AccessWindowService.Window window = accessWindowService.increment(key, seconds);
+                Long count = window.count();
+                Long expireTime = window.startedAt();
 
                 // 封禁判断方法
                 if (isBlocked(response, ip, uri, count, expireTime)) {
@@ -98,8 +88,15 @@ public class AccessLimitInterceptor implements HandlerInterceptor {
                     log.warn("用户IP[" + ip + "]访问地址[" + uri + "]超过了限定的次数[" + maxCount + "]");
                     result = false;
                 }
-            } catch (RedisConnectionFailureException e) {
-                log.error("redis连接异常", e);
+            } catch (DataAccessException | IllegalStateException e) {
+                log.error("限流存储暂不可用：{}", e.getClass().getSimpleName());
+                response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                response.setContentType("application/json;charset=UTF-8");
+                try {
+                    response.getWriter().write(ResponseResult.failure("访问校验暂不可用，请稍后重试").asJsonString());
+                } catch (java.io.IOException outputFailure) {
+                    log.warn("限流故障响应未能写入");
+                }
                 result = false;
             }
         }
