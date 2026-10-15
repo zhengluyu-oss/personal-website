@@ -3,7 +3,7 @@ import {User, Lock} from '@element-plus/icons-vue'
 import {reactive, ref, onBeforeUnmount} from "vue";
 import {login} from "@/apis/user";
 import router from "@/router";
-import {SET_TOKEN, REMOVE_TOKEN} from "@/utils/auth";
+import {SET_TOKEN} from "@/utils/auth";
 import http from '@/utils/http';
 import {confirmEmailDelivery} from '@/apis/email';
 import {ElMessage} from "element-plus";
@@ -70,10 +70,7 @@ async function completeLogin(res: any) {
   SET_TOKEN(res.data.token, res.data.expire, form.remember)
   try { await userStore.getInfo() }
   catch {
-    REMOVE_TOKEN()
-    userStore.token = ''
-    userStore.userInfo = undefined
-    ElMessage.error('无法获取登录信息，请重新登录')
+    ElMessage.error(userStore.token ? '暂时无法获取登录信息，已保留会话，请在导航栏重试' : '登录状态已失效，请重新登录')
     return
   }
   ElMessage.success('登录成功')

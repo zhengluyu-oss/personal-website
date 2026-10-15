@@ -22,12 +22,19 @@ const store = Vue.reactive({ userInfo: { username: 'qa', registerType: 0 }, toke
 const messages = [], requests = []
 let responder
 const http = { post: async (...args) => { requests.push(args); return responder(...args) } }
-globalThis.__emailSettingsFixture = { store, http, messages }
+let deliveryResponder = async () => {}
+const deliveryRequests = []
+globalThis.__emailSettingsFixture = { store, http, messages, confirmEmailDelivery: (...args) => {
+  deliveryRequests.push(args); return deliveryResponder(...args)
+} }
 const modules = {
   'element-plus': 'export const ElMessage = { success: m => globalThis.__emailSettingsFixture.messages.push(m), error: m => globalThis.__emailSettingsFixture.messages.push(m) };',
   '@/utils/http': 'export default globalThis.__emailSettingsFixture.http;',
   '@/store/modules/user': 'export default () => globalThis.__emailSettingsFixture.store;',
   '@/utils/auth': 'export const REMOVE_TOKEN = () => {};',
+  '@/apis/email': `export class EmailDeliveryError extends Error { constructor(message, status) { super(message); this.status = status } }
+    export const confirmEmailDelivery = (...args) => globalThis.__emailSettingsFixture.confirmEmailDelivery(...args);
+    globalThis.__emailSettingsFixture.EmailDeliveryError = EmailDeliveryError;`,
 }
 const bundle = await build({ stdin: { contents: compiled, loader: 'ts', resolveDir: fileURLToPath(new URL('../../blog-frontend/kuailemao-blog', import.meta.url)) },
   bundle: true, write: false, platform: 'node', format: 'cjs', external: ['vue'], plugins: [{ name: 'qa-only-boundaries', setup(build) {
@@ -42,7 +49,7 @@ const Button = { props: ['disabled', 'loading'], emits: ['click'], setup: (props
 const Container = { setup: (_, { slots }) => () => Vue.h('div', slots.default?.()) }
 async function flush() { await new Promise(resolve => setImmediate(resolve)); await Vue.nextTick() }
 function mount(type = 0) {
-  store.userInfo = { username: 'qa', registerType: type }; requests.length = 0; messages.length = 0
+  store.userInfo = { username: 'qa', registerType: type }; requests.length = 0; messages.length = 0; deliveryRequests.length = 0
   const host = document.createElement('div'); document.body.append(host)
   const app = Vue.createApp(component)
   app.component('el-input', Input); app.component('el-button', Button)
@@ -85,4 +92,40 @@ test('expired saved challenge cannot restore verification controls', async () =>
   const { host, cleanup } = mount()
   try { await flush(); assert.equal(sessionStorage.getItem('email-change-challenge-v1'), null); assert.ok(host.textContent.includes('发起安全验证')) }
   finally { cleanup() }
+})
+
+test('enqueue acceptance stays pending until delivery confirms success', async () => {
+  let delivered
+  deliveryResponder = () => new Promise(resolve => { delivered = resolve })
+  responder = async () => ({ code: 200, data: { challengeId: 'd'.repeat(64), taskId: 'e'.repeat(64), expiresIn: 300, oldEmailRequired: false, provider: 0 } })
+  const { host, cleanup } = mount()
+  try {
+    input(host, 0, 'new@example.invalid'); await flush(); click(host, '发起'); await flush()
+    assert.equal(deliveryRequests[0][0], 'e'.repeat(64)); assert.equal(messages.length, 0)
+    assert.ok(host.textContent.includes('正在发送'))
+    delivered(); await flush(); assert.ok(messages.some(m => m.includes('验证码已发送')))
+  } finally { cleanup(); deliveryResponder = async () => {} }
+})
+
+test('delivery failure clears invalid challenge and never announces success', async () => {
+  deliveryResponder = async () => { throw new globalThis.__emailSettingsFixture.EmailDeliveryError('SMTP failed', 'FAILED') }
+  responder = async () => ({ code: 200, data: { challengeId: 'd'.repeat(64), taskId: 'e'.repeat(64), expiresIn: 300, oldEmailRequired: false, provider: 0 } })
+  const { host, cleanup } = mount()
+  try {
+    input(host, 0, 'new@example.invalid'); await flush(); click(host, '发起'); await flush()
+    assert.deepEqual(messages, ['SMTP failed']); assert.equal(sessionStorage.getItem('email-change-challenge-v1'), null)
+    assert.ok(host.textContent.includes('发起安全验证'))
+  } finally { cleanup(); deliveryResponder = async () => {} }
+})
+
+test('unmount aborts pending delivery without success or error notification', async () => {
+  let signal
+  deliveryResponder = (_, passedSignal) => new Promise((_, reject) => {
+    signal = passedSignal; signal.addEventListener('abort', () => reject(new Error('cancelled')), { once: true })
+  })
+  responder = async () => ({ code: 200, data: { challengeId: 'd'.repeat(64), taskId: 'e'.repeat(64), expiresIn: 300, oldEmailRequired: false, provider: 0 } })
+  const { host, cleanup } = mount()
+  input(host, 0, 'new@example.invalid'); await flush(); click(host, '发起'); await flush()
+  cleanup(); await flush(); assert.equal(signal.aborted, true); assert.deepEqual(messages, [])
+  deliveryResponder = async () => {}
 })

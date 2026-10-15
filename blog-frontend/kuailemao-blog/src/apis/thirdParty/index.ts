@@ -1,4 +1,3 @@
-import http from "@/utils/http.ts";
 import EasyTyper from "easy-typer-js";
 // 第三方的api接口
 // 一言接口
@@ -8,9 +7,9 @@ if (!myYiYan) {
 }
 // 每日鸡汤
 export const getSoup = () => {
-    return http({
-        url: myYiYan,
-        method: 'get'
+    return fetch(myYiYan, { credentials: 'omit' }).then(res => {
+        if (!res.ok) throw new Error('一言服务暂时不可用')
+        return res.json()
     })
 }
 

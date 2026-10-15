@@ -6,9 +6,10 @@ import {
 import SvgIcon from '@/components/SvgIcon/index.vue'
 import useUserStore from "@/store/modules/user.ts"
 import {logout, oauthExchange} from "@/apis/user"
-import {GET_TOKEN, REMOVE_TOKEN, SET_TOKEN} from "@/utils/auth.ts"
+import {GET_TOKEN, SET_TOKEN} from "@/utils/auth.ts"
 import {ElMessage} from "element-plus"
 import router from "@/router"
+import SessionRecovery from './SessionRecovery.vue'
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -84,8 +85,7 @@ async function thirdLogin() {
 const logoutSub = () => {
   logout().then((res: any) => {
     if (res.code === 200) {
-      REMOVE_TOKEN()
-      userStore.userInfo = undefined
+      userStore.clearSession()
       ElMessage.success('退出登录成功')
       router.push('/')
     }
@@ -146,7 +146,8 @@ function restoreMenuFocus(event?: Event) {
         <SvgIcon name="search" width="30" height="30" color="#409EFF" class="icon"/>
       </button>
       <div class="user-info">
-        <div v-if="userStore.userInfo == undefined">
+        <SessionRecovery v-if="userStore.token && !userStore.userInfo" />
+        <div v-else-if="userStore.userInfo == undefined">
           <el-tooltip
               class="box-item"
               effect="light"
