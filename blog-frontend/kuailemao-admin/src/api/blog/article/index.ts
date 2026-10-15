@@ -36,7 +36,7 @@ export async function publishArticle(data: any) {
 
 // 发布错误，删除封面
 export async function deleteCover(articleCoverUrl: string) {
-  return useGet('/article/delete/articleCover', { articleCoverUrl }).catch(msg => message.warn(msg))
+  return useDelete('/article/delete/articleCover', undefined, { params: { articleCoverUrl } })
 }
 
 // 上传文章图片

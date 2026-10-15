@@ -66,6 +66,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     private FileUploadUtils fileUploadUtils;
 
     @Resource
+    private xyz.kuailemao.service.ArticleCoverLifecycle articleCoverLifecycle;
+
+    @Resource
     private UserMapper userMapper;
 
     @Resource
@@ -343,20 +346,27 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     public ResponseResult<String> uploadArticleCover(MultipartFile articleCover) {
+        String articleCoverUrl = null;
         try {
-            String articleCoverUrl = null;
             try {
                 articleCoverUrl = fileUploadUtils.upload(UploadEnum.ARTICLE_COVER, articleCover);
             } catch (FileUploadException e) {
                 return ResponseResult.failure(e.getMessage());
             }
-            if (StringUtils.isNotNull(articleCoverUrl))
+            if (StringUtils.isNotNull(articleCoverUrl)) {
+                articleCoverLifecycle.register(articleCoverUrl);
                 return ResponseResult.success(articleCoverUrl);
-            else
+            } else
                 return ResponseResult.failure("上传格式错误");
         } catch (Exception e) {
-            log.error("文章封面上传失败", e);
-            return ResponseResult.failure();
+            if (articleCoverUrl != null) {
+                try {
+                    if (!fileUploadUtils.deleteTrustedFile(articleCoverUrl, xyz.kuailemao.service.ArticleCoverLifecycle.PURPOSE))
+                        log.warn("新封面登记失败后的孤儿对象待重试清理");
+                } catch (RuntimeException cleanupFailed) { log.warn("新封面登记失败后的清理待核实"); }
+            }
+            log.warn("文章封面上传或授权登记失败 ({})", e.getClass().getSimpleName());
+            return ResponseResult.failure("封面上传或授权登记失败，请重新上传");
         }
     }
 
@@ -379,26 +389,30 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         if (tags.size() != tagIds.size() || tags.stream().anyMatch(tag -> Objects.equals(tag.getIsDeleted(), 1))) {
             return ResponseResult.failure("所选标签不存在，请重新选择");
         }
-        Article article = articleDTO.asViewObject(Article.class, v -> v.setUserId(SecurityUtils.getUserId()));
-        if (this.saveOrUpdate(article)) {
+        try (var publication = articleCoverLifecycle.publication(articleDTO)) {
+          Article article = articleDTO.asViewObject(Article.class, v -> v.setUserId(SecurityUtils.getUserId()));
+          if (this.saveOrUpdate(article)) {
             // 清除标签关系
             articleTagMapper.deleteById(article.getId());
             // 新增标签关系
             List<ArticleTag> articleTags = articleDTO.getTagId().stream().map(articleTag -> ArticleTag.builder().articleId(article.getId()).tagId(articleTag).build()).toList();
-            articleTagService.saveBatch(articleTags);
+            if (!articleTagService.saveBatch(articleTags)) throw new IllegalStateException("文章标签保存失败");
+            publication.complete();
             return ResponseResult.success();
+          }
+          return ResponseResult.failure();
         }
-        return ResponseResult.failure();
     }
 
     @Override
     public ResponseResult<Void> deleteArticleCover(String articleCoverUrl) {
         try {
-            fileUploadUtils.deleteFiles(List.of(fileUploadUtils.toObjectKey(articleCoverUrl)));
+            articleCoverLifecycle.cancel(articleCoverUrl);
             return ResponseResult.success();
         } catch (Exception e) {
-            log.error("删除文章封面失败", e);
-            return ResponseResult.failure();
+            log.warn("取消临时封面失败 ({})", e.getClass().getSimpleName());
+            return ResponseResult.failure(e instanceof IllegalArgumentException || e instanceof IllegalStateException
+                    ? e.getMessage() : "封面清理暂不可用，请稍后重试");
         }
     }
 

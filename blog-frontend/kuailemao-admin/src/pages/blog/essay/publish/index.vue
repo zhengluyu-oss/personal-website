@@ -176,6 +176,16 @@ async function goToArticleListAfterPublish() {
   multiTab.close(editingPath)
 }
 
+async function cancelTemporaryCover(url: string) {
+  try {
+    const result = await deleteCover(url)
+    if (result?.code !== 200) throw new Error(result?.msg || '临时封面清理失败')
+    if (formData.value.articleCover === url) formData.value.articleCover = undefined
+  } catch {
+    message.warning('临时封面未确认清理，可能已被文章引用；请先检查文章列表，勿重复删除已保存封面')
+  }
+}
+
 async function onFinish() {
   if (publishing.value)
     return
@@ -220,12 +230,12 @@ async function onFinish() {
       if (pubRes && pubRes.code === 200)
         await goToArticleListAfterPublish()
       else {
-        message.error('发布失败')
-        deleteCover(uploadedCoverUrl)
+        message.error(pubRes?.msg || '发布失败')
+        await cancelTemporaryCover(uploadedCoverUrl)
       }
     }
     catch {
-      deleteCover(uploadedCoverUrl)
+      await cancelTemporaryCover(uploadedCoverUrl)
     }
   }
   catch {
