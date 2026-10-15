@@ -9,6 +9,8 @@ import xyz.kuailemao.domain.dto.UserCommentDTO;
 import xyz.kuailemao.domain.entity.Comment;
 import xyz.kuailemao.domain.entity.User;
 import xyz.kuailemao.mapper.UserMapper;
+import xyz.kuailemao.service.ContentVisibilityService;
+import xyz.kuailemao.service.SiteModuleAccessService;
 import xyz.kuailemao.utils.RedisCache;
 import xyz.kuailemao.utils.SecurityUtils;
 
@@ -28,6 +30,10 @@ class CommentServiceImplCreationCountTest {
         users = mock(UserMapper.class);
         ReflectionTestUtils.setField(service, "redisCache", cache);
         ReflectionTestUtils.setField(service, "userMapper", users);
+        ContentVisibilityService visibility = mock(ContentVisibilityService.class);
+        when(visibility.isPublic(any(), any())).thenReturn(true);
+        ReflectionTestUtils.setField(service, "contentVisibilityService", visibility);
+        ReflectionTestUtils.setField(service, "siteModuleAccessService", mock(SiteModuleAccessService.class));
         doReturn(true).when(service).save(any(Comment.class));
         when(users.selectById(42L)).thenReturn(User.builder().id(42L).build());
     }
