@@ -10,8 +10,12 @@ import xyz.kuailemao.exceptions.FileUploadException;
 import xyz.kuailemao.storage.FileStorageService;
 
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -207,6 +211,79 @@ public class FileUploadUtils {
 
     public String publicUrl(String objectKey) {
         return publicBaseUrl() + "/" + stripLeadingSlash(objectKey);
+    }
+
+    /** Public mutations must use a trusted full URL and a server-selected purpose prefix. */
+    public String requireObjectKey(String url, String purposePrefix) {
+        if (url == null || purposePrefix == null || purposePrefix.isBlank()) {
+            throw new IllegalArgumentException("文件地址或用途无效");
+        }
+        URI target;
+        try { target = URI.create(url); }
+        catch (IllegalArgumentException invalid) { throw new IllegalArgumentException("文件地址无效"); }
+        if (!"https".equalsIgnoreCase(target.getScheme()) || target.getHost() == null
+                || target.getUserInfo() != null || target.getRawQuery() != null || target.getRawFragment() != null) {
+            throw new IllegalArgumentException("文件地址不属于可信存储");
+        }
+        String rawPath = target.getRawPath();
+        if (rawPath == null || rawPath.toLowerCase(Locale.ROOT).matches(".*%(2f|5c).*")) {
+            throw new IllegalArgumentException("文件路径无效");
+        }
+        String path = URLDecoder.decode(rawPath.replace("+", "%2B"), StandardCharsets.UTF_8);
+        if (path.contains("\\") || path.codePoints().anyMatch(Character::isISOControl) || path.contains("%") || path.contains("//")) {
+            throw new IllegalArgumentException("文件路径无效");
+        }
+        for (String segment : path.split("/")) {
+            if (segment.equals(".") || segment.equals("..")) throw new IllegalArgumentException("文件路径无效");
+        }
+        String prefix = purposePrefix.endsWith("/") ? purposePrefix : purposePrefix + "/";
+        for (String base : trustedStorageBases()) {
+            URI source;
+            try { source = URI.create(base); } catch (IllegalArgumentException invalid) { continue; }
+            if (!"https".equalsIgnoreCase(source.getScheme()) || source.getHost() == null
+                    || source.getUserInfo() != null || source.getRawQuery() != null || source.getRawFragment() != null) continue;
+            int targetPort = target.getPort() < 0 ? 443 : target.getPort();
+            int sourcePort = source.getPort() < 0 ? 443 : source.getPort();
+            if (!source.getHost().equalsIgnoreCase(target.getHost()) || targetPort != sourcePort) continue;
+            String basePath = source.getPath().replaceAll("/+$", "");
+            if (!path.startsWith(basePath + "/")) continue;
+            String key = path.substring(basePath.length() + 1);
+            if (key.startsWith(prefix) && key.length() > prefix.length()) return key;
+        }
+        throw new IllegalArgumentException("文件地址或用途不属于可信存储");
+    }
+
+    private List<String> trustedStorageBases() {
+        List<String> bases = new ArrayList<>();
+        if (ossProperties.getDomain() != null && !ossProperties.getDomain().isBlank()) bases.add(ossProperties.getDomain().trim());
+        if (ossProperties.getMediaDomain() != null && !ossProperties.getMediaDomain().isBlank()) bases.add(ossProperties.getMediaDomain().trim());
+        if (ossProperties.getBucketName() != null && ossProperties.getEndpoint() != null) {
+            bases.add("https://" + ossProperties.getBucketName() + "." + ossProperties.getEndpoint().replaceFirst("^https?://", ""));
+        }
+        return bases;
+    }
+
+    /** Recognize equivalent image references; this never authorizes an object mutation. */
+    public String referenceObjectKey(String url, String purposePrefix) {
+        try {
+            URI source = URI.create(url);
+            if (source.getUserInfo() != null || source.getHost() == null) throw new IllegalArgumentException();
+            URI canonical = new URI(source.getScheme(), null, source.getHost(), source.getPort(), source.getPath(), null, null);
+            return requireObjectKey(canonical.toASCIIString(), purposePrefix);
+        } catch (Exception invalid) {
+            throw new IllegalArgumentException("文件引用不是可信存储地址");
+        }
+    }
+
+    public boolean deleteTrustedFile(String url, String purposePrefix) {
+        String key = requireObjectKey(url, purposePrefix);
+        try {
+            if (fileStorageService.exists(key)) fileStorageService.delete(key);
+            return !fileStorageService.exists(key);
+        } catch (RuntimeException failure) {
+            log.warn("精确对象清理失败，保留引用以供重试: {} ({})", key, failure.getClass().getSimpleName());
+            return false;
+        }
     }
 
     private String publicBaseUrl() {
