@@ -194,7 +194,7 @@ public class ArticleController {
     @Parameter(name = "articleCover", description = "文章封面")
     @LogAnnotation(module = "发布错误", operation = LogConst.DELETE)
     @AccessLimit(seconds = 60, maxCount = 30)
-    @GetMapping("/delete/articleCover")
+    @DeleteMapping("/delete/articleCover")
     public ResponseResult<Void> deleteArticleCover(@RequestParam("articleCoverUrl") String articleCoverUrl) {
         return articleService.deleteArticleCover(articleCoverUrl);
     }
