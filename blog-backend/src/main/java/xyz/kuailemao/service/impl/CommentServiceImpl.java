@@ -8,6 +8,8 @@ import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import xyz.kuailemao.constants.RedisConst;
 import xyz.kuailemao.constants.SQLConst;
 import xyz.kuailemao.domain.dto.CommentIsCheckDTO;
@@ -26,6 +28,8 @@ import xyz.kuailemao.enums.LikeEnum;
 import xyz.kuailemao.enums.MailboxAlertsEnum;
 import xyz.kuailemao.mapper.*;
 import xyz.kuailemao.service.CommentService;
+import xyz.kuailemao.service.ContentVisibilityService;
+import xyz.kuailemao.service.SiteModuleAccessService;
 import xyz.kuailemao.service.LikeService;
 import xyz.kuailemao.service.PublicService;
 import xyz.kuailemao.utils.RedisCache;
@@ -62,8 +66,56 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
     @Resource
     private LikeMapper likeMapper;
 
+    @Resource
+    private ContentVisibilityService contentVisibilityService;
+
+    @Resource
+    private SiteModuleAccessService siteModuleAccessService;
+
+    private void requirePublicTarget(Integer type, Integer typeId) {
+        if (type == null || (type != 1 && type != 2) || typeId == null || typeId <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "评论目标无效");
+        }
+        if (type == 1) siteModuleAccessService.require("blog");
+        if (!contentVisibilityService.isPublic(type, typeId.longValue())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "评论目标不可用");
+        }
+    }
+
+    private Comment publicThreadComment(Long id, UserCommentDTO target) {
+        if (id == null || id <= 0) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "回复关系无效");
+        Comment value = commentMapper.selectById(id);
+        if (value == null || !Objects.equals(value.getType(), target.getType())
+                || !Objects.equals(value.getTypeId(), target.getTypeId())
+                || !Integer.valueOf(1).equals(value.getIsCheck())
+                || !Integer.valueOf(0).equals(value.getIsDeleted())
+                || value.getCommentUserId() == null || value.getCommentUserId() <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "回复关系无效");
+        }
+        return value;
+    }
+
+    private void validateReply(UserCommentDTO request) {
+        if (request.getReplyId() == null) {
+            if (request.getParentId() != null || request.getReplyUserId() != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "回复关系无效");
+            }
+            return;
+        }
+        Comment reply = publicThreadComment(request.getReplyId(), request);
+        Long parentId = reply.getParentId() == null ? reply.getId() : reply.getParentId();
+        Comment parent = publicThreadComment(parentId, request);
+        if (parent.getParentId() != null || (request.getParentId() != null && !parentId.equals(request.getParentId()))
+                || (request.getReplyUserId() != null && !reply.getCommentUserId().equals(request.getReplyUserId()))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "回复关系无效");
+        }
+        request.setParentId(parentId);
+        request.setReplyUserId(reply.getCommentUserId());
+    }
+
     @Override
     public PageVO<List<ArticleCommentVO>> getComment(Integer type, Integer typeId, Integer pageNum, Integer pageSize) {
+        requirePublicTarget(type, typeId);
         // 查询父评论
         LambdaQueryWrapper<Comment> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper
@@ -71,6 +123,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 .eq(Comment::getType, type)
                 .eq(Comment::getTypeId, typeId)
                 .eq(Comment::getIsCheck, SQLConst.COMMENT_IS_CHECK)
+                .eq(Comment::getIsDeleted, 0)
                 .isNull(Comment::getParentId);
         Page<Comment> page = new Page<>(pageNum, pageSize);
         IPage<Comment> commentIPage = commentMapper.selectPage(page, queryWrapper);
@@ -82,6 +135,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                 .eq(Comment::getType, type)
                 .eq(Comment::getTypeId, typeId)
                 .eq(Comment::getIsCheck, SQLConst.COMMENT_IS_CHECK)
+                .eq(Comment::getIsDeleted, 0)
                 .isNotNull(Comment::getParentId);
         List<Comment> childComment = commentMapper.selectList(childQueryWrapper);
         if (!childComment.isEmpty()) comments.addAll(childComment);
@@ -94,6 +148,7 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
                             .eq(Comment::getType, type)
                             .eq(Comment::getTypeId, typeId)
                             .eq(Comment::getIsCheck, SQLConst.COMMENT_IS_CHECK)
+                            .eq(Comment::getIsDeleted, 0)
                             .isNull(Comment::getParentId)));
                 }
         ).toList();
@@ -102,7 +157,8 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
         countWrapper
                 .eq(Comment::getType, type)
                 .eq(Comment::getTypeId, typeId)
-                .eq(Comment::getIsCheck, SQLConst.COMMENT_IS_CHECK);
+                .eq(Comment::getIsCheck, SQLConst.COMMENT_IS_CHECK)
+                .eq(Comment::getIsDeleted, 0);
         return new PageVO<>(collect, commentMapper.selectCount(countWrapper));
     }
 
@@ -129,14 +185,24 @@ public class CommentServiceImpl extends ServiceImpl<CommentMapper, Comment> impl
 
     @Override
     public ResponseResult<String> userComment(UserCommentDTO commentDTO) {
-        Comment comment = commentDTO.asViewObject(Comment.class, commentDto -> commentDto.setCommentUserId(SecurityUtils.getUserId()));
+        if (SecurityUtils.getUserId() == null || SecurityUtils.getUserId() <= 0) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "请先登录");
+        }
+        if (commentDTO == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "评论目标无效");
+        requirePublicTarget(commentDTO.getType(), commentDTO.getTypeId());
+        validateReply(commentDTO);
+        Comment comment = commentDTO.asViewObject(Comment.class, value -> {
+            value.setCommentUserId(SecurityUtils.getUserId());
+            value.setIsCheck(0);
+            value.setIsDeleted(0);
+        });
         if (this.save(comment)) {
             if (Objects.equals(comment.getType(), CommentEnum.COMMENT_TYPE_ARTICLE.getType())) {
                 redisCache.incrementCacheMapValue(RedisConst.ARTICLE_COMMENT_COUNT, comment.getTypeId().toString(), 1);
             }
             // 判断用是否为第三方登录没有邮箱
             User user = userMapper.selectById(SecurityUtils.getUserId());
-            if (StringUtils.isEmpty(user.getEmail())) {
+            if (user == null || StringUtils.isEmpty(user.getEmail())) {
                 // 提示绑定邮箱
                 return ResponseResult.success("检测到您尚未绑定邮箱,无法开启邮箱提醒，请先绑定邮箱");
             }
