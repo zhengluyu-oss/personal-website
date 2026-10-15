@@ -105,8 +105,8 @@ test('normal login loads profile, while missing token never reports success', as
 test('real user store returns only after profile has updated and exposes failures to callers', async () => {
   let respond
   globalThis.__userInfoRequest = () => new Promise(resolve => { respond = resolve })
-  const source = 'import { shallowRef } from "vue";\n' + readFileSync(`${root}/src/store/modules/user.ts`, 'utf8')
-  const output = await build({ stdin: { contents: source, loader: 'ts', resolveDir: root }, bundle: true, write: false,
+  const source = readFileSync(`${root}/src/store/modules/user.ts`, 'utf8')
+  const output = await build({ stdin: { contents: source, loader: 'ts', resolveDir: `${root}/src/store/modules` }, bundle: true, write: false,
     platform: 'node', format: 'cjs', external: ['vue', 'pinia'], plugins: [{ name: 'user-boundaries', setup(b) {
       b.onResolve({ filter: /^@\// }, args => ({ path: args.path, namespace: 'fixture' }))
       b.onLoad({ filter: /.*/, namespace: 'fixture' }, args => ({ loader: 'js', contents: args.path.includes('auth')
@@ -128,6 +128,21 @@ test('real user store returns only after profile has updated and exposes failure
   assert.equal(user.token, null)
   assert.equal(user.userInfo, undefined)
   assert.equal(globalThis.__authFixture.cleared, true)
+})
+
+test('profile network failure after password acceptance keeps the token without announcing login success', async () => {
+  loginResult = { code: 200, data: { token: 'synthetic', expire: '2099-01-01' } }
+  const previousGetInfo = store.getInfo
+  store.getInfo = async () => { throw new Error('Network Error') }
+  const { host, cleanup } = mount()
+  try {
+    click(host, '立即登录'); await flush()
+    assert.equal(store.token, 'synthetic')
+    assert.ok(events.includes('暂时无法获取登录信息，已保留会话，请在导航栏重试'))
+    assert.ok(!events.includes('remove'))
+    assert.ok(!events.includes('登录成功'))
+    assert.ok(!events.includes('navigate'))
+  } finally { store.getInfo = previousGetInfo; cleanup() }
 })
 
 test('frontend token storage validates data and replaces stale storage when login preference changes', () => {
