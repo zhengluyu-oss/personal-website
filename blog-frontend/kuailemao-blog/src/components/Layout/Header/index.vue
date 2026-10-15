@@ -10,6 +10,8 @@ import {GET_TOKEN, SET_TOKEN} from "@/utils/auth.ts"
 import {ElMessage} from "element-plus"
 import router from "@/router"
 import SessionRecovery from './SessionRecovery.vue'
+import DiaryMenuEntry from './DiaryMenuEntry.vue'
+import { confirmPrivateEditsBeforeLogout } from '@/utils/private-workspace'
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -82,7 +84,8 @@ async function thirdLogin() {
   }
 }
 
-const logoutSub = () => {
+const logoutSub = async () => {
+  if (!await confirmPrivateEditsBeforeLogout()) return
   logout().then((res: any) => {
     if (res.code === 200) {
       userStore.clearSession()
@@ -181,6 +184,7 @@ function restoreMenuFocus(event?: Event) {
               <el-avatar style="margin-right: 3rem"
                          :src="userStore.userInfo?.avatar"></el-avatar>
               <template #dropdown>
+                <DiaryMenuEntry />
                 <el-dropdown-item @click="router.push('/account')">
                   <template #default>
                     <el-icon>
