@@ -7,6 +7,8 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import xyz.kuailemao.constants.SQLConst;
 import xyz.kuailemao.config.OssProperties;
@@ -30,6 +32,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * (WebsiteInfo)表服务实现类
@@ -59,29 +62,70 @@ public class WebsiteInfoServiceImpl extends ServiceImpl<WebsiteInfoMapper, Websi
     @Transactional
     @Override
     public ResponseResult<String> uploadImageInsertOrUpdate(UploadEnum uploadEnum, MultipartFile avatar, Integer type) {
+        if (!(Integer.valueOf(0).equals(type) && uploadEnum == UploadEnum.WEBSITE_INFO_AVATAR)
+                && !(Integer.valueOf(1).equals(type) && uploadEnum == UploadEnum.WEBSITE_INFO_BACKGROUND)) {
+            return ResponseResult.failure("图片用途无效");
+        }
+        WebsiteInfo before = this.getById(WebsiteInfoConst.WEBSITE_INFO_ID);
+        if (before == null) return ResponseResult.failure("网站信息不存在");
+        String oldUrl = type == 0 ? before.getWebmasterAvatar() : before.getWebmasterProfileBackground();
+        final String url;
         try {
-            List<String> avatarNames = fileUploadUtils.listFiles(uploadEnum.getDir());
-            if (!avatarNames.isEmpty()) {
-                if (fileUploadUtils.deleteFiles(avatarNames))
-                    log.info("删除旧图片成功,{}", avatarNames);
-            }
-            // 上传
-            String url = fileUploadUtils.upload(uploadEnum, avatar);
-            switch (type) {
-                case 0 ->
-                        this.saveOrUpdate(WebsiteInfo.builder().webmasterAvatar(url).id(WebsiteInfoConst.WEBSITE_INFO_ID).build());
-                case 1 ->
-                        this.saveOrUpdate(WebsiteInfo.builder().webmasterProfileBackground(url).id(WebsiteInfoConst.WEBSITE_INFO_ID).build());
-            }
-
-            if (StringUtils.isNotNull(url))
-                return ResponseResult.success(url);
-            else
-                return ResponseResult.failure("图片格式不正确");
-
+            url = fileUploadUtils.upload(uploadEnum, avatar);
+            if (url == null || url.isBlank()) return ResponseResult.failure("图片上传失败");
         } catch (Exception e) {
-            log.error("上传图片失败", e);
-            return ResponseResult.failure();
+            log.warn("新站长图片上传失败，保留原图 ({})", e.getClass().getSimpleName());
+            return ResponseResult.failure("图片校验或上传失败，原图已保留");
+        }
+        boolean managed = TransactionSynchronizationManager.isSynchronizationActive();
+        AtomicBoolean switched = new AtomicBoolean();
+        if (managed) TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override public void afterCompletion(int status) {
+                cleanupUnreferencedImage(status == STATUS_COMMITTED && switched.get() ? oldUrl : url, uploadEnum);
+            }
+        });
+        try {
+            LambdaUpdateWrapper<WebsiteInfo> update = new LambdaUpdateWrapper<WebsiteInfo>()
+                    .eq(WebsiteInfo::getId, WebsiteInfoConst.WEBSITE_INFO_ID);
+            if (type == 0) {
+                update.set(WebsiteInfo::getWebmasterAvatar, url);
+                if (oldUrl == null) update.isNull(WebsiteInfo::getWebmasterAvatar);
+                else update.eq(WebsiteInfo::getWebmasterAvatar, oldUrl);
+            } else {
+                update.set(WebsiteInfo::getWebmasterProfileBackground, url);
+                if (oldUrl == null) update.isNull(WebsiteInfo::getWebmasterProfileBackground);
+                else update.eq(WebsiteInfo::getWebmasterProfileBackground, oldUrl);
+            }
+            if (baseMapper.update(null, update) != 1) {
+                if (!managed) cleanupUnreferencedImage(url, uploadEnum);
+                return ResponseResult.failure("图片配置已变化，请刷新后重试，原图已保留");
+            }
+            switched.set(true);
+            if (!managed) cleanupUnreferencedImage(oldUrl, uploadEnum);
+            return ResponseResult.success(url);
+        } catch (RuntimeException databaseFailure) {
+            if (!managed) cleanupUnreferencedImage(url, uploadEnum);
+            throw databaseFailure; // Let the enclosing transaction roll back before cleanup.
+        }
+    }
+
+    private void cleanupUnreferencedImage(String url, UploadEnum purpose) {
+        if (url == null || url.isBlank()) return;
+        String key;
+        try { key = fileUploadUtils.requireObjectKey(url, purpose.getDir()); }
+        catch (RuntimeException legacyUrl) { log.warn("历史站长图片未自动清理，用途: {}", purpose.name()); return; }
+        try {
+            WebsiteInfo current = this.getById(WebsiteInfoConst.WEBSITE_INFO_ID);
+            if (current == null) return; // Missing reference state cannot authorize cleanup.
+            for (String reference : new String[]{current.getWebmasterAvatar(), current.getWebmasterProfileBackground()}) {
+                if (reference == null || reference.isBlank()) continue;
+                try {
+                    if (key.equals(fileUploadUtils.referenceObjectKey(reference, purpose.getDir()))) return;
+                } catch (IllegalArgumentException otherPurpose) { /* Different object purpose or a legacy external image. */ }
+            }
+            if (!fileUploadUtils.deleteTrustedFile(url, purpose.getDir())) log.warn("站长旧图片待重试清理: {}", key);
+        } catch (RuntimeException failed) {
+            log.warn("站长图片清理待重试: {} ({})", key, failed.getClass().getSimpleName());
         }
     }
 
