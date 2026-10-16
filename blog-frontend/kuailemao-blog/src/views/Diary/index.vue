@@ -10,8 +10,10 @@ import { DiarySaver, type DiaryEntry, type DiaryContent } from '@/utils/diary-sa
 import { sanitizePrivateDiary } from '@/utils/diary-preview'
 import { registerPrivateWorkspaceGuard } from '@/utils/private-workspace'
 import DiaryAiPanel from './DiaryAiPanel.vue'
+import CoachingPanel from './CoachingPanel.vue'
 
 const user = useUserStore(), route = useRoute(), router = useRouter()
+const coaching = ref<InstanceType<typeof CoachingPanel>>(), coachingReady = ref(false)
 const gate = ref('checking'), gateMessage = ref('正在确认私密日记访问资格'), account = ref('')
 const saver = new DiarySaver(diaryApi.save, () => { view.value = saver.snapshot() })
 const view = ref(saver.snapshot()), metadata = ref<DiaryEntry>(), serverConflict = ref<DiaryEntry>()
@@ -224,7 +226,8 @@ onBeforeUnmount(() => { disposed = true; identitySequence++; detailSequence++; l
           <section v-if="historyOpen" class="history"><h2>修改历史</h2><p v-if="historyError" role="alert">{{ historyError }}</p><article v-for="item in history" :key="item.revision"><h3>版本 {{ item.revision }} · {{ formatTime(item.savedAt) }}</h3><p>{{ item.title || '无标题' }} · {{ item.action }} · {{ item.coveredFrom || '未填日期' }}{{ item.coveredTo ? ' 至 ' + item.coveredTo : '' }}</p><details><summary>查看此版本正文</summary><pre>{{ item.body }}</pre></details><el-button @click="changeEntry('restore', item.revision)">恢复为新版本</el-button></article><div class="pagination"><el-button :disabled="historyPage <= 1" @click="historyPage--; loadHistory()">上一页</el-button><span>{{ historyPage }}</span><el-button :disabled="historyPage * 20 >= historyTotal" @click="historyPage++; loadHistory()">下一页</el-button></div></section>
         </section>
       </div>
-      <DiaryAiPanel :key="account" :blocked="view.state !== 'clean' || !!pendingAction || actionBusy" :entry-id="view.id" :revision="view.revision" :choices="rows.filter(e => !e.deletedAt).map(e => ({ id: e.id, title: e.title }))" @open-entry="choose" />
+      <DiaryAiPanel :key="account" :blocked="view.state !== 'clean' || !!pendingAction || actionBusy" :entry-id="view.id" :revision="view.revision" :choices="rows.filter(e => !e.deletedAt).map(e => ({ id: e.id, title: e.title }))" :can-adopt="coachingReady" @open-entry="choose" @adopt-suggestion="coaching?.adoptExisting($event)" />
+      <CoachingPanel ref="coaching" :key="'coaching-' + account" :blocked="view.state !== 'clean' || !!pendingAction || actionBusy" @ready="coachingReady = $event" />
     </template>
     <el-dialog v-model="leaveOpen" title="还有内容或操作未获确认" :close-on-click-modal="false" :close-on-press-escape="false" :show-close="false" width="min(92vw, 480px)"><p>保存成功后再离开，或继续留在本页。放弃只清除本页待保存内容，已经发出的请求仍可能完成。</p><template #footer><el-button @click="answerLeave('stay')">继续编辑</el-button><el-button type="danger" plain :disabled="leavingBusy" @click="answerLeave('discard')">放弃并继续</el-button><el-button type="primary" :loading="leavingBusy" :disabled="gate !== 'ready' || view.state === 'conflict'" @click="answerLeave('save')">保存后继续</el-button></template></el-dialog>
   </main>
