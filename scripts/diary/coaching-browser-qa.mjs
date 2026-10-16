@@ -27,7 +27,7 @@ try {
     const response = await api('/coaching/goals', 'GET', undefined, token)
     assert.ok([401, 403].includes(response.status)); assert.equal(response.cache, 'private, no-store')
   }
-  await page.goto(base + '/diary?entry=' + entry); await panel.getByRole('button', { name: '新目标', exact: true }).waitFor()
+  await page.goto(base + '/diary?entry=' + entry); await page.getByRole('navigation', { name: '日记工作区' }).getByRole('button', { name: /目标行动/ }).click(); await panel.getByRole('button', { name: '新目标', exact: true }).waitFor()
   await panel.getByRole('button', { name: '新目标', exact: true }).click()
   await editor.getByLabel('目标标题').fill('Fictional watercolor goal ' + suffix)
   await editor.getByLabel('怎样判断有帮助').fill('Use my actual feedback, not planned actions.')
@@ -62,7 +62,7 @@ try {
   assert.equal(await editor.getByLabel('目标标题').inputValue(), 'Local unsaved conflict ' + suffix)
   await editor.getByRole('button', { name: '取消编辑' }).click(); await page.getByRole('button', { name: '放弃并离开', exact: true }).click()
   result.checks.push('409 preserves local draft')
-  await panel.getByRole('button', { name: '周／月回顾', exact: true }).click()
+  await page.getByRole('navigation', { name: '日记工作区' }).getByRole('button', { name: /做复盘/ }).click(); await page.getByRole('button', { name: /周／月回顾 结合目标/ }).click()
   for (const check of await panel.locator('.period-form fieldset input[type=checkbox]').all()) if (await check.isChecked()) await check.uncheck()
   const chosen = panel.locator('fieldset input[type=checkbox][value="' + goal.id + '"]'); await chosen.check()
   await panel.getByRole('button', { name: '查看范围与真实汇总', exact: true }).click(); await panel.getByText('已尝试 0 · 已完成 1', { exact: false }).waitFor()
@@ -75,7 +75,7 @@ try {
   await editor.getByRole('button', { name: '取消编辑' }).click(); await page.getByRole('button', { name: '放弃并离开', exact: true }).click()
   assert.equal((await api('/coaching/actions?parent=' + goal.id)).body.data.total, before); result.checks.push('canceling suggestion draft creates no action')
   // Re-open suggestion and explicitly adopt.
-  await panel.getByRole('button', { name: '周／月回顾', exact: true }).click(); await panel.getByRole('button', { name: '打开可编辑的行动草稿', exact: true }).first().click()
+  await page.getByRole('navigation', { name: '日记工作区' }).getByRole('button', { name: /做复盘/ }).click(); await page.getByRole('button', { name: /周／月回顾 结合目标/ }).click(); await panel.getByRole('button', { name: '打开可编辑的行动草稿', exact: true }).first().click()
   await editor.getByLabel('准备尝试的具体行动').fill('Fictional confirmed adoption ' + suffix)
   await editor.getByRole('button', { name: '确认保存', exact: true }).click(); await editor.waitFor({ state: 'hidden' })
   assert.equal((await api('/coaching/actions?parent=' + goal.id)).body.data.total, before + 1); result.checks.push('explicit edited adoption creates exactly one action')
