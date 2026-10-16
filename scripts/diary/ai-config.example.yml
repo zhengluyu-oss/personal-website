@@ -1,0 +1,20 @@
+# 合并到受限的外置配置，或通过 spring.config.additional-location 加载。
+# 供应商尚未选定；不填付费模型、真实地址或秘密，不自动启用。
+diary:
+  ai:
+    enabled: ${DIARY_AI_ENABLED:false}
+    provider: ${DIARY_AI_PROVIDER:}
+    embedding-endpoint: ${DIARY_AI_EMBEDDING_ENDPOINT:}
+    generation-endpoint: ${DIARY_AI_GENERATION_ENDPOINT:}
+    embedding-key: ${DIARY_AI_EMBEDDING_KEY:}
+    generation-key: ${DIARY_AI_GENERATION_KEY:}
+    embedding-model: ${DIARY_AI_EMBEDDING_MODEL:}
+    generation-model: ${DIARY_AI_GENERATION_MODEL:}
+    dimensions: ${DIARY_AI_DIMENSIONS:0}
+    allowed-hosts: ${DIARY_AI_ALLOWED_HOSTS:}
+    data-policy: ${DIARY_AI_DATA_POLICY:}
+    minimum-similarity: ${DIARY_AI_MINIMUM_SIMILARITY:NaN}
+    daily-generations: 20
+    daily-embedding-blocks: 200
+    max-queue: 5
+    max-reports: 1000

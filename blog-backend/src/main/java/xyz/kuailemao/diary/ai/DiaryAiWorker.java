@@ -1,0 +1,84 @@
+package xyz.kuailemao.diary.ai;
+
+import com.alibaba.fastjson2.JSON;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import jakarta.annotation.PreDestroy;
+import xyz.kuailemao.diary.DiaryFailure;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.BooleanSupplier;
+import static xyz.kuailemao.diary.ai.DiaryAiModels.*;
+
+/** 一个调度线程加数据库全局租约；所有 HTTP 调用都在数据库事务之外。 */
+public final class DiaryAiWorker {
+    private final DiaryAiStore store;private final DiaryAiIndex index;private final DiaryAiCloud cloud;
+    private final DiaryAiProperties p;private final long owner;private final BooleanSupplier active;
+    private final java.util.function.Supplier<DiaryAiExtension> extensions;
+    private final ScheduledExecutorService executor=Executors.newSingleThreadScheduledExecutor(r->{Thread t=new Thread(r,"private-diary-ai");t.setDaemon(true);return t;});
+    public DiaryAiWorker(DiaryAiStore store,DiaryAiIndex index,DiaryAiCloud cloud,DiaryAiProperties p,long owner,BooleanSupplier active) {
+        this(store,index,cloud,p,owner,active,()->null);
+    }
+    public DiaryAiWorker(DiaryAiStore store,DiaryAiIndex index,DiaryAiCloud cloud,DiaryAiProperties p,long owner,BooleanSupplier active,java.util.function.Supplier<DiaryAiExtension> extensions) {
+        this.store=store;this.index=index;this.cloud=cloud;this.p=p;this.owner=owner;this.active=active;this.extensions=extensions;
+    }
+    @EventListener(ApplicationReadyEvent.class) public void start(){executor.scheduleWithFixedDelay(this::tick,5,5,TimeUnit.SECONDS);}
+    @PreDestroy public void close(){executor.shutdownNow();}
+    public void tick() {
+        if(!p.configured())return;UUID token=UUID.randomUUID();boolean acquired=false;
+        try {
+            if(!active.getAsBoolean() || !store.available(owner))return;
+            String profile=store.ensureProfile(owner);acquired=store.acquire(owner,token);if(!acquired)return;
+            DiaryAiExtension extra=extensions.get();
+            if(extra!=null) {
+                extra.recover(owner,token);java.time.Instant next=extra.oldest(owner);
+                if(next!=null) {
+                    var own=store.oldestQueued(owner);
+                    if(own==null || next.isBefore(own)) { extra.process(owner,token,active);return; }
+                }
+            }
+            var work=store.claim(owner,token);
+            if(work==null)index.processBatch(owner,profile,token,active);else process(work,profile,token);
+        } catch(RuntimeException ignored) {
+            // 下一轮只恢复数据库持久状态；不记录可能携带正文的异常，不重发未知生成。
+        } finally {if(acquired)try{store.release(owner,token);}catch(RuntimeException ignored){/* 租约自行到期 */}}
+    }
+    private void check(DiaryAiStore.Work work) {
+        if(!active.getAsBoolean())throw new DiaryFailure(403,"账号已不可用");
+        if(!store.current(owner,work) || store.job(owner,work.id()).state()!=State.RUNNING)throw new DiaryFailure(409,"来源或任务已变化");
+    }
+    private void process(DiaryAiStore.Work work,String profile,UUID token) {
+        boolean sent=false;
+        try {
+            check(work);List<Source> sources;boolean partial=false;
+            if(work.kind()==Kind.QUESTION) {
+                Coverage c=index.coverage(owner,profile,work.request().scope());partial=c.total()!=c.indexed();
+                if(partial && !work.request().allowPartialIndex())throw new DiaryFailure(409,"索引尚未完成");
+                store.reserve(owner,0,1);
+                var embedding=cloud.embed(List.of(work.request().question()));store.usage(owner,embedding.inputTokens(),null);check(work);
+                sources=index.retrieve(owner,profile,work.request(),embedding.vectors().get(0));
+            } else {
+                store.preview(owner,work.request().scope());
+                sources=store.snapshot(owner,()->{
+                    if(!work.digest().equals(store.scopeDigest(owner,work.request().scope())))throw new DiaryFailure(409,"范围已变化");
+                    List<Source> values=new ArrayList<>();
+                    for(Entry e:store.select(owner,work.request().scope(),41))values.add(new Source("S"+(values.size()+1),e.id(),e.revision(),e.title(),e.coveredFrom(),e.coveredTo(),e.createdAt(),0,points(e.body()),e.body(),DiaryAiText.hash(e.body())));
+                    return List.copyOf(values);
+                });
+            }
+            check(work);
+            if(sources.isEmpty()){store.complete(owner,work,token,sources,DiaryAiEvidence.insufficient(),partial);return;}
+            String context=JSON.toJSONString(Map.of("question",Objects.toString(work.request().question(),""),"scope",Objects.toString(work.request().scope(),"全部当前记录"),"partialIndex",partial,"sources",sources));
+            if(points(DiaryAiEvidence.system(work.kind()))+points(context)>p.getMaxPromptCharacters())throw DiaryFailure.invalid("输入超过模型预算，请缩小范围");
+            store.reserve(owner,1,0);check(work);store.preparing(owner,work,token,sources,partial);sent=true;
+            var generation=cloud.generate(DiaryAiEvidence.system(work.kind()),context);
+            store.usage(owner,generation.inputTokens(),generation.outputTokens());check(work);
+            Result result=DiaryAiEvidence.validate(generation.content(),sources,work.kind());
+            store.complete(owner,work,token,sources,result,partial);
+        } catch(RuntimeException error) {
+            State state=error instanceof DiaryAiCloud.Failure f && f.uncertain()?State.UNCERTAIN:error instanceof DiaryFailure d && d.status()==409?State.STALE:State.FAILED;
+            String code=error instanceof DiaryAiCloud.Failure f?f.code():error instanceof DiaryFailure d && d.status()==429?"DAILY_LIMIT":"TASK_REJECTED";
+            store.fail(owner,work,token,state,code,sent);
+        }
+    }
+}
