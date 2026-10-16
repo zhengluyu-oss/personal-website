@@ -45,6 +45,8 @@ class NginxAssets(unittest.TestCase):
                 for path in ['/admin/index.html','/admin/articles/42','/index.html','/articles/42']:
                     status,h,body=get(path); self.assertEqual(status,200,path); self.assertIn('text/html',h['Content-Type']); self.assertIn('no-cache',h['Cache-Control'])
                 status,h,body=get('/admin/_app.config.js'); self.assertEqual(status,200); self.assertIn('no-cache',h['Cache-Control'])
+                status,h,body=get('/diary'); self.assertEqual(status,200); self.assertEqual(body,values['blog/index.html'])
+                self.assertIn('no-store',h['Cache-Control']); self.assertIn('noindex',h['X-Robots-Tag'])
             finally: subprocess.run(['docker','stop',name],check=True,stdout=subprocess.DEVNULL)
 
 if __name__=='__main__': unittest.main()
