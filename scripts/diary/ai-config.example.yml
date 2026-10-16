@@ -10,6 +10,8 @@ diary:
     generation-key: ${DIARY_AI_GENERATION_KEY:}
     embedding-model: ${DIARY_AI_EMBEDDING_MODEL:}
     generation-model: ${DIARY_AI_GENERATION_MODEL:}
+    # DeepSeek: explicitly set generation-thinking: false to avoid spending the output budget on reasoning.
+    # Omit for providers that do not implement the thinking parameter.
     dimensions: ${DIARY_AI_DIMENSIONS:0}
     allowed-hosts: ${DIARY_AI_ALLOWED_HOSTS:}
     data-policy: ${DIARY_AI_DATA_POLICY:}

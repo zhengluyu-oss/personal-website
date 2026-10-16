@@ -88,9 +88,11 @@ public final class DiaryAiCloud {
     }
     public Generation generate(String system,String context) {
         if(DiaryAiModels.points(system)+DiaryAiModels.points(context)>p.getMaxPromptCharacters())throw new Failure("CONTEXT_LIMIT",false);
-        JSONObject response=send(p.getGenerationEndpoint(),p.getGenerationKey(),Map.of("model",p.getGenerationModel(),
+        Map<String,Object> payload=new LinkedHashMap<>(Map.of("model",p.getGenerationModel(),
                 "messages",List.of(Map.of("role","system","content",system),Map.of("role","user","content",context)),
                 "max_tokens",p.getMaxOutputTokens()));
+        if(p.getGenerationThinking()!=null)payload.put("thinking",Map.of("type",p.getGenerationThinking()?"enabled":"disabled"));
+        JSONObject response=send(p.getGenerationEndpoint(),p.getGenerationKey(),payload);
         try {
             JSONArray choices=response.getJSONArray("choices");if(choices==null || choices.size()!=1)throw new IllegalArgumentException();
             JSONObject choice=choices.getJSONObject(0),message=choice.getJSONObject("message");
