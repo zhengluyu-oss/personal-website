@@ -1,0 +1,10 @@
+# Merge into the existing external private diary configuration, never into source control secrets.
+# The existing diary.enabled/owner-user-id/url/username/password stay in the private configuration.
+diary:
+  coaching:
+    enabled: false
+    ai-enabled: false
+# Manual goals require only 001 + 003. No AI tables, vector extension or provider credentials needed.
+# Enable AI only after 000-vector + 002 + real provider contract validation and explicit owner consent.
+# Reuse diary.ai provider/model/endpoint/allowed-hosts/data-policy/keys from ai-config.example.yml.
+# Existing diary.ai daily limits are shared by questions, reviews, period reviews and embedding work.
