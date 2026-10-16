@@ -25,6 +25,7 @@ async function request<T>(method: string, path: string, data?: unknown, download
     throw Object.assign(new Error(message), { status })
   }
 }
+export { request as diaryRequest }
 export const diaryApi = {
   capabilities: () => request<{ allowed: boolean; available: boolean }>('GET', '/capabilities'),
   read: (id: string) => request<DiaryEntry>('GET', '/entries/' + encodeURIComponent(id)),

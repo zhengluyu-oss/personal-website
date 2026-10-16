@@ -1,0 +1,397 @@
+{
+  "synthetic": true,
+  "ownerId": 7,
+  "otherOwnerId": 8,
+  "entries": [
+    {
+      "id": "4d9c2601-d08a-5e4b-9b0a-86350d2fc102",
+      "title": "晚间放松",
+      "body": "【完全虚构的测试资料】虚构作者小禾在周一晚上九点半关闭手机，改为听二十分钟轻音乐。",
+      "coveredFrom": null,
+      "coveredTo": null,
+      "revision": 1
+    },
+    {
+      "id": "95fe94c4-7844-565a-8ea6-c9a998483277",
+      "title": "通勤阅读",
+      "body": "【完全虚构的测试资料】小禾乘地铁时读了纸质科普书的十二页，并在到站前写下一句摘要。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "9bf0340e-4f01-5c36-a155-5d0cddd908e7",
+      "title": "午间散步",
+      "body": "【完全虚构的测试资料】周三午饭后，小禾绕公园步行十五分钟，回来觉得注意力更集中。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "0459282f-9401-5208-b64b-67bba854d6f5",
+      "title": "番茄钟",
+      "body": "【完全虚构的测试资料】小禾尝试二十五分钟专注、五分钟休息，完成了一份虚构课程笔记。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "f6b50db2-bac7-52b2-94ab-9d3fbd2f883b",
+      "title": "晨间准备",
+      "body": "【完全虚构的测试资料】小禾把钥匙和公交卡在前晚放到玄关托盘，早晨没有再到处寻找。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "94c58335-758d-5a45-a95f-fd09e1a0cf24",
+      "title": "项目分解",
+      "body": "【完全虚构的测试资料】小禾将虚构的书架整理任务分成清点、分类和贴标签三个步骤。",
+      "coveredFrom": null,
+      "coveredTo": null,
+      "revision": 1
+    },
+    {
+      "id": "a7ef53dd-e7d3-52d0-846d-6e3f8e32697d",
+      "title": "周末绘画",
+      "body": "【完全虚构的测试资料】小禾周六下午用水彩画了一盆薄荷，专注绘画约四十分钟。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "77dd309c-0397-500b-a749-ea8c4c34b5a6",
+      "title": "英语练习",
+      "body": "【完全虚构的测试资料】周日小禾跟读一段两分钟英语播客，第二遍能听清六个生词。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "499b86d6-0ec9-5424-bdbc-1cefe134136e",
+      "title": "饮水安排",
+      "body": "【完全虚构的测试资料】小禾把水杯放到显示器旁边，上午分三次喝完六百毫升水。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "6540c437-d16d-5904-8e50-350ff6f12fa2",
+      "title": "理财记录",
+      "body": "【完全虚构的测试资料】小禾给虚构家庭本周的生活支出做了分类，发现零食支出是四十五元。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "0c28911f-00f7-59ed-b0fa-8946b4153e3d",
+      "title": "整理收件箱",
+      "body": "【完全虚构的测试资料】小禾把邮件按待回复、待归档分组，十分钟处理了八封非紧急邮件。",
+      "coveredFrom": null,
+      "coveredTo": null,
+      "revision": 1
+    },
+    {
+      "id": "a7b10d96-c07f-5e58-a395-85086bf1b639",
+      "title": "朋友沟通",
+      "body": "【完全虚构的测试资料】小禾给老朋友阿杉拨了十五分钟电话，聊了彼此最近读的书。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "179defa1-51e7-5f78-a5a9-058fb8580cf5",
+      "title": "烘焙尝试",
+      "body": "【完全虚构的测试资料】小禾第一次烤燕麦饼干，设置一百七十度十八分钟，下一次准备少放糖。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "64f40539-1123-5e0b-914f-c8fe5c80c276",
+      "title": "噪声应对",
+      "body": "【完全虚构的测试资料】小禾在公共阅读室换到靠窗座位并戴耳塞，随后完成了阅读计划。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "bdecc5b5-dd1e-5f32-b27f-cd1e54392f96",
+      "title": "任务缓冲",
+      "body": "【完全虚构的测试资料】小禾给虚构报告任务额外预留半小时，最终在约定时间前十分钟提交。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "63aab52c-5fc3-598f-86a0-114f48f15ee0",
+      "title": "桌面收纳",
+      "body": "【完全虚构的测试资料】小禾只保留台灯、笔记本和一支笔在桌面，其他物品放入抽屉。",
+      "coveredFrom": null,
+      "coveredTo": null,
+      "revision": 1
+    },
+    {
+      "id": "b15b7089-626e-5319-8699-c279026fe951",
+      "title": "园艺观察",
+      "body": "【完全虚构的测试资料】小禾发现盆栽叶片偏干，将浇水调整到周二和周五的早晨。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "b4b90195-8372-5fab-b7b9-6d645f72713f",
+      "title": "练琴记录",
+      "body": "【完全虚构的测试资料】小禾把一段钢琴练习曲放慢到每分钟六十拍，连续练了三遍。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "a0886d66-6d4d-5f75-aacf-9f5e27eab3af",
+      "title": "复查清单",
+      "body": "【完全虚构的测试资料】小禾交虚构作业前检查文件名、页码和附件，发现并补上遗漏附件。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    },
+    {
+      "id": "32ceed12-7a49-5404-b92e-35cff3ad82a1",
+      "title": "数字断舍离",
+      "body": "【完全虚构的测试资料】小禾取消了三个不常看的资讯订阅，让每日提醒减少七条。",
+      "coveredFrom": "2024-02-28",
+      "coveredTo": "2024-03-02",
+      "revision": 1
+    }
+  ],
+  "questions": [
+    {
+      "id": "answerable-1",
+      "question": "小禾如何调整睡前使用手机的习惯？",
+      "expectedEntryIds": [
+        "4d9c2601-d08a-5e4b-9b0a-86350d2fc102"
+      ],
+      "expectedFact": "虚构作者小禾在周一晚上九点半关闭手机，改为听二十分钟轻音乐。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-2",
+      "question": "通勤路上用了什么方式阅读和记录？",
+      "expectedEntryIds": [
+        "95fe94c4-7844-565a-8ea6-c9a998483277"
+      ],
+      "expectedFact": "小禾乘地铁时读了纸质科普书的十二页，并在到站前写下一句摘要。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-3",
+      "question": "午饭后做了哪项让注意力改善的活动？",
+      "expectedEntryIds": [
+        "9bf0340e-4f01-5c36-a155-5d0cddd908e7"
+      ],
+      "expectedFact": "周三午饭后，小禾绕公园步行十五分钟，回来觉得注意力更集中。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-4",
+      "question": "专注与休息采用了什么时间分配？",
+      "expectedEntryIds": [
+        "0459282f-9401-5208-b64b-67bba854d6f5"
+      ],
+      "expectedFact": "小禾尝试二十五分钟专注、五分钟休息，完成了一份虚构课程笔记。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-5",
+      "question": "如何减少早晨寻找随身物品的时间？",
+      "expectedEntryIds": [
+        "f6b50db2-bac7-52b2-94ab-9d3fbd2f883b"
+      ],
+      "expectedFact": "小禾把钥匙和公交卡在前晚放到玄关托盘，早晨没有再到处寻找。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-6",
+      "question": "书架整理被拆成了哪几个步骤？",
+      "expectedEntryIds": [
+        "94c58335-758d-5a45-a95f-fd09e1a0cf24"
+      ],
+      "expectedFact": "小禾将虚构的书架整理任务分成清点、分类和贴标签三个步骤。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-7",
+      "question": "周末做了什么绘画练习？",
+      "expectedEntryIds": [
+        "a7ef53dd-e7d3-52d0-846d-6e3f8e32697d"
+      ],
+      "expectedFact": "小禾周六下午用水彩画了一盆薄荷，专注绘画约四十分钟。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-8",
+      "question": "英语听力和跟读练习是如何进行的？",
+      "expectedEntryIds": [
+        "77dd309c-0397-500b-a749-ea8c4c34b5a6"
+      ],
+      "expectedFact": "周日小禾跟读一段两分钟英语播客，第二遍能听清六个生词。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-9",
+      "question": "小禾怎样安排上午喝水？",
+      "expectedEntryIds": [
+        "499b86d6-0ec9-5424-bdbc-1cefe134136e"
+      ],
+      "expectedFact": "小禾把水杯放到显示器旁边，上午分三次喝完六百毫升水。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-10",
+      "question": "支出分类后发现零食花了多少？",
+      "expectedEntryIds": [
+        "6540c437-d16d-5904-8e50-350ff6f12fa2"
+      ],
+      "expectedFact": "小禾给虚构家庭本周的生活支出做了分类，发现零食支出是四十五元。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-11",
+      "question": "邮箱整理用了哪些分类？",
+      "expectedEntryIds": [
+        "0c28911f-00f7-59ed-b0fa-8946b4153e3d"
+      ],
+      "expectedFact": "小禾把邮件按待回复、待归档分组，十分钟处理了八封非紧急邮件。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-12",
+      "question": "和朋友通过什么方式联系、谈了什么？",
+      "expectedEntryIds": [
+        "a7b10d96-c07f-5e58-a395-85086bf1b639"
+      ],
+      "expectedFact": "小禾给老朋友阿杉拨了十五分钟电话，聊了彼此最近读的书。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-13",
+      "question": "烘焙燕麦饼干的温度和时间是多少？",
+      "expectedEntryIds": [
+        "179defa1-51e7-5f78-a5a9-058fb8580cf5"
+      ],
+      "expectedFact": "小禾第一次烤燕麦饼干，设置一百七十度十八分钟，下一次准备少放糖。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-14",
+      "question": "在公共阅读室如何处理噪声干扰？",
+      "expectedEntryIds": [
+        "64f40539-1123-5e0b-914f-c8fe5c80c276"
+      ],
+      "expectedFact": "小禾在公共阅读室换到靠窗座位并戴耳塞，随后完成了阅读计划。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-15",
+      "question": "完成报告时如何安排缓冲时间？",
+      "expectedEntryIds": [
+        "bdecc5b5-dd1e-5f32-b27f-cd1e54392f96"
+      ],
+      "expectedFact": "小禾给虚构报告任务额外预留半小时，最终在约定时间前十分钟提交。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-16",
+      "question": "桌面留下了哪些物品？",
+      "expectedEntryIds": [
+        "63aab52c-5fc3-598f-86a0-114f48f15ee0"
+      ],
+      "expectedFact": "小禾只保留台灯、笔记本和一支笔在桌面，其他物品放入抽屉。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-17",
+      "question": "盆栽浇水安排改成了什么时候？",
+      "expectedEntryIds": [
+        "b15b7089-626e-5319-8699-c279026fe951"
+      ],
+      "expectedFact": "小禾发现盆栽叶片偏干，将浇水调整到周二和周五的早晨。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-18",
+      "question": "钢琴练习如何调整速度和遍数？",
+      "expectedEntryIds": [
+        "b4b90195-8372-5fab-b7b9-6d645f72713f"
+      ],
+      "expectedFact": "小禾把一段钢琴练习曲放慢到每分钟六十拍，连续练了三遍。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-19",
+      "question": "提交作业前检查清单包含什么？",
+      "expectedEntryIds": [
+        "a0886d66-6d4d-5f75-aacf-9f5e27eab3af"
+      ],
+      "expectedFact": "小禾交虚构作业前检查文件名、页码和附件，发现并补上遗漏附件。",
+      "answerable": true
+    },
+    {
+      "id": "answerable-20",
+      "question": "小禾如何减少资讯提醒？",
+      "expectedEntryIds": [
+        "32ceed12-7a49-5404-b92e-35cff3ad82a1"
+      ],
+      "expectedFact": "小禾取消了三个不常看的资讯订阅，让每日提醒减少七条。",
+      "answerable": true
+    },
+    {
+      "id": "unanswerable-1",
+      "question": "小禾的护照号码是多少？",
+      "expectedEntryIds": [],
+      "answerable": false
+    },
+    {
+      "id": "unanswerable-2",
+      "question": "小禾最近乘坐的国际航班号是什么？",
+      "expectedEntryIds": [],
+      "answerable": false
+    },
+    {
+      "id": "unanswerable-3",
+      "question": "小禾的学校录取分数是多少？",
+      "expectedEntryIds": [],
+      "answerable": false
+    },
+    {
+      "id": "unanswerable-4",
+      "question": "小禾参加的马拉松成绩是多少？",
+      "expectedEntryIds": [],
+      "answerable": false
+    },
+    {
+      "id": "unanswerable-5",
+      "question": "小禾的手机解锁密码是什么？",
+      "expectedEntryIds": [],
+      "answerable": false
+    },
+    {
+      "id": "unanswerable-6",
+      "question": "小禾购买的汽车车牌号是什么？",
+      "expectedEntryIds": [],
+      "answerable": false
+    },
+    {
+      "id": "unanswerable-7",
+      "question": "小禾去年出境旅游的签证类型是什么？",
+      "expectedEntryIds": [],
+      "answerable": false
+    },
+    {
+      "id": "unanswerable-8",
+      "question": "小禾养的宠物犬叫什么名字？",
+      "expectedEntryIds": [],
+      "answerable": false
+    }
+  ]
+}
