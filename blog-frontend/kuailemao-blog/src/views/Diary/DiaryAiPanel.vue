@@ -160,6 +160,7 @@ onBeforeUnmount(() => { disposed = true; epoch++; clearTimeout(timer); capabilit
             <span class="result-label">处理进度</span><h3>{{ taskTitle }}</h3><p>{{ job?.message }}</p>
             <div v-if="running" class="response-skeleton" aria-hidden="true"><span /><span /><span /></div>
             <p v-if="job?.possiblyCharged">请求可能已产生费用，等待结果或取消不会退回额度。</p>
+            <p v-if="job && ['FAILED', 'UNCERTAIN'].includes(job.state)" class="retry-guidance">核对原因后，可修改问题或资料范围，再点击提交。再次提交会创建新任务，可能再次产生费用；本页不会自动重发。</p>
             <div class="ai-actions"><el-button v-if="running" :disabled="busy" @click="cancel">取消任务</el-button><el-button v-if="running" :disabled="busy" @click="poll">继续查询状态</el-button></div>
           </div>
           <DiaryAiResult v-if="visibleReport && report && result" :report="report" :result="result" :question="reportQuestion" :busy="busy" :blocked="blocked" :can-adopt="canAdopt" @locate="locate" @adopt="emit('adopt-suggestion', $event)" />

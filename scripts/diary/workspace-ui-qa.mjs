@@ -32,7 +32,7 @@ function makeReport(reportId, kind, value = result) {
 const historicalId = randomUUID()
 reports.set(historicalId, makeReport(historicalId, 'QUESTION', { ...result, answer: { ...statement, text: '这是一份历史问答的回答，原问题不在旧报告协议中。' } }))
 const jobs = new Map(), submissions = [], byRequest = new Map()
-let dropFirstSubmission = true, invalidSource = false, indexStarts = 0
+let dropFirstSubmission = true, invalidSource = false, indexStarts = 0, nextQuestionFailure
 await context.addInitScript(() => localStorage.setItem('Token', JSON.stringify({ token: 'workspace-ui-fixture', expire: new Date(Date.now() + 3600000).toISOString() })))
 await context.route('**/*', async route => {
   const request = route.request(), url = new URL(request.url())
@@ -64,13 +64,21 @@ await context.route('**/*', async route => {
     let job = byRequest.get(body.requestId)
     if (!job) {
       job = { id: randomUUID(), kind, state: 'QUEUED', message: '请求已排队', possiblyCharged: false }
-      const reportId = randomUUID(), value = kind === 'QUESTION' ? result : { ...result, answer: null, summary: { ...statement, text: '这一段记录围绕阅读习惯展开，环境准备和减少通知是主要线索。' } }
-      reports.set(reportId, makeReport(reportId, kind, value)); jobs.set(job.id, { ...job, reportId }); byRequest.set(body.requestId, job)
+      if (kind === 'QUESTION' && nextQuestionFailure) {
+        jobs.set(job.id, { ...job, ...nextQuestionFailure, possiblyCharged: true });nextQuestionFailure = undefined
+      } else {
+        const reportId = randomUUID(), value = kind === 'QUESTION' ? result : { ...result, answer: null, summary: { ...statement, text: '这一段记录围绕阅读习惯展开，环境准备和减少通知是主要线索。' } }
+        reports.set(reportId, makeReport(reportId, kind, value)); jobs.set(job.id, { ...job, reportId })
+      }
+      byRequest.set(body.requestId, job)
     }
     if (dropFirstSubmission && kind === 'QUESTION') { dropFirstSubmission = false; return route.abort('failed') }
     return route.fulfill({ status: 202, contentType: 'application/json', body: JSON.stringify({ code: 200, data: job }) })
   }
-  if (path.startsWith('/diary/auth/ai/jobs/')) return ok({ ...jobs.get(path.split('/').at(-1)), state: 'SUCCEEDED', message: '已完成' })
+  if (path.startsWith('/diary/auth/ai/jobs/')) {
+    const job = jobs.get(path.split('/').at(-1))
+    return ok(['FAILED', 'UNCERTAIN'].includes(job.state) ? job : { ...job, state: 'SUCCEEDED', message: '已完成' })
+  }
   if (path === '/diary/auth/coaching/capabilities') return ok({ enabled: true, available: true, aiAvailable: true, message: '虚构目标反馈资料，仅用于本地验收。' })
   if (/^\/diary\/auth\/coaching\/(goals|actions|feedback)$/.test(path)) return ok({ records: [], total: 0 })
   if (path === '/diary/auth/coaching/periods/reports') return ok({ records: [], total: 0 })
@@ -208,6 +216,31 @@ try {
       evidence.checks.push('Lighthouse navigation and rendered-answer snapshot completed with fictional data; see lighthouse.json for scores and findings')
     } finally { connection.disconnect(); await auditPage.close() }
   }
+  const failureStart = submissions.length
+  const failures = [
+    ['FAILED', '内容生成阶段：模型输出达到上限而被截断，没有展示不完整结果。'],
+    ['UNCERTAIN', '检索准备（问题向量）阶段：网络连接异常，不会自动重发。'],
+    ['FAILED', '内容生成阶段：模型没有返回有效正文。'],
+    ['FAILED', '结果校验未通过：模型的结构或原文引用不符合要求。'],
+    ['FAILED', '历史生成响应未通过检查，原记录不足以区分截断、空回答或结构异常。'],
+    ['FAILED', '内容生成阶段：供应商拒绝认证，请检查后端配置。'],
+  ]
+  for (const [state, message] of failures) {
+    nextQuestionFailure = { state, message }
+    const input = '虚构的新问题 ' + (submissions.length - failureStart)
+    await page.getByLabel('问题', { exact: true }).fill(input)
+    const before = submissions.length
+    await page.getByRole('button', { name: '查找依据并回答', exact: true }).click()
+    await page.locator('.ai-job').getByText(message, { exact: true }).waitFor({ timeout: 12000 })
+    assert.equal(await page.locator('.ai-result').count(), 0)
+    assert.ok((await page.locator('.retry-guidance').innerText()).includes('创建新任务'))
+    assert.equal(submissions.at(-1).question, input)
+    await page.waitForTimeout(2300)
+    assert.equal(submissions.length, before + 1, 'failure and polling must not resend a paid request')
+  }
+  assert.equal(new Set(submissions.slice(failureStart).map(s => s.requestId)).size, failures.length)
+  evidence.checks.push('stage-specific failures and legacy fallback; no partial answer; manual terminal retry gets a new requestId; no automatic resubmission')
+  await screenshot('failure-guidance-mobile-dark')
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('diary-session-invalid', { detail: 403 })))
   await page.locator('.diary-gate').waitFor()
   assert.equal(await page.locator('.diary-ai').count(), 0)
