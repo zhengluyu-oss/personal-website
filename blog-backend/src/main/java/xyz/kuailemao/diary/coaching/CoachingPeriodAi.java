@@ -52,7 +52,7 @@ public final class CoachingPeriodAi implements DiaryAiExtension {
     public Job job(long owner,UUID id) {
         return store.tx(owner,false,()->{
             var rows=store.jdbc.query("SELECT j.*,(SELECT id FROM diary_coaching.period_report r WHERE r.owner_id=j.owner_id AND r.job_id=j.id) report_id FROM diary_coaching.period_job j WHERE owner_id=:owner AND id=:id",CoachingStore.parameters(owner,id),(r,n)->{
-                String state=r.getString("state");String message=switch(state) {case "UNCERTAIN"->"结果未知，可能已计费，不会自动重发";case "STALE"->"资料已变化，请重新预览";case "FAILED"->"生成或引用校验失败";case "CANCELED"->"已取消，发出的请求可能已计费";case "SUCCEEDED"->"已完成";case "RUNNING"->"处理中";default->"等待处理";};
+                String state=r.getString("state");String message=DiaryAiFeedback.message(state,r.getString("error_code"));
                 return new Job(id,state,message,r.getObject("report_id",UUID.class),r.getBoolean("possibly_charged"),r.getTimestamp("created_at").toInstant());
             });if(rows.isEmpty()) throw new DiaryFailure(404,"任务不存在或不可访问");return rows.get(0);
         });
@@ -86,16 +86,19 @@ public final class CoachingPeriodAi implements DiaryAiExtension {
                 var params=CoachingStore.parameters(owner,work.id()).addValue("token",lease).addValue("sources",JSON.toJSONString(preview.sources()));
                 if(store.jdbc.update("UPDATE diary_coaching.period_job SET sources=CAST(:sources AS jsonb),possibly_charged=true WHERE owner_id=:owner AND id=:id AND state='RUNNING' AND lease_token=:token",params)!=1) throw DiaryFailure.conflict();return null;
             });
-            sent=true;var generation=cloud.generate(CoachingEvidence.system(),context);
+            sent=true;var generation=cloud.generate(CoachingEvidence.system(),context,work.id());
             execution.usage(owner,generation.inputTokens(),generation.outputTokens());
-            var result=CoachingEvidence.validate(generation.content(),preview.sources());
+            final CoachingEvidence.Result result;
+            try {result=CoachingEvidence.validate(generation.content(),preview.sources());}
+            catch(DiaryFailure invalid){throw new DiaryAiCloud.Failure("OUTPUT_EVIDENCE_INVALID",false);}
             store.tx(owner,true,()->{
                 execution.lease(owner,lease);validatePreview(periods.build(owner,work.request().period()),work.digest());
                 if(!active.getAsBoolean()) throw new DiaryFailure(403,"账号不可用");
                 var params=CoachingStore.parameters(owner,work.id()).addValue("token",lease).addValue("report",UUID.randomUUID())
                     .addValue("result",JSON.toJSONString(result)).addValue("scope",JSON.toJSONString(work.request().period())).addValue("digest",work.digest()).addValue("model",p.getGenerationModel());
                 if(store.jdbc.update("UPDATE diary_coaching.period_job SET state='SUCCEEDED',sources=NULL,updated_at=now() WHERE owner_id=:owner AND id=:id AND state='RUNNING' AND lease_token=:token",params)!=1) throw DiaryFailure.conflict();
-                store.jdbc.update("INSERT INTO diary_coaching.period_report(owner_id,id,job_id,state,result,scope,scope_digest,model,prompt_version) VALUES(:owner,:report,:id,'SUCCEEDED',CAST(:result AS jsonb),CAST(:scope AS jsonb),:digest,:model,'coaching-v1')",params);
+                params.addValue("promptVersion",CoachingEvidence.PROMPT_VERSION);
+                store.jdbc.update("INSERT INTO diary_coaching.period_report(owner_id,id,job_id,state,result,scope,scope_digest,model,prompt_version) VALUES(:owner,:report,:id,'SUCCEEDED',CAST(:result AS jsonb),CAST(:scope AS jsonb),:digest,:model,:promptVersion)",params);
                 for(Source source:preview.sources()) {
                     params.addValue("source",source.sourceId()).addValue("kind",source.kind()).addValue("entity",source.entityId()).addValue("revision",source.revision()).addValue("field",source.field()).addValue("start",source.start()).addValue("end",source.end()).addValue("hash",source.sha256());
                     store.jdbc.update("INSERT INTO diary_coaching.period_source VALUES(:owner,:report,:source,:kind,:entity,:revision,:field,:start,:end,:hash)",params);
@@ -104,8 +107,13 @@ public final class CoachingPeriodAi implements DiaryAiExtension {
         } catch(RuntimeException failure) {
             String state=failure instanceof DiaryAiCloud.Failure f && f.uncertain()?"UNCERTAIN":failure instanceof DiaryFailure d && d.status()==409?"STALE":"FAILED";
             boolean charged=sent;
-            store.tx(owner,false,()->{store.jdbc.update("UPDATE diary_coaching.period_job SET state=:state,error_code='TASK_REJECTED',possibly_charged=possibly_charged OR :charged,sources=NULL,updated_at=now() WHERE owner_id=:owner AND id=:id AND state='RUNNING' AND lease_token=:token",
-                CoachingStore.parameters(owner,work.id()).addValue("token",lease).addValue("state",state).addValue("charged",charged));return null;});
+            String code=failure instanceof DiaryAiCloud.Failure f?f.code():failure instanceof DiaryFailure d && d.status()==429?"DAILY_LIMIT":"TASK_REJECTED";
+            try {
+                if(failure instanceof DiaryAiCloud.Failure f && f.diagnostic()!=null)execution.usage(owner,f.diagnostic().inputTokens(),f.diagnostic().outputTokens());
+            } finally {
+                store.tx(owner,false,()->{store.jdbc.update("UPDATE diary_coaching.period_job SET state=:state,error_code=:code,possibly_charged=possibly_charged OR :charged,sources=NULL,updated_at=now() WHERE owner_id=:owner AND id=:id AND state='RUNNING' AND lease_token=:token",
+                    CoachingStore.parameters(owner,work.id()).addValue("token",lease).addValue("state",state).addValue("code",code).addValue("charged",charged));return null;});
+            }
         }
     }
     private void validatePreview(Preview preview,String digest) {

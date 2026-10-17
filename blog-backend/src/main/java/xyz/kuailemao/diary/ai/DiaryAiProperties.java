@@ -14,6 +14,8 @@ public class DiaryAiProperties {
     private String embeddingModel="",generationModel="",dataPolicy="";
     /** Null omits vendor-specific thinking parameters; DeepSeek may explicitly disable them. */
     private Boolean generationThinking;
+    /** Explicit opt-in: omitted for providers that do not support JSON mode. */
+    private Boolean generationJsonOutput;
     private Set<String> allowedHosts=new HashSet<>();
     private int dimensions, dailyGenerations=20,dailyEmbeddingBlocks=200,maxQueue=5,maxReports=1000;
     private int maxReviewCharacters=24000,maxQuestionContext=12000,maxPromptCharacters=32000;

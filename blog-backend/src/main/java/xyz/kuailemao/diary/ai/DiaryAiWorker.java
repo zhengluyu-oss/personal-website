@@ -55,7 +55,8 @@ public final class DiaryAiWorker {
                 Coverage c=index.coverage(owner,profile,work.request().scope());partial=c.total()!=c.indexed();
                 if(partial && !work.request().allowPartialIndex())throw new DiaryFailure(409,"索引尚未完成");
                 store.reserve(owner,0,1);
-                var embedding=cloud.embed(List.of(work.request().question()));store.usage(owner,embedding.inputTokens(),null);check(work);
+                store.cloudIntent(owner,work,token);sent=true;
+                var embedding=cloud.embed(List.of(work.request().question()),work.id());store.usage(owner,embedding.inputTokens(),null);check(work);
                 sources=index.retrieve(owner,profile,work.request(),embedding.vectors().get(0));
             } else {
                 store.preview(owner,work.request().scope());
@@ -71,14 +72,16 @@ public final class DiaryAiWorker {
             String context=JSON.toJSONString(Map.of("question",Objects.toString(work.request().question(),""),"scope",Objects.toString(work.request().scope(),"全部当前记录"),"partialIndex",partial,"sources",sources));
             if(points(DiaryAiEvidence.system(work.kind()))+points(context)>p.getMaxPromptCharacters())throw DiaryFailure.invalid("输入超过模型预算，请缩小范围");
             store.reserve(owner,1,0);check(work);store.preparing(owner,work,token,sources,partial);sent=true;
-            var generation=cloud.generate(DiaryAiEvidence.system(work.kind()),context);
+            var generation=cloud.generate(DiaryAiEvidence.system(work.kind()),context,work.id());
             store.usage(owner,generation.inputTokens(),generation.outputTokens());check(work);
             Result result=DiaryAiEvidence.validate(generation.content(),sources,work.kind());
             store.complete(owner,work,token,sources,result,partial);
         } catch(RuntimeException error) {
             State state=error instanceof DiaryAiCloud.Failure f && f.uncertain()?State.UNCERTAIN:error instanceof DiaryFailure d && d.status()==409?State.STALE:State.FAILED;
             String code=error instanceof DiaryAiCloud.Failure f?f.code():error instanceof DiaryFailure d && d.status()==429?"DAILY_LIMIT":"TASK_REJECTED";
-            store.fail(owner,work,token,state,code,sent);
+            try {
+                if(error instanceof DiaryAiCloud.Failure f && f.diagnostic()!=null)store.usage(owner,f.diagnostic().inputTokens(),f.diagnostic().outputTokens());
+            } finally {store.fail(owner,work,token,state,code,sent);}
         }
     }
 }
