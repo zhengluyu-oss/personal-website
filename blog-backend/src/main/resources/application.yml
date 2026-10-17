@@ -200,6 +200,10 @@ spring:
   config:
     activate:
       on-profile: prod
+  security:
+    jwt:
+      # 管理员登录有效期：168 小时（7 天），单位为分钟。
+      admin-expire-minutes: 10080
 
 springdoc:
   api-docs:
