@@ -40,10 +40,10 @@ class DiaryAiCloudTest {
         reply.set("{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"content\":\"{}\"}}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5}}");
         var result=cloud.generate("fixture system","fixture context");assertEquals(10L,result.inputTokens());assertEquals(5L,result.outputTokens());
         reply.set("{\"choices\":[{\"finish_reason\":\"length\",\"message\":{\"content\":\"partial private output\"}}]}");
-        assertEquals("GENERATION_FORMAT",assertThrows(DiaryAiCloud.Failure.class,()->cloud.generate("a","b")).code());
+        assertEquals("GENERATION_TRUNCATED",assertThrows(DiaryAiCloud.Failure.class,()->cloud.generate("a","b")).code());
         reply.set("fixture-secret and private context must not escape");status=401;
         var error=assertThrows(DiaryAiCloud.Failure.class,()->cloud.generate("a","b"));assertFalse(error.getMessage().contains("fixture-secret"));
-        status=429;assertEquals("PROVIDER_RATE_LIMIT",assertThrows(DiaryAiCloud.Failure.class,()->cloud.embed(List.of("x"))).code());
+        status=429;assertEquals("EMBEDDING_RATE_LIMIT",assertThrows(DiaryAiCloud.Failure.class,()->cloud.embed(List.of("x"))).code());
     }
     @Test void totalResponseTimeAndSizeAreBounded() {
         p.setMaxResponseBytes(128);reply.set("x".repeat(1024));
@@ -58,8 +58,8 @@ class DiaryAiCloudTest {
         assertThrows(Exception.class,()->DiaryAiCloud.validateDestination(URI.create("https://unapproved.invalid/"),Set.of("example.com")));
     }
     @Test void invalidJsonRedirectAndDisconnectNeverPublishAResponse() {
-        reply.set("not-json-private-probe");assertEquals("PROVIDER_FORMAT",assertThrows(DiaryAiCloud.Failure.class,()->cloud.embed(List.of("fictional"))).code());
-        status=302;reply.set("redirect-private-probe");assertEquals("PROVIDER_REJECTED",assertThrows(DiaryAiCloud.Failure.class,()->cloud.generate("a","b")).code());
+        reply.set("not-json-private-probe");assertEquals("EMBEDDING_RESPONSE_INVALID",assertThrows(DiaryAiCloud.Failure.class,()->cloud.embed(List.of("fictional"))).code());
+        status=302;reply.set("redirect-private-probe");assertEquals("GENERATION_PROVIDER_REJECTED",assertThrows(DiaryAiCloud.Failure.class,()->cloud.generate("a","b")).code());
         server.stop(0);assertTrue(assertThrows(DiaryAiCloud.Failure.class,()->cloud.generate("a","b")).uncertain());
     }
 }

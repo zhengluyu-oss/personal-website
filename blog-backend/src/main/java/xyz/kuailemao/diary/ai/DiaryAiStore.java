@@ -133,11 +133,7 @@ public final class DiaryAiStore {
         });
     }
     static String message(String state,String code) {
-        if("STALE".equals(state))return "来源日记已变化，请刷新后重新生成";
-        if("UNCERTAIN".equals(state))return "请求结果未知，可能已经计费；不会自动重发";
-        if("CANCELED".equals(state))return "任务已取消；已发出的请求可能计费";
-        if("FAILED".equals(state))return "OUTPUT_EVIDENCE_INVALID".equals(code)?"模型结果未通过引用校验":"AI 请求失败，请检查配置、限额或稍后重试";
-        return Map.of("QUEUED","等待处理","RUNNING","正在处理","SUCCEEDED","已完成").getOrDefault(state,"处理状态已更新");
+        return DiaryAiFeedback.message(state,code);
     }
     public Job cancel(long owner,UUID id) {
         tx(owner,()->{jdbc.update("UPDATE diary_ai.job SET state='CANCELED',payload='{}',sources=NULL,updated_at=now() WHERE owner_id=:owner AND id=:id AND state IN('QUEUED','RUNNING')",Map.of("owner",owner,"id",id));return null;});return job(owner,id);
@@ -184,6 +180,11 @@ public final class DiaryAiStore {
             for(Source s:sources){Entry e=entry(owner,s.entryId());if(e.revision()!=s.revision() || s.end()>points(e.body()) || !DiaryAiText.hash(slice(e.body(),s.start(),s.end())).equals(s.sha256()))throw new DiaryFailure(409,"发送前来源版本已变化");}
             var p=params(owner);p.put("id",work.id);p.put("token",token);p.put("sources",JSON.toJSONString(sources));p.put("partial",partial);
             if(jdbc.update("UPDATE diary_ai.job SET sources=CAST(:sources AS jsonb),partial=:partial,possibly_charged=true WHERE owner_id=:owner AND id=:id AND lease_token=:token AND state='RUNNING'",p)!=1)throw new DiaryFailure(409,"任务已取消或失效");return null;
+        });
+    }
+    void cloudIntent(long owner,Work work,UUID token) {
+        tx(owner,()->{lease(owner,token);var p=params(owner);p.put("id",work.id());p.put("token",token);
+            if(jdbc.update("UPDATE diary_ai.job SET possibly_charged=true WHERE owner_id=:owner AND id=:id AND lease_token=:token AND state='RUNNING'",p)!=1)throw new DiaryFailure(409,"任务已取消或失效");return null;
         });
     }
     boolean current(long owner,Work work) {return snapshot(owner,()->work.digest.equals(scopeDigest(owner,work.request.scope())));}
