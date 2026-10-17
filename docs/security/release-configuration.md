@@ -11,7 +11,7 @@
 1. 在服务器受限目录准备 `application-prod.yml`，只有服务账号/管理员可读。可从现有外置配置核对迁移，禁止从公开模板推测或填写真实秘密。
 2. 启动命令明确包含 `--spring.profiles.active=prod` 与 `--spring.config.additional-location=file:/受限绝对路径/`。只允许 prod，不与 dev 同时激活。
 3. 必需外置值由 `ProductionConfigurationGuard.REQUIRED` 定义：数据库、Redis、队列、邮件、OAuth、OSS 和 JWT。JWT 密钥至少 32 字符。开发密码没有内置回退；自定义 Quartz JDBC 数据源也需要独立密码。
-4. 保留既有非秘密业务设置：队列/交换机/路由键、mapper 与 MyBatis、邮件开关、HTTP 客户端池、文件大小、OAuth 回调、网站地址。新管理员会话继续使用 `spring.security.jwt.admin-expire-minutes: 1440`。
+4. 保留既有非秘密业务设置：队列/交换机/路由键、mapper 与 MyBatis、邮件开关、HTTP 客户端池、文件大小、OAuth 回调、网站地址。新管理员会话使用 `spring.security.jwt.admin-expire-minutes: 10080`，即168小时（7天）；生产profile提供相同默认值，外置配置需与之保持一致。普通用户的 `spring.security.jwt.expire: 7` 单位为天。此设置影响JWT及Redis白名单的新会话期限，已有令牌不自动延长，需重新登录。浏览器关闭后是否保留凭证仍由前台“记住我”决定。
 5. 启动前检查最终 JAR 与两个前端 dist；缺失配置会在创建数据库等业务组件之前失败，错误只报告属性名，不报告属性值。
 
 部署脚本只接受已经显式配置 prod 与外置目录的服务单元；不自动修改服务配置。首次安全发布前必须准备并验证外置配置。旧 JAR 可能携带秘密，备份要受限保存，不能公开或默认回退到有已知漏洞的旧包。
