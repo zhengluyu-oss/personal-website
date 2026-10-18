@@ -3,6 +3,7 @@ import { computed, watch, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useBlogCategories } from '@/composables/useBlogCategories'
 import { canViewModule } from '@/composables/useSiteModuleAccess'
+import DiaryMenuEntry from '../DiaryMenuEntry.vue'
 
 const emit = defineEmits(['update:closeDrawer'])
 function isClose() { emit('update:closeDrawer') }
@@ -28,6 +29,7 @@ watch(() => canViewModule('blog'), allowed => { if (allowed) void loadCategories
         <RouterLink v-for="entry in blogCategoryEntries" :key="entry.categoryId" :to="entry.path" @click="isClose"><span>{{ entry.category.categoryName }}</span><small v-if="entry.category.articleCount !== undefined">{{ entry.category.articleCount }}</small></RouterLink>
       </div>
     </div>
+    <DiaryMenuEntry @navigate="isClose" />
     <RouterLink to="/website-shares" :class="{ 'is-section': route.path.startsWith('/website-shares') }" @click="isClose">网站分享</RouterLink>
     <RouterLink to="/photos" @click="isClose">相册</RouterLink>
     <RouterLink to="/about" @click="isClose">关于我</RouterLink>
