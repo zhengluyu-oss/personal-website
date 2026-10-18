@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
 import {
-  DocumentCopy,
+  DocumentCopy, Notebook,
   Files,
   HomeFilled,
   Link, Setting, Promotion, ArrowDownBold, Close, PictureFilled, UserFilled
@@ -107,6 +107,9 @@ watch(() => canViewModule('blog'), allowed => { if (allowed) void loadCategories
               </li>
             </ul>
           </div>
+          <DiaryMenuEntry class="menus_item" :class="{ 'is-section': route.path.startsWith('/diary') }">
+            <span><el-icon><Notebook/></el-icon><span>我的日记</span></span>
+          </DiaryMenuEntry>
           <RouterLink class="menus_item" :class="{ 'is-section': route.path.startsWith('/website-shares') }" to="/website-shares">
             <span><el-icon><Link/></el-icon><span>网站分享</span></span>
           </RouterLink>
@@ -162,7 +165,6 @@ watch(() => canViewModule('blog'), allowed => { if (allowed) void loadCategories
             <el-avatar style="margin-right: 3rem"
                        :src="userStore.userInfo?.avatar"></el-avatar>
             <template #dropdown>
-              <DiaryMenuEntry />
               <el-dropdown-item @click="router.push('/account')">
                 <template #default>
                   <el-icon>

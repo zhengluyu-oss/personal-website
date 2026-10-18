@@ -141,6 +141,7 @@ function restoreMenuFocus(event?: Event) {
         <SvgIcon name="directory_icon" width="30" height="30" color="#409EFF" class="icon"/>
       </button>
       <router-link class="mobile-brand" to="/">陆屿</router-link>
+      <DiaryMenuEntry class="mobile-diary-link" />
     </div>
 
     <!-- 搜索按钮 -->
@@ -184,7 +185,6 @@ function restoreMenuFocus(event?: Event) {
               <el-avatar style="margin-right: 3rem"
                          :src="userStore.userInfo?.avatar"></el-avatar>
               <template #dropdown>
-                <DiaryMenuEntry />
                 <el-dropdown-item @click="router.push('/account')">
                   <template #default>
                     <el-icon>
@@ -265,10 +265,12 @@ function restoreMenuFocus(event?: Event) {
 
 .move_nav__left { display:flex; align-items:center; gap:.65rem; }
 .mobile-action { display:grid; width:44px; height:44px; place-items:center; padding:0; border:1px solid var(--brand-line); border-radius:.7rem; background:var(--brand-surface-solid); cursor:pointer; }
-.mobile-action:focus-visible, .mobile-brand:focus-visible { outline:2px solid var(--brand-accent);outline-offset:3px; }
+.mobile-action:focus-visible, .mobile-brand:focus-visible, .mobile-diary-link:focus-visible { outline:2px solid var(--brand-accent);outline-offset:3px; }
 .move_nav .search { margin-right:.75rem; }
 .move_nav :deep(.el-avatar) { margin-right:0!important; }
 .mobile-brand { color:var(--brand-ink); font-size:1rem; font-weight:750; text-decoration:none; }
+.mobile-diary-link { display:inline-flex; align-items:center; min-height:44px; padding:0 .55rem; border-radius:var(--brand-radius-sm); color:var(--brand-ink); font-size:.875rem; font-weight:600; text-decoration:none; white-space:nowrap; }
+.mobile-diary-link:hover, .mobile-diary-link.router-link-active { color:var(--brand-accent-strong); background:var(--brand-accent-soft); }
 
 .search {
   display: flex;
