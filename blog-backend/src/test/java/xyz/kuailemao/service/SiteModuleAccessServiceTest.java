@@ -43,6 +43,24 @@ class SiteModuleAccessServiceTest {
         return role;
     }
     @Test void publicModuleAllowsGuest() { policy(true); assertTrue(service.canView("blog")); }
+    @Test void missingDiaryPolicyDoesNotBreakExistingModulesAndEvenAdminCannotReadDiary() {
+        policy(true); signedIn("ADMIN");
+        assertTrue(service.canView("blog")); assertFalse(service.canView("diary"));
+        when(modules.selectById(anyString())).thenAnswer(call->{
+            if(call.getArgument(0).equals("diary")) return null;
+            var value=new SiteModule();value.setModuleKey(call.getArgument(0));value.setRevision(0);value.setPublicAccess(1);return value;
+        });
+        var access=service.access();assertEquals(7,access.size());
+        assertFalse(access.stream().filter(row->row.key().equals("diary")).findFirst().orElseThrow().allowed());
+    }
+    @Test void diaryUsesTheSameLiveRoleAndPublicRules() {
+        var diary=new SiteModule();diary.setModuleKey("diary");diary.setPublicAccess(0);diary.setRevision(0);
+        when(modules.selectById("diary")).thenReturn(diary);
+        signedIn("MEMBER");when(grants.selectList(any())).thenReturn(List.of(new SiteModuleRole("diary",2L)));
+        assertTrue(service.canView("diary"));
+        when(roles.selectList(any())).thenReturn(List.of()); assertFalse(service.canView("diary"));
+        diary.setPublicAccess(1);SecurityContextHolder.clearContext();assertTrue(service.canView("diary"));
+    }
     @Test void missingPolicyFailsClosed() {
         assertEquals(503, assertThrows(ResponseStatusException.class, () -> service.canView("blog")).getStatusCode().value());
     }

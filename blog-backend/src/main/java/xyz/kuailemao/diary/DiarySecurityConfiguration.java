@@ -16,20 +16,25 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import xyz.kuailemao.filter.JwtAuthorizeFilter;
 import xyz.kuailemao.domain.entity.LoginUser;
 import org.springframework.security.authorization.AuthorizationDecision;
+import xyz.kuailemao.service.SiteModuleAccessService;
 import java.io.IOException;
 
 @Configuration(proxyBeanMethods=false)
 public class DiarySecurityConfiguration {
     @Bean
     @Order(0)
-    SecurityFilterChain diarySecurityFilterChain(HttpSecurity http,JwtAuthorizeFilter jwt,DiaryProperties properties) throws Exception {
+    SecurityFilterChain diarySecurityFilterChain(HttpSecurity http,JwtAuthorizeFilter jwt,DiaryProperties properties,SiteModuleAccessService modules) throws Exception {
         return http.securityMatcher("/diary/**")
                 .authorizeHttpRequests(auth->auth
+                    .requestMatchers("/diary/view/capabilities").permitAll()
+                    // Check before body binding as well as at the read service boundary.
+                    .requestMatchers("/diary/view/**").access((authentication,context)->new AuthorizationDecision(modules.canView("diary")))
                     .requestMatchers("/diary/auth/capabilities").authenticated()
                     .anyRequest().access((authentication,context)->new AuthorizationDecision(
                         authentication.get().getPrincipal() instanceof LoginUser user
                         && properties.getOwnerUserId()!=null
-                        && properties.getOwnerUserId().equals(user.getUser().getId()))))
+                        && properties.getOwnerUserId().equals(user.getUser().getId())
+                        && modules.canView("diary"))))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(errors->errors

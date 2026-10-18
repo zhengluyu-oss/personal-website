@@ -29,8 +29,10 @@ import static xyz.kuailemao.diary.ai.DiaryAiModels.*;
 /** test-classes only; actual browser -> Spring security -> PG -> controlled HTTP. */
 @SpringBootConfiguration
 @EnableAutoConfiguration(exclude={DataSourceAutoConfiguration.class,DataSourceTransactionManagerAutoConfiguration.class,MybatisPlusAutoConfiguration.class})
-@Import({DiaryDataConfiguration.class,DiaryController.class,DiaryService.class,DiarySecurityConfiguration.class,DiaryExceptionHandler.class,DiaryAiController.class,DiaryAiService.class,DiaryAiExceptionHandler.class,DiaryAiBrowserFixture.PublicFixtures.class})
+@Import({DiaryModuleAccess.class,DiaryReadController.class,DiaryDataConfiguration.class,DiaryController.class,DiaryService.class,DiarySecurityConfiguration.class,DiaryExceptionHandler.class,DiaryAiController.class,DiaryAiService.class,DiaryAiExceptionHandler.class,DiaryAiBrowserFixture.PublicFixtures.class})
 public class DiaryAiBrowserFixture {
+    @Bean xyz.kuailemao.service.SiteModuleAccessService modules(){ var modules=mock(xyz.kuailemao.service.SiteModuleAccessService.class);when(modules.canView("diary")).thenReturn(true);return modules; }
+
     @Bean JwtAuthorizeFilter filter(){return new JwtAuthorizeFilter();}
     @Bean UserDetailsService users(){return username->{throw new UsernameNotFoundException("fixture-only");};}
     @Bean DiaryAiProperties ai(){var p=spy(new DiaryAiProperties());p.setEnabled(true);p.setProvider("fictional-http");p.setDimensions(3);p.setEmbeddingModel("fixture-vector");p.setGenerationModel("fixture-generation");p.setMinimumSimilarity(0.8);p.setEmbeddingEndpoint("http://127.0.0.1:18004/fixture");p.setGenerationEndpoint(p.getEmbeddingEndpoint());p.setEmbeddingKey("fictional-fixture-only");p.setGenerationKey("fictional-fixture-only");p.setDailyEmbeddingBlocks(10000);p.setDailyGenerations(1000);doReturn(true).when(p).configured();return p;}
@@ -69,7 +71,7 @@ public class DiaryAiBrowserFixture {
     @RestController static class PublicFixtures {
         @GetMapping("/user/auth/info") Object user(@RequestHeader(value="Authorization",defaultValue="") String token){return ResponseResult.success(Map.of("username",token.contains("other-admin")?"other-fixture":"owner-fixture","nickname","本地虚构账号","roles",List.of("ROLE_ADMIN"),"avatar","","email","fixture@example.invalid","registerType",0));}
         @GetMapping("/websiteInfo/front") Object site(){return ResponseResult.success(Map.of("websiteName","本地日记AI验收","webmasterAvatar","","recordNumber",""));}
-        @GetMapping("/site-modules/access") Object access(){return ResponseResult.success(List.of("home","experience","blog","shares","photos","about").stream().map(key->Map.of("key",key,"name",key,"allowed",true,"publicAccess",true)).toList());}
+        @GetMapping("/site-modules/access") Object access(){return ResponseResult.success(List.of("home","experience","blog","shares","photos","about","diary").stream().map(key->Map.of("key",key,"name",key,"allowed",true,"publicAccess",true)).toList());}
         @GetMapping({"/category/list","/category/front/list","/banners/list"}) Object empty(){return ResponseResult.success(List.of());}
     }
 }

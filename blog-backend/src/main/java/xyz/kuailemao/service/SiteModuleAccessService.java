@@ -20,6 +20,7 @@ public class SiteModuleAccessService {
         names.put("home", "首页"); names.put("experience", "工作经历");
         names.put("blog", "个人博客"); names.put("shares", "网站分享");
         names.put("photos", "相册"); names.put("about", "关于我");
+        names.put("diary", "我的日记");
         MODULES = Collections.unmodifiableMap(names);
     }
     private final SiteModuleMapper modules;
@@ -40,6 +41,11 @@ public class SiteModuleAccessService {
     private SiteModule policy(String key) {
         if (!MODULES.containsKey(key)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "未知模块");
         SiteModule policy = modules.selectById(key);
+        // During rolling upgrades a missing new policy must not break the existing six modules.
+        if (policy == null && "diary".equals(key)) {
+            SiteModule missing = new SiteModule(); missing.setModuleKey(key);
+            missing.setPublicAccess(0); missing.setRevision(-1); return missing;
+        }
         if (policy == null || policy.getRevision() == null || policy.getPublicAccess() == null)
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "模块访问配置尚未就绪");
         return policy;
@@ -61,6 +67,7 @@ public class SiteModuleAccessService {
     public boolean canView(String key) { return canView(policy(key), activeRoles(SecurityUtils.getUserId())); }
 
     private boolean canView(SiteModule policy, List<Role> active) {
+        if (policy.getRevision() < 0) return false;
         if (Integer.valueOf(1).equals(policy.getPublicAccess())) return true;
         if (active.stream().anyMatch(role -> "ADMIN".equals(role.getRoleKey()))) return true;
         Set<Long> allowed = new HashSet<>(grants.selectList(new LambdaQueryWrapper<SiteModuleRole>()

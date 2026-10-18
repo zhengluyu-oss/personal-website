@@ -22,6 +22,8 @@ class DiaryAiSecurityTest {
     @Configuration(proxyBeanMethods=false) @EnableWebSecurity @EnableWebMvc
     @Import({DiarySecurityConfiguration.class,DiaryAiController.class,DiaryAiExceptionHandler.class,DiaryAiService.class,DiaryService.class})
     static class Config {
+    @Bean xyz.kuailemao.service.SiteModuleAccessService modules(){ var modules=mock(xyz.kuailemao.service.SiteModuleAccessService.class);when(modules.canView("diary")).thenReturn(true);return modules; }
+
         @Bean DiaryProperties diary(){var p=new DiaryProperties();p.setOwnerUserId(7L);return p;}
         @Bean DiaryAiProperties ai(){return new DiaryAiProperties();}
         @Bean JwtAuthorizeFilter filter(){return new JwtAuthorizeFilter();}

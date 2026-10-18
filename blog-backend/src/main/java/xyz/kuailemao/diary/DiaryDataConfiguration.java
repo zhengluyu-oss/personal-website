@@ -46,6 +46,11 @@ public class DiaryDataConfiguration {
                               @Qualifier("diaryTransactionManager") DataSourceTransactionManager tx) {
             return new DiaryStore(jdbc,tx);
         }
+        @Bean
+        DiaryReadStore diaryReadStore(@Qualifier("diaryJdbcTemplate") NamedParameterJdbcTemplate jdbc,
+                                     @Qualifier("diaryTransactionManager") DataSourceTransactionManager tx) {
+            return new DiaryReadStore(jdbc,tx);
+        }
     }
     // 独立日志名称，避免普通JdbcTemplate调试日志输出日记SQL参数。
     static final class DiaryJdbcTemplate extends JdbcTemplate {

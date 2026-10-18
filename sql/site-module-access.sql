@@ -12,3 +12,5 @@ CREATE TABLE IF NOT EXISTS sys_site_module_role (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 INSERT IGNORE INTO sys_site_module (module_key, public_access, revision) VALUES
 ('home',1,0),('experience',1,0),('blog',1,0),('shares',1,0),('photos',1,0),('about',1,0);
+-- Diary is restricted by default. No ordinary role is granted by installation.
+INSERT IGNORE INTO sys_site_module (module_key, public_access, revision) VALUES ('diary',0,0);

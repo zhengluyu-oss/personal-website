@@ -10,7 +10,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import xyz.kuailemao.domain.response.ResponseResult;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@RestControllerAdvice(assignableTypes=DiaryController.class)
+@RestControllerAdvice(assignableTypes={DiaryController.class,DiaryReadController.class})
 public class DiaryExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ResponseResult<Void>> handle(Exception exception) {

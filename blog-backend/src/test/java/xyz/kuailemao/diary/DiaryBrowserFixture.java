@@ -23,8 +23,10 @@ import static org.mockito.Mockito.*;
 /** 只打包进test-classes，本机虚构身份+真实PG的浏览器验收入口。 */
 @SpringBootConfiguration
 @EnableAutoConfiguration(exclude={DataSourceAutoConfiguration.class,DataSourceTransactionManagerAutoConfiguration.class,MybatisPlusAutoConfiguration.class})
-@Import({DiaryDataConfiguration.class,DiaryController.class,DiaryService.class,DiarySecurityConfiguration.class,DiaryExceptionHandler.class,DiaryBrowserFixture.PublicFixtures.class})
+@Import({DiaryModuleAccess.class,DiaryReadController.class,DiaryDataConfiguration.class,DiaryController.class,DiaryService.class,DiarySecurityConfiguration.class,DiaryExceptionHandler.class,DiaryBrowserFixture.PublicFixtures.class})
 public class DiaryBrowserFixture {
+    @Bean xyz.kuailemao.service.SiteModuleAccessService modules(){ var modules=mock(xyz.kuailemao.service.SiteModuleAccessService.class);when(modules.canView("diary")).thenReturn(true);return modules; }
+
     @Bean JwtAuthorizeFilter jwtAuthorizeFilter(){return new JwtAuthorizeFilter();}
     @Bean UserDetailsService fixtureUsers(){return username->{throw new UsernameNotFoundException("fixture-only");};}
     public static void main(String[] args) {
@@ -46,7 +48,7 @@ public class DiaryBrowserFixture {
     @RestController static class PublicFixtures {
         @GetMapping("/user/auth/info") Object user(@RequestHeader(value="Authorization",defaultValue="") String token){return ResponseResult.success(Map.of("username",token.contains("other-admin")?"other-fixture":"owner-fixture","nickname","本地虚构账号","roles",List.of("ROLE_ADMIN"),"avatar","","email","fixture@example.invalid","registerType",0));}
         @GetMapping("/websiteInfo/front") Object site(){return ResponseResult.success(Map.of("websiteName","本地日记验收","webmasterAvatar","","recordNumber",""));}
-        @GetMapping("/site-modules/access") Object access(){return ResponseResult.success(List.of("home","experience","blog","shares","photos","about").stream().map(key->Map.of("key",key,"name",key,"allowed",true,"publicAccess",true)).toList());}
+        @GetMapping("/site-modules/access") Object access(){return ResponseResult.success(List.of("home","experience","blog","shares","photos","about","diary").stream().map(key->Map.of("key",key,"name",key,"allowed",true,"publicAccess",true)).toList());}
         @GetMapping({"/category/list","/category/front/list","/banners/list"}) Object empty(){return ResponseResult.success(List.of());}
     }
 }
