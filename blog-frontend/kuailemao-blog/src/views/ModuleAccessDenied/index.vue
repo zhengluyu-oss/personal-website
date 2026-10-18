@@ -21,7 +21,7 @@ const moduleKey = computed<SiteModuleKey>(() => {
 })
 const names: Record<SiteModuleKey, string> = {
   home: '首页', experience: '工作经历', blog: '个人博客',
-  shares: '网站分享', photos: '相册', about: '关于我',
+  shares: '网站分享', photos: '相册', about: '关于我', diary: '我的日记',
 }
 const moduleName = computed(() => names[moduleKey.value])
 const overview = ref<ExperienceOverview | null>(null)

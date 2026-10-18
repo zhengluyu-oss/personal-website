@@ -196,9 +196,8 @@ onBeforeUnmount(() => { disposed = true; identitySequence++; detailSequence++; l
 </script>
 
 <template>
-  <Header />
   <main class="diary-workspace">
-    <header class="diary-heading"><div><span class="private-label"><Lock aria-hidden="true" />仅本人可见</span><h1>我的日记</h1><p>记录经历，也留一点时间给自己。</p></div><div class="workspace-tools"><span v-if="view.dirty" class="draft-indicator">有日记修改未保存</span><el-button v-if="gate === 'ready'" type="primary" @click="workspace = 'write'; createEntry()">新建日记</el-button></div></header>
+    <header class="diary-heading"><div><span class="private-label"><Lock aria-hidden="true" />站主管理</span><h1>我的日记</h1><p>记录经历，也留一点时间给自己。查看范围由后台模块权限设置。</p></div><div class="workspace-tools"><span v-if="view.dirty" class="draft-indicator">有日记修改未保存</span><el-button v-if="gate === 'ready'" type="primary" @click="workspace = 'write'; createEntry()">新建日记</el-button></div></header>
     <section v-if="gate !== 'ready'" class="diary-gate" role="status"><h2>{{ gate === 'checking' ? '正在确认访问资格' : gate === 'forbidden' ? '私密空间' : '暂时无法编辑' }}</h2><p>{{ gateMessage }}</p><a v-if="gate === 'locked'" href="/auth/login" target="_blank" rel="noopener">在新标签页登录</a><el-button @click="user.getInfo().catch(() => {})">重新确认登录与存储状态</el-button></section>
     <template v-else>
       <nav class="workspace-nav" aria-label="日记工作区">
