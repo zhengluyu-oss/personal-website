@@ -22,6 +22,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class DiarySecurityTest {
     @Configuration(proxyBeanMethods=false) @EnableWebSecurity @EnableWebMvc
     static class Config {
+    @Bean xyz.kuailemao.service.SiteModuleAccessService modules(){ var modules=mock(xyz.kuailemao.service.SiteModuleAccessService.class);when(modules.canView("diary")).thenReturn(true);return modules; }
+
         @Bean DiaryProperties properties(){var p=new DiaryProperties();p.setOwnerUserId(7L);return p;}
         static JwtUtils jwtFixture(){
             var jwt=mock(JwtUtils.class);var owner=mock(DecodedJWT.class);var other=mock(DecodedJWT.class);var normal=mock(DecodedJWT.class);
