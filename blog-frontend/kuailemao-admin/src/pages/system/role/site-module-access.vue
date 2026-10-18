@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { message } from 'ant-design-vue'
+import { message, Modal } from 'ant-design-vue'
 import { useGet, usePut } from '~/utils/request'
 
 const props = defineProps<{ open: boolean }>()
@@ -32,6 +32,13 @@ watch(() => props.open, open => { if (open) void load() })
 
 async function save(policy: Policy) {
   if (!policy.publicAccess && !policy.roleIds.length) { message.warning('请选择至少一个角色'); return }
+  if (policy.key === 'diary' && policy.publicAccess) {
+    const confirmed = await new Promise<boolean>(resolve => Modal.confirm({
+      title: '公开日记？', content: '所有游客将能阅读现有日记及可展示的 AI 分析结果。撤回权限无法收回他人已经复制的内容。编辑和 AI 生成仍只允许站主操作。',
+      okText: '确认公开', cancelText: '取消', onOk: () => resolve(true), onCancel: () => resolve(false),
+    }))
+    if (!confirmed) return
+  }
   saving.value = policy.key
   try {
     const result = await usePut(`/site-modules/back/policies/${policy.key}`, {
@@ -57,12 +64,14 @@ async function save(policy: Policy) {
       <div v-if="failed"><a-button @click="load">重新读取</a-button></div>
       <div v-for="policy in policies" :key="policy.key" class="module-row">
         <h3>{{ policy.name }}</h3>
+        <p v-if="policy.key === 'diary'" class="diary-scope">权限覆盖站主的现有日记和可展示的分析结果；查看不授予编辑、导出或 AI 生成权限。</p>
+        <p v-if="policy.revision < 0" role="alert">该模块尚未初始化，请先执行模块初始化脚本。</p>
         <a-radio-group v-model:value="policy.publicAccess" :disabled="!!saving">
           <a-radio :value="true">公开访问</a-radio>
           <a-radio :value="false">指定角色可见</a-radio>
         </a-radio-group>
         <a-select v-if="!policy.publicAccess" v-model:value="policy.roleIds" mode="multiple" :options="options" :disabled="!!saving" placeholder="选择可查看的角色" class="role-select" />
-        <a-button type="primary" :loading="saving === policy.key" :disabled="!!saving && saving !== policy.key" @click="save(policy)">保存</a-button>
+        <a-button type="primary" :loading="saving === policy.key" :disabled="policy.revision < 0 || (!!saving && saving !== policy.key)" @click="save(policy)">保存</a-button>
       </div>
     </a-spin>
   </a-modal>
@@ -70,6 +79,7 @@ async function save(policy: Policy) {
 
 <style scoped>
 p { color: #64748b; line-height: 1.7; }
+.diary-scope { flex-basis: 100%; margin: 0; }
 .module-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px 0; border-bottom: 1px solid #e8e8e8; }
 .module-row h3 { width: 80px; margin: 0; font-size: 14px; }.role-select { flex: 1; min-width: 180px; }
 </style>

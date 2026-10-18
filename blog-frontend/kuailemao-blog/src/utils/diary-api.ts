@@ -7,13 +7,13 @@ export interface DiaryPage<T> { records: T[]; total: number; page: number; pageS
 export interface DiaryHistory { revision: number; title: string; body: string; coveredFrom: string | null; coveredTo: string | null; action: string; savedAt: string; sourceRevision?: number; deleted: boolean }
 export type DiaryAction = { mutationId: string; expectedRevision: number; sourceRevision?: number }
 const client = axios.create({ baseURL: import.meta.env.VITE_APP_BASE_API || '/api', timeout: 12000, withCredentials: false })
-async function request<T>(method: string, path: string, data?: unknown, download = false): Promise<T> {
+async function request<T>(method: string, path: string, data?: unknown, download = false, readOnly = false): Promise<T> {
   const base = new URL(client.defaults.baseURL || '/api', window.location.href)
   if (base.origin !== window.location.origin) throw Object.assign(new Error('日记仅允许向同源接口发送凭据'), { status: 400 })
   const token = GET_TOKEN()
-  if (!token) { window.dispatchEvent(new CustomEvent('diary-session-invalid', { detail: 401 })); throw Object.assign(new Error('请登录后恢复日记'), { status: 401 }) }
+  if (!token && !readOnly) { window.dispatchEvent(new CustomEvent('diary-session-invalid', { detail: 401 })); throw Object.assign(new Error('请登录后恢复日记'), { status: 401 }) }
   try {
-    const response = await client.request({ method, url: '/diary/auth' + path, data, headers: { Authorization: Jwt_Prefix + token, 'Content-Type': 'application/json' }, responseType: download ? 'blob' : 'json' })
+    const response = await client.request({ method, url: (readOnly ? '/diary/view' : '/diary/auth') + path, data, headers: { ...(token ? { Authorization: Jwt_Prefix + token } : {}), 'Content-Type': 'application/json' }, responseType: download ? 'blob' : 'json' })
     if (download) return response.data as T
     if (response.data?.code !== 200) throw Object.assign(new Error(response.data?.msg || '日记请求失败'), { status: response.data?.code })
     return response.data.data as T
@@ -26,6 +26,7 @@ async function request<T>(method: string, path: string, data?: unknown, download
   }
 }
 export { request as diaryRequest }
+export const diaryReadRequest = <T>(method: string, path: string, data?: unknown) => request<T>(method, path, data, false, true)
 export const diaryApi = {
   capabilities: () => request<{ allowed: boolean; available: boolean }>('GET', '/capabilities'),
   read: (id: string) => request<DiaryEntry>('GET', '/entries/' + encodeURIComponent(id)),

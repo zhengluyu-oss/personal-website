@@ -8,8 +8,18 @@ test('all content detail and category routes use their parent module', () => {
   assert.equal(moduleForPath('/website-shares/3'), 'shares')
   assert.equal(moduleForPath('/photos'), 'photos')
   assert.equal(moduleForPath('/about'), 'about')
+  assert.equal(moduleForPath('/diary'), 'diary')
+  assert.equal(moduleForPath('/diary/anything'), 'diary')
   assert.equal(moduleForPath('/'), 'home')
   for (const path of ['/auth/login', '/account', '/access-denied', '/blogger']) assert.equal(moduleForPath(path), undefined)
+})
+
+test('old backend module response keeps existing routes usable but diary closed', () => {
+  const old = SITE_MODULES.filter(key => key !== 'diary').map(key => ({ key, name: key, publicAccess: true, allowed: true }))
+  const result = validateModuleAccess(old)
+  assert.equal(result.length, 7)
+  assert.equal(result.find(item => item.key === 'diary')?.allowed, false)
+  assert.equal(result.find(item => item.key === 'blog')?.allowed, true)
 })
 test('missing or malformed access data never permits a route', () => {
   const valid = SITE_MODULES.map(key => ({ key, name: key, publicAccess: true, allowed: true }))

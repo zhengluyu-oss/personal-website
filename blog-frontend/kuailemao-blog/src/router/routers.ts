@@ -210,7 +210,7 @@ export const constantRouter = [
     },
     {
         path: '/diary',
-        component: () => import('@/views/Diary/index.vue'),
+        component: () => import('@/views/Diary/Workspace.vue'),
         name: 'diary',
         meta: { title: '我的日记', private: true },
     },
