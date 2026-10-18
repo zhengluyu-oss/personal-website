@@ -31,6 +31,16 @@ onMounted(async () => {
         </div>
         <div class="about-body">
           <section aria-labelledby="intro-heading"><h2 id="intro-heading">{{ profile.tagline }}</h2><p class="bio">{{ profile.bio }}</p></section>
+          <section class="about-detail" aria-labelledby="stack-heading">
+            <h2 id="stack-heading">技术栈</h2>
+            <dl class="tech-stack">
+              <div><dt>后端开发</dt><dd>Java · Spring Boot · Spring Security · MyBatis-Plus</dd></div>
+              <div><dt>前端开发</dt><dd>Vue 3 · TypeScript · Vite · Pinia · Element Plus · Ant Design Vue</dd></div>
+              <div><dt>数据与中间件</dt><dd>MySQL · PostgreSQL · Redis · RabbitMQ</dd></div>
+              <div><dt>AI 应用</dt><dd>大模型 API 接入 · RAG 检索增强生成 · Embedding 向量检索 · 提示词设计</dd></div>
+              <div><dt>部署与工具</dt><dd>Git · Linux · Nginx · systemd · 阿里云 OSS</dd></div>
+            </dl>
+          </section>
           <section class="profile-links" aria-labelledby="links-heading">
             <h2 id="links-heading">在这里继续了解我</h2>
             <nav aria-label="个人公开链接">
@@ -63,6 +73,11 @@ onMounted(async () => {
 .about-body { min-width: 0; }
 .about-body h2 { margin: 0; font-size: clamp(1.25rem, 2vw, 1.55rem); font-weight: 650; line-height: 1.65; overflow-wrap: anywhere; }
 .bio { margin: 1.25rem 0 0; color: var(--brand-ink-soft); font-size: 1.05rem; line-height: 1.95; white-space: pre-line; overflow-wrap: anywhere; }
+.about-detail { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--brand-line); }
+.tech-stack { margin: 1.25rem 0 0; }
+.tech-stack > div + div { margin-top: 1.5rem; }
+.tech-stack dt { font-weight: 600; line-height: 1.6; }
+.tech-stack dd { margin: .4rem 0 0; color: var(--brand-ink-soft); line-height: 1.9; overflow-wrap: anywhere; }
 .profile-links { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--brand-line); }
 .profile-links h2 { font-size: 1rem; }
 .profile-links nav { display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; margin: 1rem 0; }
