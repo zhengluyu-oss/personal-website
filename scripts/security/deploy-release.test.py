@@ -18,7 +18,8 @@ def write(p,s):
 if 'site-modules/access' in url:
     fresh=(base/'custom-app/blog-backend.jar').exists() and (base/'custom-app/blog-backend.jar').read_text()=='new-jar'
     mode=os.environ.get('QA_FAIL','')
-    d=[dict(key=k,publicAccess=False,allowed=False) for k in ('home','experience','blog','shares','photos','about')]
+    d=[dict(key=k,publicAccess=False,allowed=False) for k in ('home','experience','blog','shares','photos','about','diary')]
+    if not fresh and os.environ.get('QA_LEGACY_BACKEND'): d=d[:6]
     r=dict(code=200,data=d)
     if fresh and mode in ('health','recovery'): r['code']=500
     if fresh and mode=='shape': r['data']=d[:5]
@@ -100,6 +101,13 @@ exec /usr/bin/cp "$@"
         r=self.run_release('admin'); self.assertEqual(r.returncode,0,r.stdout)
         self.assertEqual((self.app/'blog-backend.jar').read_text(),'old-jar'); self.assertNotIn('systemctl',(self.root/'actions').read_text())
         self.assertEqual((pathlib.Path(str(self.admin)+'.previous')/'index.html').read_text(),'old-custom-admin')
+    def test_rollback_can_verify_legacy_six_module_backend(self):
+        self.env['QA_LEGACY_BACKEND']='1'
+        r=self.run_release('backend','health')
+        self.assertEqual(r.returncode,1,r.stdout)
+        self.assertIn('DEPLOYMENT_RECOVERED',r.stdout)
+        self.assertNotIn('RECOVERY_FAILED',r.stdout)
+        self.assertEqual((self.app/'blog-backend.jar').read_text(),'old-jar')
     def test_combined_private_blog_is_healthy(self):
         r=self.run_release('backend,blog,admin'); self.assertEqual(r.returncode,0,r.stdout)
         self.assertEqual(self.config.read_text(),'new-config'); self.assertEqual((self.blog/'index.html').read_text(),'new-blog')
