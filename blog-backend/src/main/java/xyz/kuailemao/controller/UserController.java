@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import xyz.kuailemao.service.AdminLoginDeliveryException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -39,6 +41,7 @@ import java.util.List;
  * 创建时间：2023/10/10 14:29
  */
 
+@Slf4j
 @RestController
 @Tag(name = "用户相关接口")
 @RequestMapping("/user")
@@ -73,8 +76,13 @@ public class UserController {
         try {
             return ResponseResult.success(adminLoginChallengeService.resend(
                     dto.getChallengeId(), IpUtils.getIpAddr(request)), "验证码已重新发送");
+        } catch (AdminLoginDeliveryException exception) {
+            return exception.response();
         } catch (BadCredentialsException exception) {
             return ResponseResult.failure(RespEnum.VERIFY_CODE_ERROR.getCode(), ADMIN_LOGIN_VERIFY_ERROR);
+        } catch (RuntimeException exception) {
+            log.warn("Administrator resend unavailable: type={}", exception.getClass().getSimpleName());
+            return AdminLoginDeliveryException.serviceUnavailable();
         }
     }
 

@@ -168,3 +168,41 @@ test('frontend token storage validates data and replaces stale storage when logi
   REMOVE_TOKEN()
   assert.equal(GET_TOKEN(), null)
 })
+
+test('cooldown after leaving verification is shown once without false login, including legacy errors', async () => {
+  const { host, cleanup } = mount()
+  try {
+    loginResult = { code: 200, data: { secondFactorRequired: true, challengeId: 'old-challenge', maskedEmail: 'f***@example.invalid', resendAfter: 0 } }
+    click(host, '立即登录'); await flush()
+    click(host, '重新登录'); await flush()
+    for (const response of [
+      { code: 1004, msg: '验证码发送过于频繁，请等待 42 秒后重试', data: { reason: 'CODE_SEND_COOLDOWN', retryAfterSeconds: 42 } },
+      { code: 1008, msg: '验证码发送服务暂不可用，请稍后重试' },
+      { code: 1001, msg: '用户名或密码错误' },
+    ]) {
+      events.length = 0; loginResult = response
+      click(host, '立即登录'); await flush()
+      assert.deepEqual(events, [response.msg]); assert.equal(store.token, null)
+      assert.ok(!host.textContent.includes('请完成邮箱验证'))
+    }
+  } finally { cleanup() }
+})
+
+test('resend failures keep the original challenge usable and never announce a new code', async () => {
+  loginResult = { code: 200, data: { secondFactorRequired: true, challengeId: 'original-challenge', maskedEmail: 'f***@example.invalid', resendAfter: 0 } }
+  const { host, cleanup } = mount()
+  try {
+    click(host, '立即登录'); await flush(); events.length = 0
+    for (const message of ['验证码发送过于频繁，请等待 5 秒后重试', '验证码发送服务暂不可用，请稍后重试']) {
+      verifyResult = { code: 1004, msg: message }
+      click(host, '重新发送'); await flush()
+      assert.ok(host.textContent.includes('请完成邮箱验证'))
+      assert.equal(events.at(-1), message)
+    }
+    const input = host.querySelector('input'); input.value = '123456'; input.dispatchEvent(new window.Event('input')); await flush()
+    verifyResult = { code: 200, data: { token: 'synthetic', expire: '2099-01-01' } }
+    click(host, '验证并登录'); await flush()
+    assert.deepEqual(requests.at(-1), ['/user/admin-login/verify', { challengeId: 'original-challenge', code: '123456' }])
+    resolveInfo(); await flush(); assert.ok(events.includes('登录成功'))
+  } finally { cleanup() }
+})

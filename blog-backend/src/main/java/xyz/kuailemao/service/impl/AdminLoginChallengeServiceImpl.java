@@ -13,6 +13,7 @@ import xyz.kuailemao.constants.RedisConst;
 import xyz.kuailemao.domain.entity.LoginUser;
 import xyz.kuailemao.domain.vo.AdminLoginChallengeVO;
 import xyz.kuailemao.service.AdminLoginChallengeService;
+import xyz.kuailemao.service.AdminLoginDeliveryException;
 import xyz.kuailemao.service.UserService;
 import xyz.kuailemao.service.AccountAuthenticationVersion;
 import xyz.kuailemao.service.EmailDeliveryService;
@@ -71,7 +72,7 @@ public class AdminLoginChallengeServiceImpl implements AdminLoginChallengeServic
         }
         String resendKey = RedisConst.ADMIN_LOGIN_RESEND + loginUser.getUser().getId();
         if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(resendKey))) {
-            throw new BadCredentialsException("验证码发送过于频繁，请稍后重试");
+            throw AdminLoginDeliveryException.cooldown(stringRedisTemplate.getExpire(resendKey, TimeUnit.MILLISECONDS));
         }
         String challengeId = UUID.randomUUID().toString();
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
@@ -93,7 +94,7 @@ public class AdminLoginChallengeServiceImpl implements AdminLoginChallengeServic
             emailDeliveryService.publish(taskId, Map.of("email", email, "code", code, "type", "adminLogin"));
         } catch (RuntimeException failure) {
             stringRedisTemplate.delete(List.of(key, resendKey));
-            throw new BadCredentialsException("验证码发送失败，请稍后重试");
+            throw AdminLoginDeliveryException.unavailable();
         }
         log.info("Administrator second-factor challenge created: userId={}, client={}", loginUser.getUser().getId(), clientAddress);
         AdminLoginChallengeVO result = new AdminLoginChallengeVO(challengeId, maskEmail(email),
