@@ -74,6 +74,7 @@ public final class CoachingPeriodAi implements DiaryAiExtension {
             store.jdbc.update("UPDATE diary_coaching.period_job SET state='RUNNING',lease_token=:token,updated_at=now() WHERE owner_id=:owner AND id=:id",params);return found;
         });
         if(work==null) return;boolean sent=false;
+        String invalidOutput=null;List<DiaryDiagnostics.Source> diagnosticSources=List.of();
         try {
             if(!active.getAsBoolean()) throw new DiaryFailure(403,"账号不可用");
             Preview preview=periods.preview(owner,work.request().period());validatePreview(preview,work.digest());
@@ -87,10 +88,13 @@ public final class CoachingPeriodAi implements DiaryAiExtension {
                 if(store.jdbc.update("UPDATE diary_coaching.period_job SET sources=CAST(:sources AS jsonb),possibly_charged=true WHERE owner_id=:owner AND id=:id AND state='RUNNING' AND lease_token=:token",params)!=1) throw DiaryFailure.conflict();return null;
             });
             sent=true;var generation=cloud.generate(CoachingEvidence.system(),context,work.id());
+            invalidOutput=generation.content();
+            diagnosticSources=preview.sources().stream().map(s->new DiaryDiagnostics.Source(s.sourceId(),s.kind(),s.entityId(),s.revision(),s.text())).toList();
             execution.usage(owner,generation.inputTokens(),generation.outputTokens());
+            DiaryValidation.check(generation.content(),preview.sources().stream().map(s->new DiaryValidation.Evidence(s.sourceId(),s.text(),s.kind())).toList(),"PERIOD");
             final CoachingEvidence.Result result;
             try {result=CoachingEvidence.validate(generation.content(),preview.sources());}
-            catch(DiaryFailure invalid){throw new DiaryAiCloud.Failure("OUTPUT_EVIDENCE_INVALID",false);}
+            catch(DiaryFailure invalid){throw DiaryValidation.unknown();}
             store.tx(owner,true,()->{
                 execution.lease(owner,lease);validatePreview(periods.build(owner,work.request().period()),work.digest());
                 if(!active.getAsBoolean()) throw new DiaryFailure(403,"账号不可用");
@@ -105,6 +109,10 @@ public final class CoachingPeriodAi implements DiaryAiExtension {
                 }return null;
             });
         } catch(RuntimeException failure) {
+            if(failure instanceof DiaryValidation.Issue issue) {
+                try {ai.recordInvalid(owner,work.id(),lease,"PERIOD",issue,invalidOutput,diagnosticSources,CoachingEvidence.PROMPT_VERSION);return;}
+                catch(RuntimeException unavailable){failure=new DiaryAiCloud.Failure("OUTPUT_EVIDENCE_INVALID",false);}
+            }
             String state=failure instanceof DiaryAiCloud.Failure f && f.uncertain()?"UNCERTAIN":failure instanceof DiaryFailure d && d.status()==409?"STALE":"FAILED";
             boolean charged=sent;
             String code=failure instanceof DiaryAiCloud.Failure f?f.code():failure instanceof DiaryFailure d && d.status()==429?"DAILY_LIMIT":"TASK_REJECTED";

@@ -49,6 +49,7 @@ public final class DiaryAiWorker {
     }
     private void process(DiaryAiStore.Work work,String profile,UUID token) {
         boolean sent=false;
+        String invalidOutput=null;List<DiaryDiagnostics.Source> diagnosticSources=List.of();
         try {
             check(work);List<Source> sources;boolean partial=false;
             if(work.kind()==Kind.QUESTION) {
@@ -73,10 +74,20 @@ public final class DiaryAiWorker {
             if(points(DiaryAiEvidence.system(work.kind()))+points(context)>p.getMaxPromptCharacters())throw DiaryFailure.invalid("输入超过模型预算，请缩小范围");
             store.reserve(owner,1,0);check(work);store.preparing(owner,work,token,sources,partial);sent=true;
             var generation=cloud.generate(DiaryAiEvidence.system(work.kind()),context,work.id());
+            invalidOutput=generation.content();
+            diagnosticSources=sources.stream().map(s->new DiaryDiagnostics.Source(s.sourceId(),"D",s.entryId(),s.revision(),s.text())).toList();
             store.usage(owner,generation.inputTokens(),generation.outputTokens());check(work);
-            Result result=DiaryAiEvidence.validate(generation.content(),sources,work.kind());
+            DiaryValidation.check(generation.content(),sources.stream().map(s->new DiaryValidation.Evidence(s.sourceId(),s.text(),"D")).toList(),work.kind().name());
+            Result result;
+            try {result=DiaryAiEvidence.validate(generation.content(),sources,work.kind());}
+            catch(DiaryAiCloud.Failure invalid){throw DiaryValidation.unknown();}
             store.complete(owner,work,token,sources,result,partial);
         } catch(RuntimeException error) {
+            if(error instanceof DiaryValidation.Issue issue) {
+                try {store.recordInvalid(owner,work.id(),token,work.kind().name(),issue,invalidOutput,diagnosticSources,DiaryAiEvidence.PROMPT_VERSION);}
+                catch(RuntimeException unavailable){store.fail(owner,work,token,State.FAILED,"OUTPUT_EVIDENCE_INVALID",sent);}
+                return;
+            }
             State state=error instanceof DiaryAiCloud.Failure f && f.uncertain()?State.UNCERTAIN:error instanceof DiaryFailure d && d.status()==409?State.STALE:State.FAILED;
             String code=error instanceof DiaryAiCloud.Failure f?f.code():error instanceof DiaryFailure d && d.status()==429?"DAILY_LIMIT":"TASK_REJECTED";
             try {

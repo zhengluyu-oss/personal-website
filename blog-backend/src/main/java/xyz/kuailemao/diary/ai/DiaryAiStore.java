@@ -24,6 +24,17 @@ public final class DiaryAiStore {
     public DiaryAiStore(NamedParameterJdbcTemplate jdbc,DataSourceTransactionManager manager,DiaryAiProperties properties,Supplier<DiaryAiExtension> extension) {
         this.jdbc=jdbc;this.manager=manager;this.properties=properties;this.extension=extension;
     }
+    public void recordInvalid(long owner,UUID id,UUID token,String kind,DiaryValidation.Issue issue,String raw,List<DiaryDiagnostics.Source> sources,String prompt) {
+        tx(owner,()->{
+            lease(owner,token);
+            String table="PERIOD".equals(kind)?"diary_coaching.period_job":"diary_ai.job";
+            var p=params(owner);p.put("id",id);p.put("token",token);
+            if(jdbc.update("UPDATE "+table+" SET state='FAILED',error_code='OUTPUT_EVIDENCE_INVALID',possibly_charged=true,sources=NULL,updated_at=now() WHERE owner_id=:owner AND id=:id AND state='RUNNING' AND lease_token=:token",p)==1)
+                new DiaryDiagnostics(jdbc,manager).save(owner,id,kind,issue,properties.getGenerationModel(),prompt,raw,sources);
+            return null;
+        });
+        org.slf4j.LoggerFactory.getLogger(DiaryAiStore.class).info("diary_ai_validation task={} reason={} field={}",id,issue.reason().name(),issue.path());
+    }
     <T>T tx(long owner,Supplier<T> operation) {
         TransactionTemplate tx=new TransactionTemplate(manager);tx.setTimeout(8);
         try { return tx.execute(status->{jdbc.queryForObject("SELECT set_config('diary.owner_id',:owner,true)",Map.of("owner",Long.toString(owner)),String.class);return operation.get();}); }
