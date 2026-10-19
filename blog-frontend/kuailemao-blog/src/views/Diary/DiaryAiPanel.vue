@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { ChatDotRound, DocumentChecked, Setting } from '@element-plus/icons-vue'
 import DiaryAiResult from './DiaryAiResult.vue'
+import DiaryValidationDiagnostic from './DiaryValidationDiagnostic.vue'
 import { diaryAiApi as api, type AiIndex, type AiJob, type AiPreview, type AiReport, type AiReportSummary, type AiRequest, type AiResult, type AiScope, type AiSource } from '@/utils/diary-ai-api'
 import { diaryApi } from '@/utils/diary-api'
 const props = withDefaults(defineProps<{ blocked: boolean; entryId: string; revision: number; choices: { id: string; title: string }[]; canAdopt?: boolean; section?: 'question' | 'review'; active?: boolean }>(), { section: 'question', active: true })
@@ -161,6 +162,7 @@ onBeforeUnmount(() => { disposed = true; epoch++; clearTimeout(timer); capabilit
             <div v-if="running" class="response-skeleton" aria-hidden="true"><span /><span /><span /></div>
             <p v-if="job?.possiblyCharged">请求可能已产生费用，等待结果或取消不会退回额度。</p>
             <p v-if="job && ['FAILED', 'UNCERTAIN'].includes(job.state)" class="retry-guidance">核对原因后，可修改问题或资料范围，再点击提交。再次提交会创建新任务，可能再次产生费用；本页不会自动重发。</p>
+            <DiaryValidationDiagnostic v-if="active && job?.state === 'FAILED'" :key="job.id" :id="job.id" :kind="job.kind === 'REVIEW' ? 'REVIEW' : 'QUESTION'" />
             <div class="ai-actions"><el-button v-if="running" :disabled="busy" @click="cancel">取消任务</el-button><el-button v-if="running" :disabled="busy" @click="poll">继续查询状态</el-button></div>
           </div>
           <DiaryAiResult v-if="visibleReport && report && result" :report="report" :result="result" :question="reportQuestion" :busy="busy" :blocked="blocked" :can-adopt="canAdopt" @locate="locate" @adopt="emit('adopt-suggestion', $event)" />
