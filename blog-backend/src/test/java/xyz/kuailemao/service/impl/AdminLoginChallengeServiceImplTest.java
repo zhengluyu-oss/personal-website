@@ -16,6 +16,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import xyz.kuailemao.domain.entity.LoginUser;
 import xyz.kuailemao.domain.entity.User;
 import xyz.kuailemao.service.EmailDeliveryService;
+import xyz.kuailemao.service.AdminLoginDeliveryException;
 import xyz.kuailemao.service.UserService;
 import xyz.kuailemao.service.AccountAuthenticationVersion;
 
@@ -33,6 +34,8 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.ArgumentMatchers.anyLong;
 
 @ExtendWith(MockitoExtension.class)
 class AdminLoginChallengeServiceImplTest {
@@ -88,7 +91,7 @@ class AdminLoginChallengeServiceImplTest {
         assertThrows(BadCredentialsException.class, () -> service.verify("expired", "123456", "203.0.113.2"));
 
         when(stringRedisTemplate.hasKey(anyString())).thenReturn(true);
-        assertThrows(BadCredentialsException.class, () -> service.create(administrator, "203.0.113.2"));
+        assertThrows(AdminLoginDeliveryException.class, () -> service.create(administrator, "203.0.113.2"));
         verify(rabbitTemplate, never()).convertAndSend(anyString(), anyString(), any(Object.class));
     }
 
@@ -169,5 +172,60 @@ class AdminLoginChallengeServiceImplTest {
         when(stringRedisTemplate.execute(any(RedisScript.class), anyList(), any(), any())).thenReturn(1L);
         when(userService.loadUserByUsername("admin")).thenReturn(administrator);
         assertThrows(BadCredentialsException.class, () -> service.verify("old", "123456", "203.0.113.2"));
+    }
+    @Test void cooldownReadsRemainingMillisecondsWithoutSendingOrExtending() {
+        when(stringRedisTemplate.hasKey(anyString())).thenReturn(true);
+        when(stringRedisTemplate.getExpire(anyString(),eq(java.util.concurrent.TimeUnit.MILLISECONDS))).thenReturn(12001L);
+        var failure=assertThrows(AdminLoginDeliveryException.class,()->service.create(administrator,"fixture"));
+        assertEquals(13L,failure.response().getData().retryAfterSeconds());
+        verify(stringRedisTemplate,never()).expire(anyString(),anyLong(),any());
+        verifyNoInteractions(emailDeliveryService);
+    }
+    @Test void unknownTtlNeverProducesNegativeOrInventedRetryDuration() {
+        when(stringRedisTemplate.hasKey(anyString())).thenReturn(true);
+        for(Long ttl:java.util.Arrays.asList(null,-2L,-1L,0L)) {
+            when(stringRedisTemplate.getExpire(anyString(),eq(java.util.concurrent.TimeUnit.MILLISECONDS))).thenReturn(ttl);
+            var failure=assertThrows(AdminLoginDeliveryException.class,()->service.create(administrator,"fixture"));
+            org.junit.jupiter.api.Assertions.assertNull(failure.response().getData().retryAfterSeconds());
+            assertEquals("验证码发送过于频繁，请稍后重试",failure.response().getMsg());
+        }
+        verifyNoInteractions(emailDeliveryService);
+    }
+    @Test void publishingFailureCleansNewChallengeAndCooldownButNeverDeletesOldChallenge() {
+        when(stringRedisTemplate.<String,String>opsForHash()).thenReturn(hashOperations);
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
+        when(emailDeliveryService.create(eq(1),anyList())).thenReturn("fixture-task");
+        org.mockito.Mockito.doThrow(new IllegalStateException("private upstream error")).when(emailDeliveryService).publish(anyString(),any());
+        var failure=assertThrows(AdminLoginDeliveryException.class,()->service.create(administrator,"fixture"));
+        assertEquals("CODE_SEND_UNAVAILABLE",failure.response().getData().reason().name());
+        verify(stringRedisTemplate).delete(org.mockito.ArgumentMatchers.<java.util.Collection<String>>argThat(keys -> keys.size()==2
+            && keys.contains("auth:admin:resend:7") && keys.stream().noneMatch(k->k.equals("auth:admin:challenge:old"))));
+    }
+    @Test @SuppressWarnings("unchecked") void resendDuringCooldownPreservesOldChallengeAndItCanStillCompleteOnce() {
+        when(stringRedisTemplate.<String,String>opsForHash()).thenReturn(hashOperations);
+        when(hashOperations.entries(anyString())).thenReturn(Map.of("username","admin","userId","7","version","a".repeat(64),"credentials","snapshot"));
+        when(userService.loadUserByUsername("admin")).thenReturn(administrator);
+        when(stringRedisTemplate.hasKey(anyString())).thenReturn(true);
+        assertThrows(AdminLoginDeliveryException.class,()->service.resend("old","fixture"));
+        verify(stringRedisTemplate,never()).delete(anyString());
+        verifyNoInteractions(emailDeliveryService);
+        when(stringRedisTemplate.execute(any(RedisScript.class),anyList(),any(),any())).thenReturn(1L,-1L);
+        assertEquals(administrator,service.verify("old","123456","fixture"));
+        assertThrows(BadCredentialsException.class,()->service.verify("old","123456","fixture"));
+    }
+    @Test void resendPublishFailurePreservesOldChallengeAndDoesNotRefreshItsExpiry() {
+        when(stringRedisTemplate.<String,String>opsForHash()).thenReturn(hashOperations);
+        when(hashOperations.entries("auth:admin:challenge:old")).thenReturn(Map.of("username","admin","userId","7","version","a".repeat(64),"credentials","snapshot"));
+        when(userService.loadUserByUsername("admin")).thenReturn(administrator);
+        when(stringRedisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(stringRedisTemplate.hasKey(anyString())).thenReturn(false);
+        when(emailDeliveryService.create(eq(1),anyList())).thenReturn("fixture-task");
+        org.mockito.Mockito.doThrow(new IllegalStateException("private failure")).when(emailDeliveryService).publish(anyString(),any());
+        assertThrows(AdminLoginDeliveryException.class,()->service.resend("old","fixture"));
+        verify(stringRedisTemplate,never()).delete("auth:admin:challenge:old");
+        verify(stringRedisTemplate,never()).expire(eq("auth:admin:challenge:old"),anyLong(),any());
+        verify(stringRedisTemplate).delete(org.mockito.ArgumentMatchers.<java.util.Collection<String>>argThat(keys->
+            keys.size()==2 && !keys.contains("auth:admin:challenge:old")));
     }
 }

@@ -1,6 +1,10 @@
 package xyz.kuailemao.handler;
 
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import xyz.kuailemao.service.AdminLoginDeliveryException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.access.AccessDeniedException;
@@ -30,6 +34,7 @@ import java.util.UUID;
  * <p>
  * 创建时间：2023/10/11 16:03
  */
+@Slf4j
 @Component
 public class SecurityHandler {
 
@@ -74,8 +79,16 @@ public class SecurityHandler {
         boolean administrator = user.getAuthorities().stream()
                 .anyMatch(authority -> (SecurityConst.ROLE_PREFIX + SecurityConst.ROLE_ADMIN).equals(authority.getAuthority()));
         if (administrator) {
-            var challenge = adminLoginChallengeService.create(user, IpUtils.getIpAddr(request));
-            WebUtil.renderString(response, ResponseResult.success(challenge, "请完成邮箱验证").asJsonString());
+            try {
+                var challenge = adminLoginChallengeService.create(user, IpUtils.getIpAddr(request));
+                WebUtil.renderString(response, ResponseResult.success(challenge, "请完成邮箱验证").asJsonString());
+            } catch (AdminLoginDeliveryException failure) {
+                renderLoginFailure(request, response, failure);
+            } catch (RuntimeException failure) {
+                // This boundary runs only after password/OAuth authentication succeeded.
+                log.warn("Administrator challenge unavailable: type={}", failure.getClass().getSimpleName());
+                renderLoginFailure(request, response, new AuthenticationServiceException("challenge unavailable"));
+            }
             return;
         }
         issueToken(request, response, user);
@@ -108,8 +121,20 @@ public class SecurityHandler {
             HttpServletResponse response,
             AuthenticationException exception
     ) throws IOException {
-        loginLogService.loginLog(request, request.getParameter(USER_NAME), 1, "登录验证失败");
-        WebUtil.renderString(response, ResponseResult.failure(RespEnum.USERNAME_OR_PASSWORD_ERROR.getCode(), RespConst.USERNAME_OR_PASSWORD_ERROR_MSG).asJsonString());
+        renderLoginFailure(request, response, exception);
+    }
+
+    private void renderLoginFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException failure) {
+        SecurityContextHolder.clearContext();
+        ResponseResult<?> result = failure instanceof AdminLoginDeliveryException delivery ? delivery.response()
+                : failure instanceof AuthenticationServiceException ? AdminLoginDeliveryException.serviceUnavailable()
+                : ResponseResult.failure(RespEnum.USERNAME_OR_PASSWORD_ERROR.getCode(), RespConst.USERNAME_OR_PASSWORD_ERROR_MSG);
+        try {
+            loginLogService.loginLog(request, request.getParameter(USER_NAME), 1, "登录验证失败");
+        } catch (RuntimeException loggingFailure) {
+            log.warn("Login failure audit unavailable: type={}", loggingFailure.getClass().getSimpleName());
+        }
+        WebUtil.renderString(response, result.asJsonString());
     }
 
     /**

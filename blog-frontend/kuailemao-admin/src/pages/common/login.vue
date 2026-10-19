@@ -30,7 +30,7 @@ const { t } = useI18nLocale()
 const formRef = shallowRef()
 const resetCounter = 60
 const submitLoading = shallowRef(false)
-const errorAlert = shallowRef(false)
+const errorAlert = shallowRef('')
 const secondFactorError = shallowRef('')
 const deliveryMessage = shallowRef('')
 let deliveryController: AbortController | undefined
@@ -69,7 +69,7 @@ const { pause } = useInterval(1000, {
 const userStore = useUserStore()
 async function submit() {
   submitLoading.value = true
-  errorAlert.value = false
+  errorAlert.value = ''
   try {
     await formRef.value?.validate()
     let params: LoginParams | LoginMobileParams
@@ -183,22 +183,9 @@ async function finishLogin(loginToken?: string, expire?: string) {
 }
 
 function handleLoginError(e: unknown, stage: 'credentials' | 'secondFactor' = 'credentials') {
-    const serverMessage = getLoginErrorMessage(e)
-    if (stage === 'secondFactor') {
-      const status = e instanceof AxiosError ? e.response?.status : undefined
-      secondFactorError.value = status && status >= 500
-        ? '验证码验证服务暂时不可用，请稍后重试'
-        : '验证码无效或已过期，请重新获取'
-    }
-    else {
-      errorAlert.value = true
-    }
-    notification.error({
-      message: stage === 'secondFactor' ? '邮箱验证失败' : '登录失败',
-      description: serverMessage,
-      duration: 3,
-    })
-
+  const serverMessage = getLoginErrorMessage(e)
+  if (stage === 'secondFactor') secondFactorError.value = serverMessage
+  else errorAlert.value = serverMessage
   submitLoading.value = false
 }
 
@@ -292,7 +279,7 @@ onBeforeUnmount(() => {
               <!-- 判断是否存在error -->
               <a-alert
                 v-if="errorAlert && loginModel.type === 'account' && !awaitingSecondFactor" mb-24px
-                :message="t('pages.login.accountLogin.errorMessage')" type="error" show-icon
+                :message="errorAlert" type="error" show-icon
               />
               <template v-if="loginModel.type === 'account' && !awaitingSecondFactor">
                 <a-form-item name="username" :rules="[{ required: true, message: t('pages.login.username.required') }]">
