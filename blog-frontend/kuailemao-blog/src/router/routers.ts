@@ -214,6 +214,12 @@ export const constantRouter = [
         name: 'diary',
         meta: { title: '我的日记', private: true },
     },
+    {
+        path: '/knowledge',
+        component: () => import('@/views/Knowledge/Workspace.vue'),
+        name: 'knowledge',
+        meta: { title: '知识库', private: true },
+    },
     // 设置
     {
         path: PUBLIC_PATHS.account,

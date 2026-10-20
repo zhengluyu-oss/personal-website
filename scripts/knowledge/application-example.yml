@@ -1,0 +1,25 @@
+# Documentation only. Not included in the application JAR.
+# Keep off until isolated migrations and private storage acceptance pass.
+knowledge:
+  enabled: false
+  owner-user-id: null
+  postgres:
+    url: ""
+    username: knowledge_runtime
+    password: ""
+  storage:
+    endpoint: ""
+    bucket: ""
+    access-key: ""
+    secret-key: ""
+    prefix: knowledge/
+    quota-bytes: 1073741824
+  processing:
+    enabled: false
+    temporary-directory: ""
+    timeout-seconds: 60
+    max-pages: 300
+    pdf-bytes: 20971520
+    text-bytes: 5242880
+    output-bytes: 2097152
+    temporary-bytes: 268435456

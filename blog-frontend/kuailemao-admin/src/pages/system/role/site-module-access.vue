@@ -32,9 +32,11 @@ watch(() => props.open, open => { if (open) void load() })
 
 async function save(policy: Policy) {
   if (!policy.publicAccess && !policy.roleIds.length) { message.warning('请选择至少一个角色'); return }
-  if (policy.key === 'diary' && policy.publicAccess) {
+  if (['diary', 'knowledge'].includes(policy.key) && policy.publicAccess) {
     const confirmed = await new Promise<boolean>(resolve => Modal.confirm({
-      title: '公开日记？', content: '所有游客将能阅读现有日记及可展示的 AI 分析结果。撤回权限无法收回他人已经复制的内容。编辑和 AI 生成仍只允许站主操作。',
+      title: `公开${policy.name}？`, content: policy.key === 'knowledge'
+        ? '所有游客将能阅读知识库笔记、文件和关联信息。撤回权限无法收回已经下载或复制的内容。写入和整理为文章仍只允许站主操作。'
+        : '所有游客将能阅读现有日记及可展示的 AI 分析结果。撤回权限无法收回他人已经复制的内容。编辑和 AI 生成仍只允许站主操作。',
       okText: '确认公开', cancelText: '取消', onOk: () => resolve(true), onCancel: () => resolve(false),
     }))
     if (!confirmed) return
@@ -64,6 +66,7 @@ async function save(policy: Policy) {
       <div v-if="failed"><a-button @click="load">重新读取</a-button></div>
       <div v-for="policy in policies" :key="policy.key" class="module-row">
         <h3>{{ policy.name }}</h3>
+        <p v-if="policy.key === 'knowledge'" class="diary-scope">权限覆盖知识库条目、私有文件和关系图；查看不授予编辑、解析或生成文章权限。</p>
         <p v-if="policy.key === 'diary'" class="diary-scope">权限覆盖站主的现有日记和可展示的分析结果；查看不授予编辑、导出或 AI 生成权限。</p>
         <p v-if="policy.revision < 0" role="alert">该模块尚未初始化，请先执行模块初始化脚本。</p>
         <a-radio-group v-model:value="policy.publicAccess" :disabled="!!saving">

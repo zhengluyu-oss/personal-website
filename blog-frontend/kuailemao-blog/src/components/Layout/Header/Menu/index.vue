@@ -110,6 +110,9 @@ watch(() => canViewModule('blog'), allowed => { if (allowed) void loadCategories
           <DiaryMenuEntry class="menus_item" :class="{ 'is-section': route.path.startsWith('/diary') }">
             <span><el-icon><Notebook/></el-icon><span>我的日记</span></span>
           </DiaryMenuEntry>
+          <RouterLink class="menus_item" :class="{ 'is-section': route.path.startsWith('/knowledge') }" to="/knowledge">
+            <span><el-icon><Files/></el-icon><span>知识库</span></span>
+          </RouterLink>
           <RouterLink class="menus_item" :class="{ 'is-section': route.path.startsWith('/website-shares') }" to="/website-shares">
             <span><el-icon><Link/></el-icon><span>网站分享</span></span>
           </RouterLink>

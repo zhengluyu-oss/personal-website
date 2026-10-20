@@ -18,7 +18,8 @@ def write(p,s):
 if 'site-modules/access' in url:
     fresh=(base/'custom-app/blog-backend.jar').exists() and (base/'custom-app/blog-backend.jar').read_text()=='new-jar'
     mode=os.environ.get('QA_FAIL','')
-    d=[dict(key=k,publicAccess=False,allowed=False) for k in ('home','experience','blog','shares','photos','about','diary')]
+    d=[dict(key=k,publicAccess=False,allowed=False) for k in ('home','experience','blog','shares','photos','about','diary','knowledge')]
+    if os.environ.get('QA_SEVEN_BACKEND'): d=d[:7]
     if not fresh and os.environ.get('QA_LEGACY_BACKEND'): d=d[:6]
     r=dict(code=200,data=d)
     if fresh and mode in ('health','recovery'): r['code']=500
@@ -97,6 +98,9 @@ exec /usr/bin/cp "$@"
     def test_backend_only_does_not_consume_frontend_previous(self):
         r=self.run_release('backend'); self.assertEqual(r.returncode,0,r.stdout); self.old_untouched_front()
         self.assertEqual((self.app/'blog-backend.jar').read_text(),'new-jar'); self.assertEqual(self.config.read_text(),'old-config')
+    def test_previous_seven_module_backend_remains_healthy(self):
+        self.env['QA_SEVEN_BACKEND']='1'
+        r=self.run_release('backend'); self.assertEqual(r.returncode,0,r.stdout)
     def test_frontend_only_does_not_restart_backend(self):
         r=self.run_release('admin'); self.assertEqual(r.returncode,0,r.stdout)
         self.assertEqual((self.app/'blog-backend.jar').read_text(),'old-jar'); self.assertNotIn('systemctl',(self.root/'actions').read_text())
