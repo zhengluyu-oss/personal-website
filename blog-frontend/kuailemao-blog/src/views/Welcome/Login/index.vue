@@ -152,14 +152,14 @@ async function resendCode() {
         <el-button :disabled="submitting" @click="challenge = undefined; verificationCode = ''; clearInterval(timer)">重新登录</el-button>
       </div>
     </div>
-    <div style="margin-top: 30px">
-      <el-button style="width: 270px" type="success" plain :loading="submitting" @click="userLogin()">{{ challenge ? '验证并登录' : '立即登录' }}</el-button>
+    <div class="auth-actions">
+      <el-button class="auth-action" type="success" plain :loading="submitting" @click="userLogin()">{{ challenge ? '验证并登录' : '立即登录' }}</el-button>
     </div>
     <el-divider>
       <span style="font-size: 13px;color: grey">没有账号</span>
     </el-divider>
-    <div>
-      <el-button @click="$router.push('/auth/register')" style="width: 270px" type="danger" plain>立即注册</el-button>
+    <div class="auth-actions">
+      <el-button class="auth-action" type="danger" plain @click="$router.push('/auth/register')">立即注册</el-button>
     </div>
     <el-divider>
       <span style="font-size: 13px;color: grey">其他方式</span>
@@ -187,6 +187,36 @@ async function resendCode() {
   justify-content: center;
   div:hover{
     cursor: pointer;
+  }
+}
+
+.auth-actions {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+}
+
+.auth-action {
+  width: min(270px, 100%);
+  min-height: 44px;
+}
+
+:deep(.el-input__inner),
+:deep(.el-input__wrapper input) {
+  font-size: 16px;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+@media (max-width: 600px) {
+  .auth-actions {
+    margin-top: 24px;
+  }
+
+  .auth-action {
+    width: 100%;
   }
 }
 </style>

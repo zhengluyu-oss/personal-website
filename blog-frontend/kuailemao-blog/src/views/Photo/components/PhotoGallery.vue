@@ -394,6 +394,7 @@ const isAlbum = (item: GalleryItem): item is { type: 'album', data: AlbumData } 
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
   transition: all 0.3s ease;
 }
 
@@ -401,10 +402,13 @@ const isAlbum = (item: GalleryItem): item is { type: 'album', data: AlbumData } 
   content: '📁';
   font-size: 1.4em;
   line-height: 1;
+  flex: none;
 }
 
 .item-info h3 {
   margin: 0;
+  min-width: 0;
+  flex: 1;
   font-size: 1.1em;
   font-weight: 500;
   white-space: nowrap;

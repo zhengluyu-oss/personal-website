@@ -44,9 +44,9 @@ function getTreeHole() {
   <div class="container" :style="{ backgroundImage: `url(${treeHoleBg})` }">
     <div class="content_container">
       <div>树洞</div>
-      <div>
+      <div class="compose-row">
         <input v-model="content" @focus="isShowSubmit = true" type="text" placeholder="在这里留下自己的足迹吧...">
-        <button v-show="isShowSubmit" @click="addTreeHoleBtn"><span style="color: grey;font-style: italic;font-weight: bold">提交</span></button>
+        <button v-show="isShowSubmit" type="button" @click="addTreeHoleBtn"><span>提交</span></button>
       </div>
     </div>
     <vue-danmaku :debounce="3000"
@@ -56,7 +56,7 @@ function getTreeHole() {
                  is-suspend
                  v-model:danmus="treeHoleList"
                  use-slot loop
-                 style="height:100vh; width:100vw;">
+                 class="danmaku-stage">
       <template v-slot:dm="{ danmu }">
         <div class="barrage_container">
           <div>
@@ -73,21 +73,24 @@ function getTreeHole() {
 .container {
   background-size: cover;
   background-position: center;
-  min-width: 100vw;
+  width: 100%;
+  max-width: 100vw;
   height: 100vh;
+  overflow-x: hidden;
+  box-sizing: border-box;
 
-  // 内容
   .content_container {
     position: absolute;
     top: 40%;
     left: 50%;
     z-index: 2;
+    width: min(22rem, calc(100vw - 2rem));
     transform: translate(-50%, -50%);
+    box-sizing: border-box;
 
-
-    & div:first-child {
+    & > div:first-child {
       color: white;
-      font-size: 2rem;
+      font-size: clamp(1.5rem, 6vw, 2rem);
       font-weight: bold;
       text-shadow: 0 0 10px #000;
       text-align: center;
@@ -95,55 +98,74 @@ function getTreeHole() {
       letter-spacing: 0.2rem;
     }
 
-    & div:last-child {
+    .compose-row {
       display: flex;
+      flex-wrap: wrap;
       justify-content: center;
       align-items: center;
+      gap: 0.5rem;
       margin-top: 1rem;
+      width: 100%;
 
-      & input {
-        width: 16rem;
-        height: 2rem;
+      input {
+        flex: 1 1 12rem;
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+        height: 2.75rem;
         border: #409EFF solid 1px;
         border-radius: 1rem;
         outline: none;
         padding: 0 1rem;
         font-size: 1rem;
-        background-color: rgba(255, 255, 255, 0.2)
+        background-color: rgba(255, 255, 255, 0.2);
+        box-sizing: border-box;
+        color: #fff;
       }
 
-      // 改变placeholder样式
-      & input::placeholder {
+      input::placeholder {
         color: white;
         font-style: italic;
       }
 
-      & button {
-        width: 5rem;
-        height: 2rem;
+      button {
+        flex: 0 0 auto;
+        min-width: 4.5rem;
+        min-height: 2.75rem;
+        padding: 0 1rem;
         border-radius: 1rem;
         outline: none;
-        margin-left: 0.5rem;
         background-color: rgba(255, 255, 255, 0.2);
         border: #409EFF solid 1px;
         color: white;
         font-size: 1rem;
+        cursor: pointer;
+
+        span {
+          color: #e8e8e8;
+          font-style: italic;
+          font-weight: bold;
+        }
 
         &:hover {
           background-color: rgba(255, 255, 255, 0.5);
-          cursor: pointer;
         }
       }
     }
   }
 
-  // 弹幕
+  .danmaku-stage {
+    width: 100%;
+    height: 100vh;
+    max-width: 100%;
+  }
+
   .barrage_container {
     display: flex;
     align-items: center;
     position: relative;
+    max-width: min(90vw, 28rem);
 
-    // 下边框动画
     &::after {
       content: '';
       position: absolute;
@@ -152,9 +174,8 @@ function getTreeHole() {
       width: 0;
       height: 0.2em;
       border-radius: 0.1em;
-      // 蓝紫色渐变色背景
       background: linear-gradient(to right, #00c6ff, #0072ff);
-      transition: width 0.3s ease; /* 过渡动画效果 */
+      transition: width 0.3s ease;
     }
 
     &:hover::after {
@@ -169,18 +190,17 @@ function getTreeHole() {
 
     & div:last-child span:last-child {
       font-size: 1.2rem;
+      overflow-wrap: anywhere;
     }
 
     & div:last-child {
-      // 悬浮动态移动下边框
       border-bottom: 1px solid #ebebeb;
       padding: 0.5rem;
       margin-left: 0.5rem;
       border-radius: $border-radius;
       background-color: rgba(255, 255, 255, 0.2);
-
+      min-width: 0;
     }
   }
-
 }
 </style>

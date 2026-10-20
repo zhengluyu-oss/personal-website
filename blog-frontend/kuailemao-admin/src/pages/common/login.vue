@@ -451,10 +451,33 @@ onBeforeUnmount(() => {
 }
 
 @media screen and (max-width: 767px) {
-  .login-media(350px);
+  .login-media(min(350px, calc(100vw - 2rem)));
 
   .ant-pro-login-divider {
     display: none;
+  }
+
+  .ant-pro-form-login-main {
+    max-width: calc(100vw - 2rem);
+    box-sizing: border-box;
+  }
+
+  .ant-pro-form-login-main-right {
+    width: 100% !important;
+    max-width: 100%;
+    padding-inline: 0.75rem;
+    box-sizing: border-box;
+  }
+
+  .ant-pro-form-login-main-right :deep(.ant-input),
+  .ant-pro-form-login-main-right :deep(.ant-input-affix-wrapper),
+  .ant-pro-form-login-main-right :deep(.ant-input-password) {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .ant-pro-form-login-main-right :deep(.ant-btn) {
+    min-height: 44px;
   }
 }
 </style>

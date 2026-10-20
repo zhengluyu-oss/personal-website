@@ -1068,10 +1068,11 @@ const isDark = false
 
 /* 添加右侧容器样式 */
 .gallery-container {
-  /* border: 1px solid red; */
-  min-width: 60vw; /* 防止内容溢出 */
-  width: 100%; /* 确保占满剩余空间 */
-  position: relative; /* 为内部定位提供参考 */
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+  box-sizing: border-box;
 }
 
 </style>
