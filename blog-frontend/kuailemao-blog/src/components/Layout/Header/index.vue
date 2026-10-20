@@ -10,7 +10,6 @@ import {GET_TOKEN, SET_TOKEN} from "@/utils/auth.ts"
 import {ElMessage} from "element-plus"
 import router from "@/router"
 import SessionRecovery from './SessionRecovery.vue'
-import DiaryMenuEntry from './DiaryMenuEntry.vue'
 import { confirmPrivateEditsBeforeLogout } from '@/utils/private-workspace'
 
 const userStore = useUserStore()
@@ -141,8 +140,6 @@ function restoreMenuFocus(event?: Event) {
         <SvgIcon name="directory_icon" width="30" height="30" color="#409EFF" class="icon"/>
       </button>
       <router-link class="mobile-brand" to="/">陆屿</router-link>
-      <DiaryMenuEntry class="mobile-diary-link" />
-      <RouterLink class="mobile-diary-link" to="/knowledge">知识库</RouterLink>
     </div>
 
     <!-- 搜索按钮 -->
@@ -159,7 +156,7 @@ function restoreMenuFocus(event?: Event) {
               content="点击去登录"
               placement="right"
           >
-            <RouterLink to="/auth/login" aria-label="登录"><el-avatar>登录</el-avatar></RouterLink>
+            <RouterLink class="mobile-account" to="/auth/login" aria-label="登录"><el-avatar>登录</el-avatar></RouterLink>
           </el-tooltip>
         </div>
         <div v-else style="display: flex">
@@ -183,7 +180,7 @@ function restoreMenuFocus(event?: Event) {
               </div>
             </template>
             <el-dropdown>
-              <el-avatar style="margin-right: 3rem"
+              <el-avatar class="mobile-account-avatar"
                          :src="userStore.userInfo?.avatar"></el-avatar>
               <template #dropdown>
                 <el-dropdown-item @click="router.push('/account')">
