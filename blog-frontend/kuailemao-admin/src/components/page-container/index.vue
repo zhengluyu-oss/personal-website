@@ -44,7 +44,7 @@ onDeactivated(async () => {
 })
 const contentCls = computed(() => {
   const cls: string[] = [
-    'flex flex-col flex-1',
+    'flex flex-col flex-1 min-w-0 max-w-full',
   ]
   if (contentWidth.value === 'Fluid')
     cls.push('w-full')
@@ -63,8 +63,15 @@ function renderTitle(title: VNodeChild | (() => VNodeChild)) {
 </script>
 
 <template>
-  <div>
-    <div class="bg-[var(--bg-color)]" :class="layoutSetting.multiTab ? 'pb-16px' : 'py-16px'" px-24px mb-24px mx--24px mt--24px>
+  <div class="admin-page min-w-0 max-w-full">
+    <div
+      class="admin-page__header bg-[var(--bg-color)]"
+      :class="layoutSetting.multiTab ? 'pb-16px' : 'py-16px'"
+      px-24px
+      mb-24px
+      mx--24px
+      mt--24px
+    >
       <a-breadcrumb v-if="!currentItem.hideInBreadcrumb">
         <template v-if="currentItem.matched?.length">
           <a-breadcrumb-item v-for="item in currentItem.matched" :key="item.path">
@@ -85,9 +92,9 @@ function renderTitle(title: VNodeChild | (() => VNodeChild)) {
       <!--          <slot name="extra" /> -->
       <!--        </div> -->
       <!--      </div> -->
-      <div v-if="$slots.content || $slots.extraContent" pt-12px>
-        <div flex w-full>
-          <div flex-auto>
+      <div v-if="$slots.content || $slots.extraContent" pt-12px class="min-w-0 max-w-full">
+        <div flex w-full min-w-0>
+          <div class="flex-auto min-w-0 max-w-full">
             <slot name="content" />
           </div>
           <div flex-shrink-0>
@@ -102,3 +109,14 @@ function renderTitle(title: VNodeChild | (() => VNodeChild)) {
     </div>
   </div>
 </template>
+
+<style scoped>
+@media (max-width: 767px) {
+  .admin-page__header {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+</style>

@@ -98,6 +98,7 @@ function onFinishFailed(errorInfo: any) {
         </div>
       </div>
       <div class="admin-list__table">
+        <p class="admin-list__table-hint">左右滑动可查看更多列</p>
         <slot name="table-content" />
       </div>
     </template>
@@ -136,9 +137,38 @@ function onFinishFailed(errorInfo: any) {
 }
 
 .admin-list__table {
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   margin-top: 12px;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+}
+
+.admin-list__table-hint {
+  display: none;
+  margin: 0 0 8px;
+  color: #647089;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.admin-list__table :deep(.ant-table-wrapper),
+.admin-list__table :deep(.ant-spin-nested-loading),
+.admin-list__table :deep(.ant-spin-container),
+.admin-list__table :deep(.ant-table) {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-list__table :deep(.ant-table-content),
+.admin-list__table :deep(.ant-table-body) {
+  overflow-x: auto !important;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 
 ::v-deep(.ant-form-item){
@@ -161,6 +191,10 @@ function onFinishFailed(errorInfo: any) {
 
   .admin-list__tools {
     margin-left: auto;
+  }
+
+  .admin-list__table-hint {
+    display: block;
   }
 }
 </style>
