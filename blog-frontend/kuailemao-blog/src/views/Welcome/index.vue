@@ -6,15 +6,15 @@ const welcomeBg = ossUrl('blog/background/压缩水狗.png')
 
 <template>
   <Header/>
-  <div style="width: 100vw;height: 100vh;overflow: hidden;display: flex">
+  <div class="welcome-shell">
     <!-- 左边区域 -->
     <div class="left-card">
       <el-image style="width: 100%;height: 100%" fit="cover"
                 :src="welcomeBg"/>
-    </div>
-    <div class="welcome-title">
-      <div>{{ WELCOME_TITLE }}</div>
-      <div style="margin-top: 10px">{{ WELCOME_SUBTITLE }}</div>
+      <div class="welcome-title">
+        <div>{{ WELCOME_TITLE }}</div>
+        <div class="welcome-subtitle">{{ WELCOME_SUBTITLE }}</div>
+      </div>
     </div>
     <!-- 右边区域 -->
     <div class="right-card">
@@ -28,23 +28,38 @@ const welcomeBg = ossUrl('blog/background/压缩水狗.png')
 </template>
 
 <style scoped>
-.left-card{
+.welcome-shell {
+  display: flex;
+  width: 100%;
+  max-width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.left-card {
+  position: relative;
   flex: 1;
-  background-color: black
+  min-width: 0;
+  background-color: black;
 }
 
 .right-card {
   width: 400px;
+  max-width: 100%;
   z-index: 1;
   background-color: var(--el-bg-color);
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 @media screen and (max-width: 600px) {
   .left-card {
     display: none;
   }
-  .right-card{
-    width: 100vw;
+
+  .right-card {
+    width: 100%;
   }
 }
 
@@ -59,5 +74,9 @@ const welcomeBg = ossUrl('blog/background/压缩水狗.png')
 .welcome-title div:first-child {
   font-size: 30px;
   font-weight: bold;
+}
+
+.welcome-subtitle {
+  margin-top: 10px;
 }
 </style>
