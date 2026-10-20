@@ -30,6 +30,13 @@ body {
 
 .ant-pro-basicLayout-content {
   margin: 18px 22px 24px !important;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ant-pro-basicLayout-content > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .ant-pro-sider {

@@ -88,7 +88,9 @@ function onSelectChange(selectedRowKeys: Key[]) {
   state.selectedRowKeys = selectedRowKeys
 }
 
-const columns: any = [
+const isNarrowList = useMediaQuery('(max-width: 767px)')
+
+const columns = computed<any[]>(() => [
   {
     title: '编号',
     dataIndex: 'id',
@@ -161,9 +163,10 @@ const columns: any = [
     dataIndex: 'operation',
     align: 'center',
     width: 190,
-    fixed: 'right',
+    // Fixed columns + overflow-hidden ancestors break horizontal swipe on phones.
+    ...(isNarrowList.value ? {} : { fixed: 'right' as const }),
   },
-]
+])
 
 function normalizeRows(rows: any[] = []) {
   return rows.map(item => ({ ...item, isTop: item.isTop === 1 }))
@@ -490,10 +493,18 @@ const domain = import.meta.env.VITE_APP_DOMAIN_NAME_FRONT
 .article-list-table {
   width: 100%;
   max-width: 100%;
+  min-width: 0;
 }
 
-:deep(.article-list-table .ant-table-content) {
+:deep(.article-list-table .ant-table) {
+  width: 100%;
+}
+
+:deep(.article-list-table .ant-table-content),
+:deep(.article-list-table .ant-table-body) {
+  overflow-x: auto !important;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 </style>
