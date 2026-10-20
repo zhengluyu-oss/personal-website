@@ -7,9 +7,9 @@ import DiaryValidationDiagnostic from './DiaryValidationDiagnostic.vue'
 import { diaryAiApi as api, type AiIndex, type AiJob, type AiPreview, type AiReport, type AiReportSummary, type AiRequest, type AiResult, type AiScope, type AiSource } from '@/utils/diary-ai-api'
 import { diaryApi } from '@/utils/diary-api'
 const props = withDefaults(defineProps<{ blocked: boolean; entryId: string; revision: number; choices: { id: string; title: string }[]; canAdopt?: boolean; section?: 'question' | 'review'; active?: boolean }>(), { section: 'question', active: true })
-const emit = defineEmits<{ (e: 'open-entry', id: string): void; (e: 'adopt-suggestion', value: { reportId: string; index: number; suggestion: Record<string, unknown> }): void; (e: 'section-change', section: 'question' | 'review'): void }>()
+const emit = defineEmits<{ (e: 'open-entry', id: string): void; (e: 'browse-entries'): void; (e: 'adopt-suggestion', value: { reportId: string; index: number; suggestion: Record<string, unknown> }): void; (e: 'section-change', section: 'question' | 'review'): void }>()
 const capability = ref<{ enabled: boolean; available: boolean; message: string }>(), index = ref<AiIndex>()
-const consent = ref(false), busy = ref(false), error = ref(''), question = ref(''), partial = ref(false)
+const consent = ref(false), busy = ref(false), previewing = ref(false), error = ref(''), question = ref(''), partial = ref(false)
 const responseZone = ref<HTMLElement>(), submittedQuestion = ref(''), reportQuestion = ref('')
 // Old reports do not carry their question. Keep only known request/report associations in memory.
 const questionsByReport = new Map<string, string>()
@@ -63,7 +63,16 @@ async function changeIndex(start: boolean, retry = false) {
 }
 async function previewReview() {
   if (!canSubmit.value) return
-  await run(async () => { const s = scope(true)!; const p = await api.preview(s); if (!disposed) preview.value = p })
+  previewing.value = true; preview.value = undefined
+  try {
+    await run(async () => {
+      const s = scope(true)!, signature = JSON.stringify(s)
+      const p = await api.preview(s)
+      if (disposed) return
+      if (signature !== JSON.stringify(scope(true)) || props.blocked) throw new Error('复盘范围已变化，请重新预览完整范围')
+      preview.value = p
+    })
+  } finally { if (!disposed) previewing.value = false }
 }
 async function submit(kind: 'questions' | 'reviews') {
   if (props.blocked || running.value || busy.value) return
@@ -124,7 +133,7 @@ onBeforeUnmount(() => { disposed = true; epoch++; clearTimeout(timer); capabilit
       <div><h2>{{ reviewing ? '做复盘' : '问日记' }}</h2><p>{{ reviewing ? '选一段经历，回看观察、变化和下一步。' : '从你写过的经历里，找到问题的线索。' }}</p></div>
       <span class="index-status">{{ !index ? '正在检查资料' : ready ? `${index.coverage.indexed} 篇日记可供检索` : `${index.coverage.indexed} / ${index.coverage.total} 篇已索引` }}</span>
     </header>
-    <div v-if="error" class="ai-error" role="alert">{{ error }}</div>
+    <div v-if="error && (!reviewing || !capability?.available)" class="ai-error" role="alert">{{ error }}</div>
     <div v-if="!capability?.available" class="ai-unavailable" role="status"><h3>{{ busy ? '正在准备日记助手' : '日记助手暂不可用' }}</h3><p>{{ capability?.message || '正在确认 AI 功能状态…' }}</p><el-button :loading="busy" @click="run(initialize)">重新检查</el-button></div>
     <template v-else>
       <details class="ai-settings">
@@ -153,7 +162,17 @@ onBeforeUnmount(() => { disposed = true; epoch++; clearTimeout(timer); capabilit
             <el-button type="primary" :disabled="!canSubmit || !question.trim()" @click="submit('questions')">查找依据并回答</el-button>
             <p class="composer-help">提交后，可在“AI 回答”中阅读结果并核对引用。</p>
           </div>
-          <div v-else class="review-composer"><p class="composer-help">使用所选范围的完整正文，最多40篇及24,000字预算，超限请缩小范围。</p><el-button :disabled="!canSubmit" @click="previewReview">预览完整范围</el-button><div v-if="preview" class="ai-preview"><h4>本次将分析</h4><strong>{{ preview.entries }} 篇 · 输入预算约 {{ preview.characters }} 字符</strong><details><summary>查看所选篇目</summary><ul><li v-for="entry in preview.records" :key="entry.id">{{ entry.title || '无标题日记' }}</li></ul></details><p>{{ preview.limitation }}</p><el-button type="primary" :disabled="!canSubmit" @click="submit('reviews')">确认范围并手动生成</el-button></div></div>
+          <div v-else class="review-composer">
+            <p class="composer-help">使用所选范围的完整正文，最多40篇及24,000字预算，超限请缩小范围。预览只读取资料，不调用模型。</p>
+            <div v-if="mode === 'current'" class="composer-help">
+              <p v-if="entryId && revision">当前篇：{{ choices.find(entry => entry.id === entryId)?.title || '已选日记' }} · 版本 {{ revision }}</p>
+              <p v-else>尚未选中已保存的日记。“当前篇”是你在“写日记”中打开的篇目，也可改用“指定多篇”。</p>
+              <el-button :disabled="busy || running || !!pending" @click="emit('browse-entries')">选择已保存日记</el-button>
+            </div>
+            <el-button :disabled="!canSubmit" :loading="previewing" @click="previewReview">{{ previewing ? '正在读取完整范围…' : '预览完整范围' }}</el-button>
+            <p v-if="error" class="review-preview-status" role="alert">{{ error }}</p>
+            <div v-if="preview" class="ai-preview"><h4>本次将分析</h4><strong>{{ preview.entries }} 篇 · 输入预算约 {{ preview.characters }} 字符</strong><details><summary>查看所选篇目</summary><ul><li v-for="entry in preview.records" :key="entry.id">{{ entry.title || '无标题日记' }}</li></ul></details><p>{{ preview.limitation }}</p><el-button type="primary" :disabled="!canSubmit" @click="submit('reviews')">确认范围并手动生成</el-button></div>
+          </div>
           <div v-if="pending" class="ai-pending" role="status"><h4>请求结果待确认</h4><p>提交结果未确认，重试会使用原请求标识。先确认这次请求，再更换内容。</p><el-button :disabled="busy || blocked" @click="submit(pending.kind)">重试原请求</el-button></div>
         </section>
         <div ref="responseZone" class="response-zone" aria-label="回答与复盘阅读区">
