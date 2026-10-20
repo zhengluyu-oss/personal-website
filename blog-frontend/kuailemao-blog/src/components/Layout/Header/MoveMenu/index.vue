@@ -30,6 +30,7 @@ watch(() => canViewModule('blog'), allowed => { if (allowed) void loadCategories
       </div>
     </div>
     <DiaryMenuEntry @navigate="isClose" />
+    <RouterLink to="/knowledge" :class="{ 'is-section': route.path.startsWith('/knowledge') }" @click="isClose">知识库</RouterLink>
     <RouterLink to="/website-shares" :class="{ 'is-section': route.path.startsWith('/website-shares') }" @click="isClose">网站分享</RouterLink>
     <RouterLink to="/photos" @click="isClose">相册</RouterLink>
     <RouterLink to="/about" @click="isClose">关于我</RouterLink>

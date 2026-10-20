@@ -21,6 +21,7 @@ public class SiteModuleAccessService {
         names.put("blog", "个人博客"); names.put("shares", "网站分享");
         names.put("photos", "相册"); names.put("about", "关于我");
         names.put("diary", "我的日记");
+        names.put("knowledge", "知识库");
         MODULES = Collections.unmodifiableMap(names);
     }
     private final SiteModuleMapper modules;
@@ -42,7 +43,7 @@ public class SiteModuleAccessService {
         if (!MODULES.containsKey(key)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "未知模块");
         SiteModule policy = modules.selectById(key);
         // During rolling upgrades a missing new policy must not break the existing six modules.
-        if (policy == null && "diary".equals(key)) {
+        if (policy == null && Set.of("diary", "knowledge").contains(key)) {
             SiteModule missing = new SiteModule(); missing.setModuleKey(key);
             missing.setPublicAccess(0); missing.setRevision(-1); return missing;
         }

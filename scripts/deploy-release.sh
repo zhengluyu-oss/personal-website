@@ -36,10 +36,10 @@ health() {
 import json,sys
 try:
     r=json.load(open(sys.argv[1])); d=r['data']
-    assert r['code']==200 and isinstance(d,list) and len(d) in (6,7)
+    assert r['code']==200 and isinstance(d,list) and len(d) in (6,7,8)
     keys={x['key'] for x in d}; core={'home','experience','blog','shares','photos','about'}
     # The restored pre-diary release still has six modules; rollback must remain verifiable.
-    assert len(keys)==len(d) and core <= keys <= core | {'diary'}
+    assert len(keys)==len(d) and keys in (core,core|{'diary'},core|{'diary','knowledge'})
     assert all(isinstance(x['allowed'],bool) and isinstance(x['publicAccess'],bool) for x in d)
 except (ValueError,KeyError,AssertionError,TypeError): sys.exit(1)
 PY

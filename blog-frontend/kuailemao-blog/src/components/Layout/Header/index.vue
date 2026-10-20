@@ -142,6 +142,7 @@ function restoreMenuFocus(event?: Event) {
       </button>
       <router-link class="mobile-brand" to="/">陆屿</router-link>
       <DiaryMenuEntry class="mobile-diary-link" />
+      <RouterLink class="mobile-diary-link" to="/knowledge">知识库</RouterLink>
     </div>
 
     <!-- 搜索按钮 -->

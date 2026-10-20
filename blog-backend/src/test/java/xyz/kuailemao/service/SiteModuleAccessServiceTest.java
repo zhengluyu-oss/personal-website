@@ -43,6 +43,10 @@ class SiteModuleAccessServiceTest {
         return role;
     }
     @Test void publicModuleAllowsGuest() { policy(true); assertTrue(service.canView("blog")); }
+    @Test void missingKnowledgePolicyFailsClosedEvenForAdmin() {
+        policy(true);signedIn("ADMIN");
+        assertTrue(service.canView("blog"));assertFalse(service.canView("knowledge"));
+    }
     @Test void missingDiaryPolicyDoesNotBreakExistingModulesAndEvenAdminCannotReadDiary() {
         policy(true); signedIn("ADMIN");
         assertTrue(service.canView("blog")); assertFalse(service.canView("diary"));
@@ -50,7 +54,7 @@ class SiteModuleAccessServiceTest {
             if(call.getArgument(0).equals("diary")) return null;
             var value=new SiteModule();value.setModuleKey(call.getArgument(0));value.setRevision(0);value.setPublicAccess(1);return value;
         });
-        var access=service.access();assertEquals(7,access.size());
+        var access=service.access();assertEquals(8,access.size());
         assertFalse(access.stream().filter(row->row.key().equals("diary")).findFirst().orElseThrow().allowed());
     }
     @Test void diaryUsesTheSameLiveRoleAndPublicRules() {
