@@ -3,6 +3,7 @@ export const ADMIN_PATHS = {
   articles: '/articles',
   articleNew: '/articles/new',
   articleEdit: '/articles/:id',
+  knowledge: '/knowledge',
   categories: '/categories',
   tags: '/tags',
   comments: '/comments',
