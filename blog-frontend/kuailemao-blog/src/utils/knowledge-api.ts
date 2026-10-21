@@ -9,8 +9,12 @@ export interface KnowledgePage<T> { records: T[]; total: number; page: number; p
 export interface KnowledgeCapability { allowed: boolean; available: boolean; canManage: boolean; filesAvailable: boolean; message: string }
 export interface KnowledgeAck { id: string; revision: number; savedAt: string; deleted: boolean }
 export interface KnowledgeLabel { id: string; kind: 'CATEGORY' | 'TAG'; name: string; revision: number }
+export interface KnowledgeFileInfo { version: string; filename: string; mime: string; sizeBytes: number; state: 'QUEUED' | 'RUNNING' | 'READY' | 'RETRY_WAIT' | 'FAILED' | 'NEEDS_OCR' | 'CANCELED'; errorCode: string | null }
+export interface KnowledgeFileCommit { ack: KnowledgeAck; accepted: boolean; version: string | null }
 const client = axios.create({ baseURL: import.meta.env.VITE_APP_BASE_API || '/api', timeout: 12000, withCredentials: false })
 export async function knowledgeRequest<T>(method: string, path: string, data?: unknown): Promise<T> {
+  if (!path.startsWith('/view/') || (method.toUpperCase() !== 'GET' && !(method.toUpperCase() === 'POST' && ['/view/search', '/view/relations/graph', '/view/relations/neighbors'].some(prefix => path.split('?')[0] === prefix))))
+    throw new Error('前台知识库仅支持阅读；请到管理后台维护')
   const token = GET_TOKEN()
   if (new URL(client.defaults.baseURL || '/api', location.href).origin !== location.origin) throw new Error('知识库仅允许同源请求')
   try {
@@ -24,21 +28,12 @@ export async function knowledgeRequest<T>(method: string, path: string, data?: u
   }
 }
 
-export async function knowledgeArticleOptions<T>(path: '/category/list' | '/tag/list'): Promise<T> {
-  if (new URL(client.defaults.baseURL || '/api', location.href).origin !== location.origin) throw new Error('知识库仅允许同源请求')
-  const r = await client.get(path)
-  if (r.data?.code !== 200) throw new Error(r.data?.msg || '文章选项加载失败')
-  return r.data.data as T
-}
-
-export async function knowledgeUploadArticleCover(file: File): Promise<string> {
-  if (new URL(client.defaults.baseURL || '/api', location.href).origin !== location.origin) throw new Error('知识库仅允许同源请求')
+export async function knowledgeDownloadFile(entryId: string, version: string, filename: string): Promise<void> {
   const token = GET_TOKEN()
-  if (!token) throw new Error('请先登录再上传封面')
-  const body = new FormData()
-  body.append('articleCover', file, file.name)
-  const r = await client.post('/article/upload/articleCover', body,
-    { headers: { Authorization: Jwt_Prefix + token }, timeout: 30000 })
-  if (r.data?.code !== 200 || typeof r.data.data !== 'string') throw new Error(r.data?.msg || '封面上传失败')
-  return r.data.data
+  if (new URL(client.defaults.baseURL || '/api', location.href).origin !== location.origin) throw new Error('知识库仅允许同源下载')
+  const response = await client.get(`/knowledge/view/files/${entryId}/${version}/content`, { headers: { ...(token ? { Authorization: Jwt_Prefix + token } : {}) }, responseType: 'blob', timeout: 120000 })
+  if (response.status !== 200) throw new Error('文件下载失败')
+  const url = URL.createObjectURL(response.data)
+  try { const link = document.createElement('a'); link.href = url; link.download = filename; link.click() }
+  finally { setTimeout(() => URL.revokeObjectURL(url), 60000) }
 }
