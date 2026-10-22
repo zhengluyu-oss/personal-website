@@ -7,6 +7,7 @@ import type { WritingArticleItem } from '@/components/Writing/WritingArticleList
 import NotFound from '@/views/NotFound/index.vue'
 import { buildCategorySlugEntries, resolveCategorySlug } from '@/utils/category-slug'
 import { setSeoMeta } from '@/utils/seo'
+import { SITE_NAME } from '@/config/site'
 import { normalizeBlogFeed } from '@/utils/blog-feed'
 import { resolveCategoryHero } from '@/utils/category-hero'
 import { BLOG_MAX_PAGE_SIZE, blogPageCount, blogPageQuery, blogPageSizeQuery, clampBlogPage, isCanonicalBlogPage, isCanonicalBlogPageSize, parseBlogPage, parseBlogPageSize } from '@/utils/blog-pagination'
@@ -105,7 +106,7 @@ async function bootstrap() {
         return
       }
       setSeoMeta({
-        title: `${entry.category.categoryName} | 陆屿的个人博客`,
+        title: `${entry.category.categoryName} | ${SITE_NAME}`,
         description: `浏览“${entry.category.categoryName}”主题下的技术记录、实践经验与项目复盘。`,
         keywords: `${entry.category.categoryName},技术博客,项目实践,陆屿`,
       })
