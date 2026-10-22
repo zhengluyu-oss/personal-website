@@ -2,6 +2,7 @@ server:
   port: 8001
 logging:
   level:
+    diary.ai.audit: INFO
     xyz.kuailemao.diary: OFF
     org.springframework.jdbc.core.StatementCreatorUtils: OFF
     org.postgresql: OFF

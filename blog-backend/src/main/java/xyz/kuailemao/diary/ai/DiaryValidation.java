@@ -6,7 +6,7 @@ import java.util.*;
 /** Strict preflight. Only application-owned paths and enum values may leave this boundary. */
 public final class DiaryValidation {
     private DiaryValidation() {}
-    public enum Reason { JSON_PARSE, ROOT_FIELDS, REQUIRED, TYPE, TEXT_LIMIT, ARRAY_LIMIT, SOURCE_UNKNOWN, QUOTE_MISMATCH, EVIDENCE_TYPE, CONTRACT_UNKNOWN }
+    public enum Reason { JSON_PARSE, ROOT_FIELDS, REQUIRED, TYPE, TEXT_LIMIT, ARRAY_LIMIT, SOURCE_UNKNOWN, QUOTE_MISMATCH, QUOTE_ID_UNKNOWN, QUOTE_ID_FOREIGN, QUOTE_ID_SOURCE, QUOTE_ID_TYPE, EVIDENCE_TYPE, CONTRACT_UNKNOWN }
     public static final class Issue extends RuntimeException {
         private final Reason reason; private final String path;
         private Issue(Reason reason,String path){super(reason.name());this.reason=reason;this.path=path;}

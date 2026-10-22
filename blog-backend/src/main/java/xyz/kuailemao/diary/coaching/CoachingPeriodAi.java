@@ -73,13 +73,18 @@ public final class CoachingPeriodAi implements DiaryAiExtension {
             if(rows.isEmpty()) return null;Work found=rows.get(0);params.addValue("id",found.id());
             store.jdbc.update("UPDATE diary_coaching.period_job SET state='RUNNING',lease_token=:token,updated_at=now() WHERE owner_id=:owner AND id=:id",params);return found;
         });
-        if(work==null) return;boolean sent=false;
+        if(work==null) return;boolean sent=false;long started=System.nanoTime();Long inputTokens=null,outputTokens=null;
         String invalidOutput=null;List<DiaryDiagnostics.Source> diagnosticSources=List.of();
         try {
             if(!active.getAsBoolean()) throw new DiaryFailure(403,"账号不可用");
             Preview preview=periods.preview(owner,work.request().period());validatePreview(preview,work.digest());
+            String system=CoachingEvidence.system();
             String context=canonical(CoachingPeriods.context(preview));
-            if(points(context)+points(CoachingEvidence.system())>Math.min(32000,p.getMaxPromptCharacters())) throw DiaryFailure.invalid("整体提示超过预算");
+            int remaining=Math.min(32000,p.getMaxPromptCharacters())-points(context)-points(system)-32;
+            DiaryQuoteCatalog catalog=DiaryQuoteCatalog.build(work.id(),preview.sources().stream().map(s->new DiaryQuoteCatalog.SourceText(s.sourceId(),s.kind(),s.revision(),s.text())).toList(),Math.min(5000,remaining));
+            if(catalog.items().isEmpty())throw DiaryFailure.invalid("完整资料超出引文预算，请缩小范围");
+            context=catalog.attach(context);
+            if(points(context)+points(system)>Math.min(32000,p.getMaxPromptCharacters())) throw DiaryFailure.invalid("整体提示超过预算");
             execution.reserveGeneration(owner);
             store.tx(owner,true,()->{
                 execution.lease(owner,lease);validatePreview(periods.build(owner,work.request().period()),work.digest());
@@ -87,13 +92,15 @@ public final class CoachingPeriodAi implements DiaryAiExtension {
                 var params=CoachingStore.parameters(owner,work.id()).addValue("token",lease).addValue("sources",JSON.toJSONString(preview.sources()));
                 if(store.jdbc.update("UPDATE diary_coaching.period_job SET sources=CAST(:sources AS jsonb),possibly_charged=true WHERE owner_id=:owner AND id=:id AND state='RUNNING' AND lease_token=:token",params)!=1) throw DiaryFailure.conflict();return null;
             });
-            sent=true;var generation=cloud.generate(CoachingEvidence.system(),context,work.id());
+            sent=true;var generation=cloud.generate(system,context,work.id());
+            inputTokens=generation.inputTokens();outputTokens=generation.outputTokens();
             invalidOutput=generation.content();
             diagnosticSources=preview.sources().stream().map(s->new DiaryDiagnostics.Source(s.sourceId(),s.kind(),s.entityId(),s.revision(),s.text())).toList();
             execution.usage(owner,generation.inputTokens(),generation.outputTokens());
-            DiaryValidation.check(generation.content(),preview.sources().stream().map(s->new DiaryValidation.Evidence(s.sourceId(),s.text(),s.kind())).toList(),"PERIOD");
+            String hydrated=catalog.hydrate(generation.content());
+            DiaryValidation.check(hydrated,preview.sources().stream().map(s->new DiaryValidation.Evidence(s.sourceId(),s.text(),s.kind())).toList(),"PERIOD");
             final CoachingEvidence.Result result;
-            try {result=CoachingEvidence.validate(generation.content(),preview.sources());}
+            try {result=CoachingEvidence.validate(hydrated,preview.sources());}
             catch(DiaryFailure invalid){throw DiaryValidation.unknown();}
             store.tx(owner,true,()->{
                 execution.lease(owner,lease);validatePreview(periods.build(owner,work.request().period()),work.digest());
@@ -108,14 +115,17 @@ public final class CoachingPeriodAi implements DiaryAiExtension {
                     store.jdbc.update("INSERT INTO diary_coaching.period_source VALUES(:owner,:report,:source,:kind,:entity,:revision,:field,:start,:end,:hash)",params);
                 }return null;
             });
+            DiaryAiAudit.event(work.id(),"PERIOD","COMPLETE","OK",elapsed(started),inputTokens,outputTokens,sent);
         } catch(RuntimeException failure) {
             if(failure instanceof DiaryValidation.Issue issue) {
+                DiaryAiAudit.event(work.id(),"PERIOD","VALIDATION",issue.reason().name(),elapsed(started),inputTokens,outputTokens,sent);
                 try {ai.recordInvalid(owner,work.id(),lease,"PERIOD",issue,invalidOutput,diagnosticSources,CoachingEvidence.PROMPT_VERSION);return;}
                 catch(RuntimeException unavailable){failure=new DiaryAiCloud.Failure("OUTPUT_EVIDENCE_INVALID",false);}
             }
             String state=failure instanceof DiaryAiCloud.Failure f && f.uncertain()?"UNCERTAIN":failure instanceof DiaryFailure d && d.status()==409?"STALE":"FAILED";
             boolean charged=sent;
             String code=failure instanceof DiaryAiCloud.Failure f?f.code():failure instanceof DiaryFailure d && d.status()==429?"DAILY_LIMIT":"TASK_REJECTED";
+            DiaryAiAudit.event(work.id(),"PERIOD","FAILURE",code,elapsed(started),inputTokens,outputTokens,sent);
             try {
                 if(failure instanceof DiaryAiCloud.Failure f && f.diagnostic()!=null)execution.usage(owner,f.diagnostic().inputTokens(),f.diagnostic().outputTokens());
             } finally {
@@ -124,6 +134,7 @@ public final class CoachingPeriodAi implements DiaryAiExtension {
             }
         }
     }
+    private static long elapsed(long start){return java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-start);}
     private void validatePreview(Preview preview,String digest) {
         if(!preview.snapshotDigest().equals(digest)) throw DiaryFailure.conflict();
         if(!preview.withinBudget()) throw DiaryFailure.invalid("完整资料超过预算，请缩小范围");

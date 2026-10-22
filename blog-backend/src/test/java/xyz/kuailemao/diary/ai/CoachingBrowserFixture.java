@@ -53,10 +53,11 @@ public class CoachingBrowserFixture {
                 else {
                     var input=JSON.parseObject(body.getJSONArray("messages").getJSONObject(1).getString("content"));
                     var s=input.getJSONArray("sources").stream().map(v->(com.alibaba.fastjson2.JSONObject)v).filter(v->"G".equals(v.getString("kind"))).findFirst().orElseThrow();
-                    String source=s.getString("sourceId"),text=s.getString("text"),quote=slice(text,0,Math.min(30,points(text)));
-                    var claim=new CoachingEvidence.Claim("Fictional goal <img src=https://coaching-probe.invalid/secret>","GOAL",List.of(source),List.of(new CoachingEvidence.Quote(source,quote)));
+                    String source=s.getString("sourceId");
+                    String quoteId=input.getJSONArray("quoteCatalog").stream().map(v->(com.alibaba.fastjson2.JSONObject)v).filter(v->source.equals(v.getString("sourceId"))).findFirst().orElseThrow().getString("quoteId");
+                    var claim=Map.of("text","Fictional goal <img src=https://coaching-probe.invalid/secret>","type","GOAL","evidenceIds",List.of(source),"quotes",List.of(Map.of("quoteId",quoteId)));
                     var suggestion=new CoachingEvidence.Suggestion("Fictional: try a small watercolor sketch","Only a voluntary plan",List.of(source),"Five minutes","Next diary entry",false);
-                    var result=new CoachingEvidence.Result("Fictional loopback coverage only",List.of(claim),List.of(),List.of(),List.of(),List.of(suggestion),List.of("Plans do not prove execution; no claim about daily activity"));
+                    var result=Map.of("coverage","Fictional loopback coverage only","currentGoals",List.of(claim),"observations",List.of(),"feedback",List.of(),"hypotheses",List.of(),"suggestions",List.of(suggestion),"limitations",List.of("Plans do not prove execution; no claim about daily activity"));
                     response=JSON.toJSONString(Map.of("choices",List.of(Map.of("finish_reason","stop","message",Map.of("content",JSON.toJSONString(result))))));
                 }
                 byte[] bytes=response.getBytes(StandardCharsets.UTF_8);try{e.sendResponseHeaders(200,bytes.length);e.getResponseBody().write(bytes);}finally{e.close();}
