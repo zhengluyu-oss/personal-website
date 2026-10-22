@@ -53,13 +53,17 @@ public final class DiaryAiWorker {
         String invalidOutput=null;List<DiaryDiagnostics.Source> diagnosticSources=List.of();
         try {
             check(work);List<Source> sources;boolean partial=false;
-            if(work.kind()==Kind.QUESTION) {
+            DiaryConversationStore.Context conversation=new DiaryConversationStore(store).context(owner,work.id());
+            boolean fullReview=work.kind()==Kind.REVIEW || conversation!=null && conversation.conversationKind()==Kind.REVIEW;
+            if(!fullReview) {
                 Coverage c=index.coverage(owner,profile,work.request().scope());partial=c.total()!=c.indexed();
                 if(partial && !work.request().allowPartialIndex())throw new DiaryFailure(409,"索引尚未完成");
                 store.reserve(owner,0,1);
                 store.cloudIntent(owner,work,token);sent=true;
-                var embedding=cloud.embed(List.of(work.request().question()),work.id());store.usage(owner,embedding.inputTokens(),null);check(work);
-                sources=index.retrieve(owner,profile,work.request(),embedding.vectors().get(0));
+                String search=conversation==null?work.request().question():DiaryConversationText.retrievalQuestion(work.request().question(),conversation.history());
+                var embedding=cloud.embed(List.of(search),work.id());store.usage(owner,embedding.inputTokens(),null);check(work);
+                Request retrieval=conversation==null?work.request():new Request(work.request().requestId(),search,work.request().scope(),null,work.request().allowPartialIndex());
+                sources=index.retrieve(owner,profile,retrieval,embedding.vectors().get(0));
             } else {
                 store.preview(owner,work.request().scope());
                 sources=store.snapshot(owner,()->{
@@ -72,7 +76,9 @@ public final class DiaryAiWorker {
             check(work);
             if(sources.isEmpty()){store.complete(owner,work,token,sources,DiaryAiEvidence.insufficient(),partial);DiaryAiAudit.event(work.id(),work.kind().name(),"COMPLETE","INSUFFICIENT",elapsed(started),inputTokens,outputTokens,sent);return;}
             String system=DiaryAiEvidence.system(work.kind());
-            String context=JSON.toJSONString(Map.of("question",Objects.toString(work.request().question(),""),"scope",Objects.toString(work.request().scope(),"全部当前记录"),"partialIndex",partial,"sources",sources));
+            if(conversation!=null)system+="历史对话只用于理解本轮追问的指代；历史AI回答不是日记证据，不可引用或据此断言个人事实。本轮所有事实必须重新由本轮sources和quoteCatalog支持。";
+            String history=conversation==null?"":DiaryConversationText.history(conversation.history(),1600);
+            String context=JSON.toJSONString(Map.of("question",Objects.toString(work.request().question(),""),"scope",Objects.toString(work.request().scope(),"全部当前记录"),"partialIndex",partial,"sources",sources,"conversationHistory",history));
             int remaining=p.getMaxPromptCharacters()-points(system)-points(context)-32;
             DiaryQuoteCatalog catalog=DiaryQuoteCatalog.build(work.id(),sources.stream().map(s->new DiaryQuoteCatalog.SourceText(s.sourceId(),"D",s.revision(),s.text())).toList(),Math.min(5000,remaining));
             if(catalog.items().isEmpty())throw DiaryFailure.invalid("输入超过引文预算，请缩小范围");

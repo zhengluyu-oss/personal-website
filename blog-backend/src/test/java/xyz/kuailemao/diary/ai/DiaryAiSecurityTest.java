@@ -20,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class DiaryAiSecurityTest {
     @Configuration(proxyBeanMethods=false) @EnableWebSecurity @EnableWebMvc
-    @Import({DiarySecurityConfiguration.class,DiaryAiController.class,DiaryAiExceptionHandler.class,DiaryAiService.class,DiaryService.class})
+    @Import({DiarySecurityConfiguration.class,DiaryAiController.class,DiaryConversationController.class,DiaryAiExceptionHandler.class,DiaryAiService.class,DiaryService.class})
     static class Config {
     @Bean xyz.kuailemao.service.SiteModuleAccessService modules(){ var modules=mock(xyz.kuailemao.service.SiteModuleAccessService.class);when(modules.canView("diary")).thenReturn(true);return modules; }
 
@@ -37,7 +37,7 @@ class DiaryAiSecurityTest {
             when(jwt.toUser(d)).thenReturn(new LoginUser(User.builder().id(9L).build(),List.of("ROLE_USER")));
             c.setServletContext(new MockServletContext());c.addBeanFactoryPostProcessor(f->f.registerSingleton("jwtUtils",jwt));c.register(Config.class);c.refresh();
             var mvc=MockMvcBuilders.webAppContextSetup(c).addFilters(c.getBean("springSecurityFilterChain",Filter.class)).build();
-            for(String path:List.of("/capabilities","/index","/index/pause","/questions","/reviews/preview","/reviews","/jobs/00000000-0000-4000-8000-000000000001","/jobs/00000000-0000-4000-8000-000000000001/cancel","/reports","/reports/00000000-0000-4000-8000-000000000001"))
+            for(String path:List.of("/capabilities","/index","/index/pause","/questions","/reviews/preview","/reviews","/jobs/00000000-0000-4000-8000-000000000001","/jobs/00000000-0000-4000-8000-000000000001/cancel","/reports","/reports/00000000-0000-4000-8000-000000000001","/conversations","/conversations/questions","/conversations/reviews","/conversations/00000000-0000-4000-8000-000000000001","/conversations/00000000-0000-4000-8000-000000000001/turns"))
                 for(var method:List.of(org.springframework.http.HttpMethod.GET,org.springframework.http.HttpMethod.POST,org.springframework.http.HttpMethod.DELETE)) {
                     mvc.perform(request(method,"/diary/auth/ai"+path).contentType("application/json").content("private-probe"))
                         .andExpect(status().isUnauthorized()).andExpect(header().string("Cache-Control","private, no-store"));

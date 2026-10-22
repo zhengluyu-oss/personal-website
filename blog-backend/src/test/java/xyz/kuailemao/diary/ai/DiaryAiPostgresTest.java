@@ -34,7 +34,15 @@ class DiaryAiPostgresTest {
             if(started!=null){started.countDown();try{proceed.await(10,TimeUnit.SECONDS);}catch(InterruptedException interrupted){Thread.currentThread().interrupt();}}
             String response;
             if(body.containsKey("input")){var data=new ArrayList<Map<String,Object>>();for(int i=0;i<body.getJSONArray("input").size();i++)data.add(Map.of("index",i,"embedding",List.of(1,0,0)));response=JSON.toJSONString(Map.of("data",data));}
-            else response=JSON.toJSONString(Map.of("choices",List.of(Map.of("finish_reason","stop","message",Map.of("content",reply.get())))));
+            else {
+                String generated=reply.get();
+                if(generated!=null && generated.contains("$QUOTE_ID$")) {
+                    var messages=body.getJSONArray("messages");
+                    var context=JSON.parseObject(messages.getJSONObject(1).getString("content"));
+                    generated=generated.replace("$QUOTE_ID$",context.getJSONArray("quoteCatalog").getJSONObject(0).getString("quoteId"));
+                }
+                response=JSON.toJSONString(Map.of("choices",List.of(Map.of("finish_reason","stop","message",Map.of("content",generated)))));
+            }
             byte[] bytes=response.getBytes(StandardCharsets.UTF_8);try{e.sendResponseHeaders(200,bytes.length);e.getResponseBody().write(bytes);}finally{e.close();}
         });server.start();p.setEmbeddingEndpoint("http://127.0.0.1:"+server.getAddress().getPort()+"/fixture");p.setGenerationEndpoint(p.getEmbeddingEndpoint());
         cloud=new DiaryAiCloud(p,HttpClient.newHttpClient(),uri->{});store=new DiaryAiStore(jdbc,tx,p);index=new DiaryAiIndex(store,cloud,p);diary=new DiaryStore(jdbc,tx);assertTrue(store.available(owner));store.ensureProfile(owner);
@@ -45,6 +53,14 @@ class DiaryAiPostgresTest {
     Scope selected(UUID id){return new Scope(List.of(id),null,null,null);}
     Request question(Scope scope){return new Request(UUID.randomUUID(),"虚构测试",scope,null,false);}
     void indexAll(){store.indexAction(owner,new IndexRequest(UUID.randomUUID(),false),true);UUID t=UUID.randomUUID();assertTrue(store.acquire(owner,t));try{for(int i=0;i<10;i++)index.processBatch(owner,store.ensureProfile(owner),t,()->true);}finally{store.release(owner,t);}}
+    String catalogReply(boolean review) {
+        var statement=JSON.parseObject("{\"text\":\"Watercolor was noted\",\"evidenceIds\":[\"S1\"],\"quotes\":[{\"quoteId\":\"$QUOTE_ID$\"}]}");
+        var result=new com.alibaba.fastjson2.JSONObject();
+        result.put("answer",review?null:statement);result.put("summary",review?statement:null);
+        result.put("observations",List.of(statement));result.put("hypotheses",List.of());result.put("suggestions",List.of());
+        result.put("limitations",List.of("只依据选定资料"));result.put("insufficientEvidence",false);
+        return result.toJSONString();
+    }
     @Test void fullRetrievalCurrentVersionsProfilesAndOwnerIsolation(){
         UUID id=entry("虚构测试：周末练习水彩🙂。\n".repeat(80));indexAll();String profile=store.ensureProfile(owner);
         assertEquals(1,index.coverage(owner,profile,null).indexed());assertEquals(0,index.coverage(owner+1,profile,null).total());
@@ -92,15 +108,110 @@ class DiaryAiPostgresTest {
     @Test void completeQuestionAndReviewWorkerChainsUseCurrentEvidence() {
         UUID id=entry("虚构水彩记录🙂");indexAll();
         var statement=new Statement("日记提到水彩",List.of("S1"),List.of(new Quote("S1","水彩")));
-        reply.set(JSON.toJSONString(new Result(statement,null,List.of(statement),List.of(),List.of(),List.of("夹具只测试链路，不代表模型质量"),false)));
+        reply.set(catalogReply(false));
         var spy=org.mockito.Mockito.spy(p);org.mockito.Mockito.doReturn(true).when(spy).configured();
         var worker=new DiaryAiWorker(store,index,cloud,spy,owner,()->true);
         try{
             Job q=store.enqueue(owner,Kind.QUESTION,question(selected(id)));worker.tick();assertEquals(State.SUCCEEDED,store.job(owner,q.id()).state());assertEquals(1,store.report(owner,store.job(owner,q.id()).reportId()).sources().size());
-            reply.set(JSON.toJSONString(new Result(null,statement,List.of(statement),List.of(),List.of(),List.of("仅覆盖选定篇目"),false)));
+            reply.set(catalogReply(true));
             var preview=store.preview(owner,selected(id));Job review=store.enqueue(owner,Kind.REVIEW,new Request(UUID.randomUUID(),null,selected(id),preview.snapshotDigest(),false));
             worker.tick();assertEquals(State.SUCCEEDED,store.job(owner,review.id()).state());assertEquals("虚构水彩记录🙂",store.report(owner,store.job(owner,review.id()).reportId()).sources().get(0).text());
         }finally{worker.close();}
+    }
+    @Test void conversationQuestionAndReviewKeepThreeTurnsAndCurrentEvidence() {
+        UUID id=entry("虚构水彩记录🙂");indexAll();
+        var conversations=new DiaryConversationStore(store);assertTrue(conversations.available(owner));
+        var spy=org.mockito.Mockito.spy(p);org.mockito.Mockito.doReturn(true).when(spy).configured();
+        var worker=new DiaryAiWorker(store,index,cloud,spy,owner,()->true);
+        try {
+            reply.set(catalogReply(false));
+            Request first=question(selected(id));var opened=conversations.start(owner,Kind.QUESTION,first);
+            assertEquals(opened.job().id(),conversations.start(owner,Kind.QUESTION,first).job().id());
+            status(409,()->conversations.followup(owner,opened.conversationId(),new DiaryConversationStore.Followup(UUID.randomUUID(),"继续")));
+            worker.tick();assertEquals(State.SUCCEEDED,store.job(owner,opened.job().id()).state());
+            var second=conversations.followup(owner,opened.conversationId(),new DiaryConversationStore.Followup(UUID.randomUUID(),"刚才的水彩是什么？"));
+            assertEquals(second.job().id(),conversations.followup(owner,opened.conversationId(),new DiaryConversationStore.Followup(
+                store.tx(owner,()->jdbc.queryForObject("SELECT request_id FROM diary_conversation.turn WHERE owner_id=:owner AND id=:turn",
+                    Map.of("owner",owner,"turn",second.turnId()),UUID.class)),"刚才的水彩是什么？")).job().id());
+            worker.tick();assertEquals(State.SUCCEEDED,store.job(owner,second.job().id()).state());
+            var third=conversations.followup(owner,opened.conversationId(),new DiaryConversationStore.Followup(UUID.randomUUID(),"那我后来怎样了？"));
+            worker.tick();assertEquals(State.SUCCEEDED,store.job(owner,third.job().id()).state());
+            var detail=conversations.detail(owner,opened.conversationId(),1);
+            assertEquals(3,detail.total());assertEquals(List.of(1,2,3),detail.turns().stream().map(DiaryConversationStore.Turn::sequence).toList());
+            assertTrue(detail.turns().stream().allMatch(t->t.report()!=null && !t.report().sources().isEmpty()));
+            assertEquals(1,conversations.list(owner,Kind.QUESTION,1).total());
+            assertEquals(0,conversations.list(owner+1,Kind.QUESTION,1).total());
+            status(404,()->conversations.detail(owner+1,opened.conversationId(),1));
+
+            var preview=store.preview(owner,selected(id));
+            reply.set(catalogReply(true));
+            var review=conversations.start(owner,Kind.REVIEW,new Request(UUID.randomUUID(),null,selected(id),preview.snapshotDigest(),false));
+            worker.tick();assertEquals(State.SUCCEEDED,store.job(owner,review.job().id()).state());
+            reply.set(catalogReply(false));
+            var follow=conversations.followup(owner,review.conversationId(),new DiaryConversationStore.Followup(UUID.randomUUID(),"第二条观察依据是什么？"));
+            worker.tick();assertEquals(State.SUCCEEDED,store.job(owner,follow.job().id()).state());
+            var finalReviewTurn=conversations.followup(owner,review.conversationId(),new DiaryConversationStore.Followup(UUID.randomUUID(),"How should I reflect on it?"));
+            worker.tick();assertEquals(State.SUCCEEDED,store.job(owner,finalReviewTurn.job().id()).state());
+            assertEquals(3,conversations.detail(owner,review.conversationId(),1).total());
+            assertEquals("虚构水彩记录🙂",conversations.detail(owner,review.conversationId(),1).turns().get(1).report().sources().get(0).text());
+            p.setMaxPromptCharacters(200);spy.setMaxPromptCharacters(200);
+            var overBudget=conversations.followup(owner,review.conversationId(),new DiaryConversationStore.Followup(UUID.randomUUID(),"More detail"));
+            int callsBefore=calls.get();worker.tick();
+            assertEquals(State.FAILED,store.job(owner,overBudget.job().id()).state());
+            assertEquals(callsBefore,calls.get());
+            conversations.delete(owner,opened.conversationId());
+            status(404,()->conversations.detail(owner,opened.conversationId(),1));
+            assertEquals("虚构水彩记录🙂",diary.read(owner,id).body());
+        } finally { worker.close(); }
+    }
+    @Test void conversationCancellationUnknownDeletionAndStaleSourcesNeverReplay() {
+        UUID id=entry("Virtual watercolor note");indexAll();
+        var conversations=new DiaryConversationStore(store);
+        var spy=org.mockito.Mockito.spy(p);org.mockito.Mockito.doReturn(true).when(spy).configured();
+        var worker=new DiaryAiWorker(store,index,cloud,spy,owner,()->true);
+        try {
+            reply.set(catalogReply(false));
+            var first=conversations.start(owner,Kind.QUESTION,question(selected(id)));worker.tick();
+            assertEquals(State.SUCCEEDED,store.job(owner,first.job().id()).state());
+            var cancelled=conversations.followup(owner,first.conversationId(),new DiaryConversationStore.Followup(UUID.randomUUID(),"Please clarify"));
+            store.cancel(owner,cancelled.job().id());worker.tick();
+            assertEquals(State.CANCELED,store.job(owner,cancelled.job().id()).state());
+            var unknown=conversations.followup(owner,first.conversationId(),new DiaryConversationStore.Followup(UUID.randomUUID(),"What did I do?"));
+            UUID lease=UUID.randomUUID();assertTrue(store.acquire(owner,lease));assertNotNull(store.claim(owner,lease));store.release(owner,lease);
+            UUID next=UUID.randomUUID();assertTrue(store.acquire(owner,next));assertNull(store.claim(owner,next));store.release(owner,next);
+            assertEquals(State.UNCERTAIN,store.job(owner,unknown.job().id()).state());
+            assertEquals(3,conversations.detail(owner,first.conversationId(),1).total());
+            diary.save(owner,id,new DiaryModels.Write(id,UUID.randomUUID(),1,"Updated","Completely different",null,null));
+            assertNull(conversations.detail(owner,first.conversationId(),1).turns().get(0).report());
+            status(409,()->conversations.followup(owner,first.conversationId(),new DiaryConversationStore.Followup(UUID.randomUUID(),"Continue")));
+            diary.delete(owner,id,new DiaryModels.Change(UUID.randomUUID(),2,null));
+            status(409,()->conversations.followup(owner,first.conversationId(),new DiaryConversationStore.Followup(UUID.randomUUID(),"After deletion")));
+            conversations.delete(owner,first.conversationId());
+            assertEquals("{}",store.tx(owner,()->jdbc.queryForObject("SELECT payload::text FROM diary_ai.job WHERE owner_id=:owner AND id=:job",
+                Map.of("owner",owner,"job",first.job().id()),String.class)));
+            assertEquals("Completely different",diary.history(owner,id,1).records().get(0).body());
+        } finally { worker.close(); }
+    }
+    @Test void concurrentFollowupsCreateOnlyOnePendingRound() throws Exception {
+        UUID id=entry("Virtual watercolor note");indexAll();
+        var conversations=new DiaryConversationStore(store);
+        var spy=org.mockito.Mockito.spy(p);org.mockito.Mockito.doReturn(true).when(spy).configured();
+        var worker=new DiaryAiWorker(store,index,cloud,spy,owner,()->true);
+        try {
+            reply.set(catalogReply(false));
+            var first=conversations.start(owner,Kind.QUESTION,question(selected(id)));worker.tick();
+            var executor=Executors.newFixedThreadPool(2);var gate=new CountDownLatch(1);
+            try {
+                UUID requestId=UUID.randomUUID();
+                Callable<UUID> same=()->{gate.await();return conversations.followup(owner,first.conversationId(),
+                    new DiaryConversationStore.Followup(requestId,"Clarify the watercolor entry")).job().id();};
+                var a=executor.submit(same);var b=executor.submit(same);gate.countDown();
+                assertEquals(a.get(10,TimeUnit.SECONDS),b.get(10,TimeUnit.SECONDS));
+                assertEquals(2,conversations.detail(owner,first.conversationId(),1).total());
+                status(409,()->conversations.followup(owner,first.conversationId(),
+                    new DiaryConversationStore.Followup(UUID.randomUUID(),"Another concurrent request")));
+            } finally { executor.shutdownNow(); }
+        } finally { worker.close(); }
     }
     @Test void slowEmbeddingDoesNotHoldPgConnectionAndLateIndexCannotPublish() throws Exception {
         UUID id=entry("虚构慢请求");store.indexAction(owner,new IndexRequest(UUID.randomUUID(),false),true);UUID token=UUID.randomUUID();assertTrue(store.acquire(owner,token));
