@@ -14,7 +14,7 @@ import router from "@/router";
 import useWebsiteStore from "@/store/modules/website.ts";
 import MobileDirectoryCard from "./MobileDirectoryCard/index.vue";
 import {ARTICLE_VISIT_PREFIX} from "@/const/Visits";
-import { ossUrl } from '@/config/site'
+import { ossUrl, SITE_NAME } from '@/config/site'
 import { setSeoMeta } from '@/utils/seo'
 import { categoryRoute } from '@/utils/category-slug'
 import { useBlogCategories } from '@/composables/useBlogCategories'
@@ -104,7 +104,7 @@ async function getArticleDetailById() {
     const plainText = String(res.data.articleContent || '').replace(/```[\s\S]*?```/g, ' ').replace(/[#>*_`\[\]()!-]/g, ' ').replace(/\s+/g, ' ').trim()
     const tagKeywords = (res.data.tags || []).map((tag: any) => tag.tagName).filter(Boolean).join(',')
     setSeoMeta({
-      title: res.data.seoTitle?.trim() || `${res.data.articleTitle} | 陆屿的个人博客`,
+      title: res.data.seoTitle?.trim() || `${res.data.articleTitle} | ${SITE_NAME}`,
       description: res.data.seoDescription?.trim() || plainText.slice(0, 160),
       keywords: res.data.seoKeywords?.trim() || tagKeywords || '技术博客,开发实践',
     })
@@ -260,7 +260,7 @@ const readingMinutes = computed(() => {
         </div>
         <figure v-if="articleDetail.articleCover" class="article-cover">
           <img :src="articleDetail.articleCover" :alt="articleDetail.articleTitle"/>
-          <figcaption>陆屿的个人博客 · 技术与实践记录</figcaption>
+          <figcaption>陆屿 · 技术与实践记录</figcaption>
         </figure>
       </header>
 
