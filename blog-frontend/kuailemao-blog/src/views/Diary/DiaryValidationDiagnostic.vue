@@ -5,7 +5,7 @@ import { diaryRequest } from '@/utils/diary-api'
 const props = defineProps<{ id: string; kind: 'QUESTION' | 'REVIEW' | 'PERIOD' }>()
 interface Diagnostic { status: string; reason?: string; fieldPath?: string; model?: string; promptVersion?: string; expiresAt?: string; raw?: string; sources: { sourceId: string; kind: string; text: string }[] }
 const metadata = ref<Diagnostic>(), output = ref<Diagnostic>(), error = ref(''), busy = ref(false)
-const reasons: Record<string, string> = { JSON_PARSE: '回答不是有效的 JSON', ROOT_FIELDS: '回答字段缺失或包含不支持的字段', REQUIRED: '缺少必填内容', TYPE: '字段类型不符合要求', TEXT_LIMIT: '文字超出限制或含不支持字符', ARRAY_LIMIT: '条目数量超出限制', SOURCE_UNKNOWN: '引用了不存在或不匹配的来源编号', QUOTE_MISMATCH: '引文与日记原文不逐字一致', EVIDENCE_TYPE: '陈述类型与证据类型不一致', CONTRACT_UNKNOWN: '其他输出校验问题' }
+const reasons: Record<string, string> = { JSON_PARSE: '回答不是有效的 JSON', ROOT_FIELDS: '回答字段缺失或包含不支持的字段', REQUIRED: '缺少必填内容', TYPE: '字段类型不符合要求', TEXT_LIMIT: '文字超出限制或含不支持字符', ARRAY_LIMIT: '条目数量超出限制', SOURCE_UNKNOWN: '引用了不存在或不匹配的来源编号', QUOTE_MISMATCH: '引文与日记原文不逐字一致', QUOTE_ID_UNKNOWN: '模型选择了不存在的引文编号', QUOTE_ID_FOREIGN: '模型使用了本次任务之外的引文编号', QUOTE_ID_SOURCE: '引文编号与结论所列来源不一致', QUOTE_ID_TYPE: '引文编号的资料类型不支持该结论', EVIDENCE_TYPE: '陈述类型与证据类型不一致', CONTRACT_UNKNOWN: '其他输出校验问题' }
 const statuses: Record<string, string> = { NOT_RECORDED: '本次没有留存具体诊断；旧任务无法补回回答。', NOT_RETAINED: '已记录原因，但因容量限制未保留完整回答。', EXPIRED: '七天保留期已结束，回答已清除。', DELETED: '你已删除失败回答。', STALE: '来源已修改或删除，失败回答已清除。' }
 let disposed = false, timer: ReturnType<typeof setInterval> | undefined
 let expiry: ReturnType<typeof setTimeout> | undefined

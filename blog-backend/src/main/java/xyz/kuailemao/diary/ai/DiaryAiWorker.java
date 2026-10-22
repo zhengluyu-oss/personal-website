@@ -48,6 +48,7 @@ public final class DiaryAiWorker {
         if(!store.current(owner,work) || store.job(owner,work.id()).state()!=State.RUNNING)throw new DiaryFailure(409,"来源或任务已变化");
     }
     private void process(DiaryAiStore.Work work,String profile,UUID token) {
+        long started=System.nanoTime();Long inputTokens=null,outputTokens=null;
         boolean sent=false;
         String invalidOutput=null;List<DiaryDiagnostics.Source> diagnosticSources=List.of();
         try {
@@ -69,30 +70,41 @@ public final class DiaryAiWorker {
                 });
             }
             check(work);
-            if(sources.isEmpty()){store.complete(owner,work,token,sources,DiaryAiEvidence.insufficient(),partial);return;}
+            if(sources.isEmpty()){store.complete(owner,work,token,sources,DiaryAiEvidence.insufficient(),partial);DiaryAiAudit.event(work.id(),work.kind().name(),"COMPLETE","INSUFFICIENT",elapsed(started),inputTokens,outputTokens,sent);return;}
+            String system=DiaryAiEvidence.system(work.kind());
             String context=JSON.toJSONString(Map.of("question",Objects.toString(work.request().question(),""),"scope",Objects.toString(work.request().scope(),"全部当前记录"),"partialIndex",partial,"sources",sources));
-            if(points(DiaryAiEvidence.system(work.kind()))+points(context)>p.getMaxPromptCharacters())throw DiaryFailure.invalid("输入超过模型预算，请缩小范围");
+            int remaining=p.getMaxPromptCharacters()-points(system)-points(context)-32;
+            DiaryQuoteCatalog catalog=DiaryQuoteCatalog.build(work.id(),sources.stream().map(s->new DiaryQuoteCatalog.SourceText(s.sourceId(),"D",s.revision(),s.text())).toList(),Math.min(5000,remaining));
+            if(catalog.items().isEmpty())throw DiaryFailure.invalid("输入超过引文预算，请缩小范围");
+            context=catalog.attach(context);
+            if(points(system)+points(context)>p.getMaxPromptCharacters())throw DiaryFailure.invalid("输入超过模型预算，请缩小范围");
             store.reserve(owner,1,0);check(work);store.preparing(owner,work,token,sources,partial);sent=true;
-            var generation=cloud.generate(DiaryAiEvidence.system(work.kind()),context,work.id());
+            var generation=cloud.generate(system,context,work.id());
+            inputTokens=generation.inputTokens();outputTokens=generation.outputTokens();
             invalidOutput=generation.content();
             diagnosticSources=sources.stream().map(s->new DiaryDiagnostics.Source(s.sourceId(),"D",s.entryId(),s.revision(),s.text())).toList();
             store.usage(owner,generation.inputTokens(),generation.outputTokens());check(work);
-            DiaryValidation.check(generation.content(),sources.stream().map(s->new DiaryValidation.Evidence(s.sourceId(),s.text(),"D")).toList(),work.kind().name());
+            String hydrated=catalog.hydrate(generation.content());
+            DiaryValidation.check(hydrated,sources.stream().map(s->new DiaryValidation.Evidence(s.sourceId(),s.text(),"D")).toList(),work.kind().name());
             Result result;
-            try {result=DiaryAiEvidence.validate(generation.content(),sources,work.kind());}
+            try {result=DiaryAiEvidence.validate(hydrated,sources,work.kind());}
             catch(DiaryAiCloud.Failure invalid){throw DiaryValidation.unknown();}
             store.complete(owner,work,token,sources,result,partial);
+            DiaryAiAudit.event(work.id(),work.kind().name(),"COMPLETE","OK",elapsed(started),inputTokens,outputTokens,sent);
         } catch(RuntimeException error) {
             if(error instanceof DiaryValidation.Issue issue) {
+                DiaryAiAudit.event(work.id(),work.kind().name(),"VALIDATION",issue.reason().name(),elapsed(started),inputTokens,outputTokens,sent);
                 try {store.recordInvalid(owner,work.id(),token,work.kind().name(),issue,invalidOutput,diagnosticSources,DiaryAiEvidence.PROMPT_VERSION);}
                 catch(RuntimeException unavailable){store.fail(owner,work,token,State.FAILED,"OUTPUT_EVIDENCE_INVALID",sent);}
                 return;
             }
             State state=error instanceof DiaryAiCloud.Failure f && f.uncertain()?State.UNCERTAIN:error instanceof DiaryFailure d && d.status()==409?State.STALE:State.FAILED;
             String code=error instanceof DiaryAiCloud.Failure f?f.code():error instanceof DiaryFailure d && d.status()==429?"DAILY_LIMIT":"TASK_REJECTED";
+            DiaryAiAudit.event(work.id(),work.kind().name(),"FAILURE",code,elapsed(started),inputTokens,outputTokens,sent);
             try {
                 if(error instanceof DiaryAiCloud.Failure f && f.diagnostic()!=null)store.usage(owner,f.diagnostic().inputTokens(),f.diagnostic().outputTokens());
             } finally {store.fail(owner,work,token,state,code,sent);}
         }
     }
+    private static long elapsed(long start){return TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-start);}
 }

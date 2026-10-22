@@ -39,9 +39,10 @@ class CoachingPeriodAiTest {
             if(started!=null) { started.countDown();try { proceed.await(8,TimeUnit.SECONDS); } catch(InterruptedException e) { Thread.currentThread().interrupt(); } }
             var source=context.getJSONArray("sources").stream().map(v->(JSONObject)v).filter(v->"G".equals(v.getString("kind"))).findFirst().orElseThrow();
             String sourceId=source.getString("sourceId");
-            var claim=new CoachingEvidence.Claim("虚构目标中写了水彩", "GOAL",List.of(sourceId),List.of(new CoachingEvidence.Quote(sourceId,"水彩")));
+            String quoteId=context.getJSONArray("quoteCatalog").stream().map(v->(JSONObject)v).filter(v->sourceId.equals(v.getString("sourceId"))).findFirst().orElseThrow().getString("quoteId");
+            var claim=Map.of("text","虚构目标中写了水彩","type","GOAL","evidenceIds",List.of(sourceId),"quotes",List.of(Map.of("quoteId",quoteId)));
             var suggestion=new CoachingEvidence.Suggestion("虚构：试一次水彩 <img src=https://coaching-probe.invalid/a>","只是一项可选择的计划",List.of(sourceId),"五分钟以内","下一次记录时",false);
-            var result=new CoachingEvidence.Result("虚构受控HTTP，仅验证链路",List.of(claim),List.of(),List.of(),List.of(),List.of(suggestion),List.of("不代表真实模型质量；计划不是执行"));
+            var result=Map.of("coverage","虚构受控HTTP，仅验证链路","currentGoals",List.of(claim),"observations",List.of(),"feedback",List.of(),"hypotheses",List.of(),"suggestions",List.of(suggestion),"limitations",List.of("不代表真实模型质量；计划不是执行"));
             byte[] body=JSON.toJSONBytes(Map.of("choices",List.of(Map.of("finish_reason","stop","message",Map.of("content",JSON.toJSONString(result))))));
             try { exchange.sendResponseHeaders(200,body.length);exchange.getResponseBody().write(body); } finally { exchange.close(); }
         });server.start();

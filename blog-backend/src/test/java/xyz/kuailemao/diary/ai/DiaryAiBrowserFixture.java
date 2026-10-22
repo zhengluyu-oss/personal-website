@@ -50,10 +50,11 @@ public class DiaryAiBrowserFixture {
                 if(body.containsKey("input")){var data=new ArrayList<Map<String,Object>>();for(int n=0;n<body.getJSONArray("input").size();n++)data.add(Map.of("index",n,"embedding",List.of(1,0,0)));response=JSON.toJSONString(Map.of("data",data));}
                 else {
                     var input=JSON.parseObject(body.getJSONArray("messages").getJSONObject(1).getString("content"));var s=input.getJSONArray("sources").getJSONObject(0);
-                    String text=s.getString("text"),quote=slice(text,0,Math.min(30,points(text)));
-                    var statement=new Statement("虚构夹具回答 <img src=https://fixture-blocked.invalid/private onerror=alert(1)>",List.of(s.getString("sourceId")),List.of(new Quote(s.getString("sourceId"),quote)));
-                    boolean question=!input.getString("question").isBlank();var result=new Result(question?statement:null,question?null:statement,List.of(statement),List.of(),List.of(),List.of("只是受控 HTTP 链路夹具，不代表模型质量；跨日记录不能当作每天都有记录"),false);
-                    response=JSON.toJSONString(Map.of("choices",List.of(Map.of("finish_reason","stop","message",Map.of("content",JSON.toJSONString(result))))));
+                    String quoteId=input.getJSONArray("quoteCatalog").getJSONObject(0).getString("quoteId");
+                    var statement=Map.of("text","虚构夹具回答 <img src=https://fixture-blocked.invalid/private onerror=alert(1)>","evidenceIds",List.of(s.getString("sourceId")),"quotes",List.of(Map.of("quoteId",quoteId)));
+                    boolean question=!input.getString("question").isBlank();var result=new LinkedHashMap<String,Object>();
+                    result.put("answer",question?statement:null);result.put("summary",question?null:statement);result.put("observations",List.of(statement));result.put("hypotheses",List.of());result.put("suggestions",List.of());result.put("limitations",List.of("只是受控 HTTP 链路夹具，不代表模型质量；跨日记录不能当作每天都有记录"));result.put("insufficientEvidence",false);
+                    response=JSON.toJSONString(Map.of("choices",List.of(Map.of("finish_reason","stop","message",Map.of("content",JSON.toJSONString(result,com.alibaba.fastjson2.JSONWriter.Feature.WriteNulls))))));
                 }
                 byte[] bytes=response.getBytes(StandardCharsets.UTF_8);try{e.sendResponseHeaders(200,bytes.length);e.getResponseBody().write(bytes);}finally{e.close();}
             });server.start();
