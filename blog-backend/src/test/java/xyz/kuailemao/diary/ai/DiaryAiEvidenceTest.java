@@ -26,5 +26,6 @@ class DiaryAiEvidenceTest {
         var unsupportedInference=new Statement("模型推断需要本人判断。",List.of("S1"),List.of(new Quote("S1","步行")));
         assertNotNull(DiaryAiEvidence.validate(JSON.toJSONString(answer(unsupportedInference)),List.of(source),Kind.QUESTION));
         assertTrue(DiaryAiEvidence.system(Kind.REVIEW).contains("不把未记录的事视为未发生"));
+        assertTrue(DiaryAiEvidence.system(Kind.REVIEW).contains("\"summary\":{\"text\""));
     }
 }

@@ -24,7 +24,8 @@ public final class DiaryAiEvidence {
             +"Statement格式：{text:字符串,evidenceIds:[来源ID],quotes:[{quoteId:输入quoteCatalog中的标识}]}。quoteId对应的来源必须在evidenceIds中。建议应围绕用户目标及可控条件；未知偏好不替本人确定目标。个人化建议关联来源；一般性可选建议可general=true且不声称来自个人事实。"
             +(kind==Kind.QUESTION?"本次是问日记：先直接回答本次问题，answer必填且text尽量500字以内，summary=null，observations/hypotheses/suggestions使用空数组。若用户问如何改进，可在answer.text内给一个具体小尝试、简要依据及复查方法，不额外填建议数组或重复分析。"
                 +"有部分证据就先回答可确认部分，在answer及limitations说明其余缺什么，insufficientEvidence=false；只有核心问题完全无可用依据时设true，不编造细节。问答使用检索片段，不代表已覆盖整个月所有经历；需要完整范围时提示使用期间复盘。"
-                :"本次是选定完整篇目的复盘：summary必填且text约120至180字，answer=null；observations最多3项、hypotheses最多1项、suggestions最多2项；有内容才填写，不重复概览。"
+                :"本次是选定完整篇目的复盘：answer=null；除非核心经历完全无依据且insufficientEvidence=true，summary必须是包含text、evidenceIds、quotes三个字段的JSON对象，绝不能是字符串、数组或null。summary.text约120至180字，summary.evidenceIds和summary.quotes都至少填写一项真实来源与引文标识。"
+                +"复盘JSON结构示例（仅示字段类型；示例文字和占位标识绝不可原样输出，必须替换为本次真实资料）：{\"answer\":null,\"summary\":{\"text\":\"根据本次资料撰写的概览\",\"evidenceIds\":[\"从本次sources选取的来源ID\"],\"quotes\":[{\"quoteId\":\"从本次quoteCatalog选取的引文ID\"}]},\"observations\":[],\"hypotheses\":[],\"suggestions\":[],\"limitations\":[\"本次资料的具体局限\"],\"insufficientEvidence\":false}。observations最多3项、hypotheses最多1项、suggestions最多2项；有内容才填写，不重复概览。"
                 +"建议将action写成‘如果出现具体情境，就做一个最小动作’，reason写其来源依据与试验目的，effort写最小投入/完成标准，reviewAfter写复查时点、观察指标和不适合时的调整；建议供本人选择，不保证效果，不替本人创建行动。信息少就简短，核心经历完全无依据才设insufficientEvidence=true。")
             +"输出总预算只有2000 token。优先保留有依据的核心结论和完整闭合JSON；每个Statement至多2个引文标识；limitations用1至2条具体短句说明日期、覆盖或解释局限。不要重复大段来源，不为显得深入堆术语。"
             +"必须输出全部顶层字段，问答时summary为null，复盘时answer为null；不可使用虚构的示例来源ID或quoteId。"
