@@ -3,7 +3,7 @@ server:
 logging:
   level:
     diary.ai.audit: INFO
-    xyz.kuailemao.diary: OFF
+    xyz.luyu.diary: OFF
     org.springframework.jdbc.core.StatementCreatorUtils: OFF
     org.postgresql: OFF
 spring:
@@ -75,10 +75,10 @@ spring:
 #          auth: true
 #          starttls:
 #            enable: true
-#  servlet:
-#    multipart:
-#      max-file-size: 10MB
-#      max-request-size: 10MB
+  servlet:
+    multipart:
+      max-file-size: 21MB
+      max-request-size: 21MB
 #  quartz:
 #    # 将 Quartz 持久化方式修改为 jdbc
 #    job-store-type: jdbc
@@ -144,7 +144,7 @@ spring:
 #  group-configs:
 #    - group: 'default'
 #      paths-to-match: '/**'
-#      packages-to-scan: xyz.kuailemao
+#      packages-to-scan: xyz.luyu
 #oauth:
 #  # gitee 登录
 #  gitee:
@@ -159,7 +159,7 @@ spring:
 #web:
 #  index:
 #    # 网站前端首页
-#    path: http://kuailemao.xyz/
+#    path: http://luyu.xyz/
 ## knife4j的增强配置，不需要增强可以不配
 #knife4j:
 #  enable: true

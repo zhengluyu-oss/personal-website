@@ -22,7 +22,7 @@ class DependencyInventoryTest(unittest.TestCase):
                 self.assertEqual(rows[0]['scope'], 'dev-only')
 
     def test_real_locks_are_pnpm_and_match_declared_axios(self):
-        for project in ['kuailemao-blog', 'kuailemao-admin']:
+        for project in ['luyu-blog', 'luyu-admin']:
             root = inventory.ROOT / 'blog-frontend' / project
             manifest = json.loads((root / 'package.json').read_text(encoding='utf-8'))
             self.assertTrue(manifest['packageManager'].startswith('pnpm@'))

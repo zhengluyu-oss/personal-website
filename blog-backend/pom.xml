@@ -8,7 +8,7 @@
         <version>4.0.8</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>xyz.kuailemao</groupId>
+    <groupId>xyz.luyu</groupId>
     <artifactId>blog-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>blog-backend</name>
@@ -173,6 +173,11 @@
             <groupId>com.aliyun.oss</groupId>
             <artifactId>aliyun-sdk-oss</artifactId>
             <version>3.18.5</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>3.0.8</version>
         </dependency>
         <!-- 引入 Quartz 依赖-->
         <dependency>

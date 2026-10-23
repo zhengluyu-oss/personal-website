@@ -8,11 +8,10 @@ knowledge:
     username: knowledge_runtime
     password: ""
   storage:
-    endpoint: ""
-    bucket: ""
-    access-key: ""
-    secret-key: ""
-    prefix: knowledge/
+    # Uses the already configured oss.endpoint/bucket-name/access-key/secret-key.
+    # Enable only after the anonymous-read probe passes for OSS and media domain.
+    enabled: false
+    prefix: knowledge/private/
     quota-bytes: 1073741824
   processing:
     enabled: false

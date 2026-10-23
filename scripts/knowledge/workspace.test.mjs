@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-const admin=createRequire(new URL('../../blog-frontend/kuailemao-admin/package.json',import.meta.url))
+const admin=createRequire(new URL('../../blog-frontend/luyu-admin/package.json',import.meta.url))
 const req=admin
 const {JSDOM}=admin('jsdom'),dom=new JSDOM('<html><body></body></html>',{url:'https://fixture.invalid/knowledge'})
 for(const key of ['window','document','Document','Element','HTMLElement','SVGElement','Node','navigator'])Object.defineProperty(globalThis,key,{configurable:true,value:dom.window[key]})
@@ -23,7 +23,7 @@ globalThis.__knowledgeFixture={authorization,request:async(method,path,data)=>{
   if(path==='/manage/entries'){if(saveError)throw saveError;if(saveReply)return saveReply;return{id:data.entryId,revision:1,savedAt:'2026-10-20T00:00:00Z',deleted:false}}
   throw new Error('Unexpected fixture request '+path)
 }}
-const root=fileURLToPath(new URL('../../blog-frontend/kuailemao-admin/',import.meta.url)),filename=root+'/src/pages/blog/knowledge/index.vue'
+const root=fileURLToPath(new URL('../../blog-frontend/luyu-admin/',import.meta.url)),filename=root+'/src/pages/blog/knowledge/index.vue'
 const {descriptor}=parse(readFileSync(filename,'utf8'),{filename})
 const source=compileScript(descriptor,{id:'knowledge-fixture',inlineTemplate:true}).content
 const built=await build({stdin:{contents:source,loader:'ts',resolveDir:root},bundle:true,write:false,platform:'node',format:'cjs',external:['vue'],plugins:[{name:'fixture',setup(b){

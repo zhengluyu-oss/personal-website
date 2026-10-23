@@ -43,7 +43,7 @@ def scan_jar(path, known_values=()):
     with zipfile.ZipFile(path) as archive:
         names = set(archive.namelist())
         required = {"BOOT-INF/classes/application.yml",
-                    "BOOT-INF/classes/xyz/kuailemao/config/ProductionConfigurationGuard.class"}
+                    "BOOT-INF/classes/xyz/luyu/config/ProductionConfigurationGuard.class"}
         for name in sorted(required - names):
             findings.append((name, "missing-production-guard"))
         if not ({"META-INF/spring.factories", "BOOT-INF/classes/META-INF/spring.factories"} & names):

@@ -6,9 +6,9 @@ import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
 import { execFileSync } from 'node:child_process'
 
-const root = fileURLToPath(new URL('../../blog-frontend/kuailemao-blog/', import.meta.url))
+const root = fileURLToPath(new URL('../../blog-frontend/luyu-blog/', import.meta.url))
 const req = createRequire(`${root}/package.json`)
-const adminReq = createRequire(new URL('../../blog-frontend/kuailemao-admin/package.json', import.meta.url))
+const adminReq = createRequire(new URL('../../blog-frontend/luyu-admin/package.json', import.meta.url))
 const { JSDOM } = adminReq('jsdom')
 const dom = new JSDOM('', { url: 'https://blog.example/' })
 globalThis.localStorage = dom.window.localStorage
@@ -24,7 +24,7 @@ globalThis.__sessionFixture = fixture
 async function load(relative, modules = {}, external = []) {
   const filename = `${root}/${relative}`
   const source = process.env.SESSION_TEST_BASELINE && ['src/utils/http.ts', 'src/store/modules/user.ts'].includes(relative)
-    ? execFileSync('git', ['show', `HEAD:blog-frontend/kuailemao-blog/${relative}`], { encoding: 'utf8' })
+    ? execFileSync('git', ['show', `HEAD:blog-frontend/luyu-blog/${relative}`], { encoding: 'utf8' })
     : readFileSync(filename, 'utf8')
   const output = await build({ stdin: { contents: source, loader: 'ts', resolveDir: dirname(filename) },
     bundle: true, write: false, platform: 'node', format: 'cjs', external,

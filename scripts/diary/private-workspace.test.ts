@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { registerPrivateWorkspaceGuard, confirmPrivateEditsBeforeLogout } from '../../blog-frontend/kuailemao-blog/src/utils/private-workspace.ts'
+import { registerPrivateWorkspaceGuard, confirmPrivateEditsBeforeLogout } from '../../blog-frontend/luyu-blog/src/utils/private-workspace.ts'
 
 test('diary and coaching guards coexist; unmounting one does not remove the other', async () => {
   const calls: string[] = []

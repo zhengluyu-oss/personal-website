@@ -45,13 +45,13 @@ cd blog-backend
 mvn -Dtest=SiteModuleAccessServiceTest,SiteModuleAccessInterceptorTest,SiteModuleControllerSecurityTest,SiteModuleMetadataTest test
 
 # 前台路由归属、异常配置拒绝访问与现有回归
-cd ../blog-frontend/kuailemao-blog
+cd ../blog-frontend/luyu-blog
 node --experimental-strip-types --test src/utils/site-module-access.test.ts
 pnpm test
 pnpm build
 
 # 后台类型检查及构建
-cd ../kuailemao-admin
+cd ../luyu-admin
 pnpm build
 ```
 

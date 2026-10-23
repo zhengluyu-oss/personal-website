@@ -4,7 +4,7 @@ import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-const admin=createRequire(new URL('../../blog-frontend/kuailemao-admin/package.json',import.meta.url))
+const admin=createRequire(new URL('../../blog-frontend/luyu-admin/package.json',import.meta.url))
 const req=admin
 const {JSDOM}=admin('jsdom'),dom=new JSDOM('<html><body></body></html>',{url:'https://fixture.invalid/knowledge'})
 for(const key of ['window','document','Document','Element','HTMLElement','SVGElement','Node','navigator','File'])
@@ -30,7 +30,7 @@ globalThis.__knowledgeDraftFixture={
   options:async path=>path==='/category/list'?[{id:2,categoryName:'技术'}]:[{id:3,tagName:'知识'}],
   cover:async()=> 'https://example.com/cover.png',
 }
-const root=fileURLToPath(new URL('../../blog-frontend/kuailemao-admin/',import.meta.url)),filename=root+'/src/pages/blog/knowledge/Draft.vue'
+const root=fileURLToPath(new URL('../../blog-frontend/luyu-admin/',import.meta.url)),filename=root+'/src/pages/blog/knowledge/Draft.vue'
 const {descriptor}=parse(readFileSync(filename,'utf8'),{filename})
 const source=compileScript(descriptor,{id:'knowledge-draft-fixture',inlineTemplate:true}).content
 const built=await build({stdin:{contents:source,loader:'ts',resolveDir:root},bundle:true,write:false,platform:'node',format:'cjs',external:['vue'],plugins:[{name:'fixture',setup(b){

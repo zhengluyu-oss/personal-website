@@ -1,1 +1,1 @@
-org.springframework.boot.EnvironmentPostProcessor=xyz.kuailemao.config.ProductionConfigurationGuard
+org.springframework.boot.EnvironmentPostProcessor=xyz.luyu.config.ProductionConfigurationGuard

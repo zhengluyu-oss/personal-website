@@ -1,0 +1,590 @@
+package xyz.luyu.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import xyz.luyu.constants.RedisConst;
+import xyz.luyu.constants.SQLConst;
+import xyz.luyu.constants.WebsiteInfoConst;
+import xyz.luyu.domain.dto.ArticleDTO;
+import xyz.luyu.domain.dto.SearchArticleDTO;
+import xyz.luyu.domain.entity.*;
+import xyz.luyu.domain.response.ResponseResult;
+import xyz.luyu.domain.vo.*;
+import xyz.luyu.enums.*;
+import xyz.luyu.exceptions.FileUploadException;
+import xyz.luyu.mapper.*;
+import xyz.luyu.service.*;
+import xyz.luyu.utils.*;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+/**
+ * (Article)表服务实现类
+ *
+ * @author luyu
+ * @since 2023-10-15 02:29:13
+ */
+@Slf4j
+@Service("articleService")
+public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> implements ArticleService {
+
+    @Resource
+    private CategoryMapper categoryMapper;
+
+    @Resource
+    private ArticleTagMapper articleTagMapper;
+
+    @Resource
+    private TagMapper tagMapper;
+
+    @Resource
+    private ArticleMapper articleMapper;
+
+    @Resource
+    private FavoriteService favoriteService;
+
+    @Resource
+    private LikeService likeService;
+
+    @Resource
+    private CommentService commentService;
+
+    @Resource
+    private RedisCache redisCache;
+
+    @Resource
+    private FileUploadUtils fileUploadUtils;
+
+    @Resource
+    private xyz.luyu.service.ArticleCoverLifecycle articleCoverLifecycle;
+
+    @Resource
+    private UserMapper userMapper;
+
+    @Resource
+    private LikeMapper likeMapper;
+
+    @Resource
+    private FavoriteMapper favoriteMapper;
+
+    @Resource
+    private CommentMapper commentMapper;
+
+    @Resource
+    private WebsiteInfoMapper websiteInfoMapper;
+
+
+    @Override
+    public PageVO<List<ArticleVO>> listAllArticle(Integer pageNum, Integer pageSize) {
+        boolean hasKey = redisCache.isHasKey(RedisConst.ARTICLE_COMMENT_COUNT) && redisCache.isHasKey(RedisConst.ARTICLE_FAVORITE_COUNT) && redisCache.isHasKey(RedisConst.ARTICLE_LIKE_COUNT);
+        // 文章
+        Page<Article> page = new Page<>(pageNum, pageSize);
+        this.page(page, new LambdaQueryWrapper<Article>().eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                .orderByDesc(Article::getCreateTime)
+                .orderByDesc(Article::getId));
+        List<Article> list = page.getRecords();
+        // 无文章时跳过 IN 批量查询，避免生成非法 SQL：id IN ()
+        if (list.isEmpty()) {
+            return new PageVO<>(Collections.emptyList(), page.getTotal());
+        }
+        // 文章分类
+        // 1. 优化：使用 Map 存储分类和标签信息，避免 N+1 问题
+        Map<Long, String> categoryMap = categoryMapper.selectBatchIds(list.stream().map(Article::getCategoryId).toList())
+                .stream().collect(Collectors.toMap(Category::getId, Category::getCategoryName));
+
+        List<ArticleTag> articleTags = articleTagMapper.selectBatchIds(list.stream().map(Article::getId).toList());
+        Map<Long, String> tagMap = tagMapper.selectBatchIds(articleTags.stream().map(ArticleTag::getTagId).toList())
+                .stream().collect(Collectors.toMap(Tag::getId, Tag::getTagName));
+
+        List<ArticleVO> articleVOS = list.stream().map(article -> {
+            ArticleVO articleVO = article.asViewObject(ArticleVO.class);
+            // 2. 优化：使用 Map 获取分类和标签信息
+            articleVO.setCategoryName(categoryMap.get(article.getCategoryId()));
+            articleVO.setTags(articleTags.stream()
+                    .filter(at -> Objects.equals(at.getArticleId(), article.getId()))
+                    .map(at -> tagMap.get(at.getTagId()))
+                    .toList());
+            return articleVO;
+        }).toList();
+
+        if (hasKey) {
+            articleVOS = articleVOS.stream().peek(articleVO -> {
+                setArticleCount(articleVO, RedisConst.ARTICLE_FAVORITE_COUNT, CountTypeEnum.FAVORITE);
+                setArticleCount(articleVO, RedisConst.ARTICLE_LIKE_COUNT, CountTypeEnum.LIKE);
+                setArticleCount(articleVO, RedisConst.ARTICLE_COMMENT_COUNT, CountTypeEnum.COMMENT);
+            }).toList();
+        }
+
+        return new PageVO<>(articleVOS, page.getTotal());
+    }
+
+    @Override
+    public BlogFeedVO listBlogFeed(Long categoryId, Integer pageNum, Integer pageSize, String keyword) {
+        String titleKeyword = StringUtils.trimToEmpty(keyword);
+        boolean searching = !titleKeyword.isEmpty();
+        LambdaQueryWrapper<Article> scope = new LambdaQueryWrapper<Article>()
+                .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                .eq(categoryId != null, Article::getCategoryId, categoryId)
+                .apply(searching, "LOCATE({0}, article_title) > 0", titleKeyword)
+                .orderByDesc(Article::getCreateTime)
+                .orderByDesc(Article::getId);
+
+        Long total = articleMapper.selectCount(new LambdaQueryWrapper<Article>()
+                .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                .eq(categoryId != null, Article::getCategoryId, categoryId)
+                .apply(searching, "LOCATE({0}, article_title) > 0", titleKeyword));
+        Article featured = searching ? null : resolveFeaturedArticle(categoryId);
+
+        Page<Article> page = new Page<>(pageNum, pageSize);
+        if (featured != null) scope.ne(Article::getId, featured.getId());
+        articleMapper.selectPage(page, scope);
+
+        ArticleVO featuredVO = featured == null ? null : toArticleVOs(List.of(featured)).get(0);
+        long listTotal = searching ? total : Math.max(0L, total - (featured == null ? 0L : 1L));
+        return new BlogFeedVO(featuredVO, toArticleVOs(page.getRecords()), total, listTotal);
+    }
+
+    private Article resolveFeaturedArticle(Long categoryId) {
+        Long configuredId = null;
+        if (categoryId == null) {
+            WebsiteInfo websiteInfo = websiteInfoMapper.selectById(WebsiteInfoConst.WEBSITE_INFO_ID);
+            if (websiteInfo != null) configuredId = websiteInfo.getBlogFeaturedArticleId();
+        } else {
+            Category category = categoryMapper.selectById(categoryId);
+            if (category != null) configuredId = category.getFeaturedArticleId();
+        }
+
+        if (configuredId != null) {
+            Article configured = articleMapper.selectById(configuredId);
+            if (configured != null
+                    && Objects.equals(configured.getStatus(), SQLConst.PUBLIC_ARTICLE)
+                    && (categoryId == null || Objects.equals(configured.getCategoryId(), categoryId))) {
+                return configured;
+            }
+        }
+
+        return articleMapper.selectOne(new LambdaQueryWrapper<Article>()
+                .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                .eq(categoryId != null, Article::getCategoryId, categoryId)
+                .orderByDesc(Article::getCreateTime)
+                .orderByDesc(Article::getId)
+                .last(SQLConst.LIMIT_ONE_SQL));
+    }
+
+    @Override
+    public List<ArticleOptionVO> listPublishedArticleOptions(Long categoryId, String keyword) {
+        List<Article> articles = articleMapper.selectList(new LambdaQueryWrapper<Article>()
+                .select(Article::getId, Article::getArticleTitle, Article::getCategoryId)
+                .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                .eq(categoryId != null, Article::getCategoryId, categoryId)
+                .like(StringUtils.isNotEmpty(keyword), Article::getArticleTitle, keyword)
+                .orderByDesc(Article::getCreateTime)
+                .last("LIMIT 50"));
+        if (articles.isEmpty()) return List.of();
+        Map<Long, String> categories = categoryMapper.selectBatchIds(articles.stream().map(Article::getCategoryId).distinct().toList())
+                .stream().collect(Collectors.toMap(Category::getId, Category::getCategoryName));
+        return articles.stream().map(article -> article.asViewObject(ArticleOptionVO.class,
+                option -> option.setCategoryName(categories.get(article.getCategoryId())))).toList();
+    }
+
+    private List<ArticleVO> toArticleVOs(List<Article> articles) {
+        if (articles.isEmpty()) return List.of();
+        Map<Long, String> categoryMap = categoryMapper.selectBatchIds(articles.stream().map(Article::getCategoryId).distinct().toList())
+                .stream().collect(Collectors.toMap(Category::getId, Category::getCategoryName));
+        List<Long> articleIds = articles.stream().map(Article::getId).toList();
+        List<ArticleTag> articleTags = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getArticleId, articleIds));
+        List<Long> tagIds = articleTags.stream().map(ArticleTag::getTagId).distinct().toList();
+        Map<Long, String> tagMap = tagIds.isEmpty() ? Map.of() : tagMapper.selectBatchIds(tagIds).stream()
+                .collect(Collectors.toMap(Tag::getId, Tag::getTagName));
+        return articles.stream().map(article -> article.asViewObject(ArticleVO.class, vo -> {
+            vo.setCategoryName(categoryMap.get(article.getCategoryId()));
+            vo.setTags(articleTags.stream()
+                    .filter(relation -> Objects.equals(relation.getArticleId(), article.getId()))
+                    .map(relation -> tagMap.get(relation.getTagId()))
+                    .filter(Objects::nonNull)
+                    .toList());
+        })).toList();
+    }
+
+    private void setArticleCount(ArticleVO articleVO, String redisKey, CountTypeEnum articleFieldName) {
+        String articleId = articleVO.getId().toString();
+        Object countObj = redisCache.getCacheMap(redisKey).get(articleId);
+        long count = 0L;
+        if (countObj != null) {
+            count = Long.parseLong(countObj.toString());
+        } else {
+            // 缓存发布新文章时数量缓存不存在
+            redisCache.setCacheMap(redisKey, Map.of(articleId, 0));
+        }
+
+        if (articleFieldName.equals(CountTypeEnum.FAVORITE)) {
+            articleVO.setFavoriteCount(count);
+        } else if (articleFieldName.equals(CountTypeEnum.LIKE)) {
+            articleVO.setLikeCount(count);
+        } else if (articleFieldName.equals(CountTypeEnum.COMMENT)) {
+            articleVO.setCommentCount(count);
+        }
+    }
+
+    @Override
+    public List<RecommendArticleVO> listRecommendArticle() {
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Article::getIsTop, SQLConst.RECOMMEND_ARTICLE).and(i -> i.eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE));
+        List<Article> articles = articleMapper.selectList(wrapper);
+        return articles.stream().map(article -> article.asViewObject(RecommendArticleVO.class)).toList();
+    }
+
+    @Override
+    public List<RandomArticleVO> listRandomArticle() {
+        List<Article> randomArticles = articleMapper.selectRandomArticles(SQLConst.PUBLIC_ARTICLE, SQLConst.RANDOM_ARTICLE_COUNT);
+        return randomArticles.stream()
+                .map(article -> article.asViewObject(RandomArticleVO.class))
+                .toList();
+    }
+
+    @Override
+    public ArticleDetailVO getArticleDetail(Integer id) {
+        Article article = articleMapper.selectOne(new LambdaQueryWrapper<Article>().eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE).and(i -> i.eq(Article::getId, id)));
+        if (StringUtils.isNull(article)) return null;
+        // 文章分类
+        Category category = categoryMapper.selectById(article.getCategoryId());
+        // 文章关系
+        List<ArticleTag> articleTags = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, article.getId()));
+        // 标签
+        List<Tag> tags = tagMapper.selectBatchIds(articleTags.stream().map(ArticleTag::getTagId).toList());
+        // 当前文章的上一篇文章与下一篇文章,大于当前文章的最小文章与小于当前文章的最大文章
+        LambdaQueryWrapper<Article> preAndNextWrapper = new LambdaQueryWrapper<>();
+        preAndNextWrapper.eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE).lt(Article::getId, id);
+        Article preArticle = articleMapper.selectOne(preAndNextWrapper.orderByDesc(Article::getId).last(SQLConst.LIMIT_ONE_SQL));
+        preAndNextWrapper.clear();
+        preAndNextWrapper.eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE).gt(Article::getId, id);
+        Article nextArticle = articleMapper.selectOne(preAndNextWrapper.orderByAsc(Article::getId).last(SQLConst.LIMIT_ONE_SQL));
+
+        return article.asViewObject(ArticleDetailVO.class, vo -> {
+            vo.setCategoryName(category.getCategoryName());
+            vo.setCategoryId(category.getId());
+            vo.setTags(tags.stream().map(tag -> tag.asViewObject(TagVO.class)).toList());
+            vo.setCommentCount(commentService.count(new LambdaQueryWrapper<Comment>().eq(Comment::getTypeId, article.getId()).eq(Comment::getType, CommentEnum.COMMENT_TYPE_ARTICLE.getType())));
+            vo.setLikeCount(likeService.count(new LambdaQueryWrapper<Like>().eq(Like::getTypeId, article.getId()).eq(Like::getType, LikeEnum.LIKE_TYPE_ARTICLE.getType())));
+            vo.setFavoriteCount(favoriteService.count(new LambdaQueryWrapper<Favorite>().eq(Favorite::getTypeId, article.getId()).eq(Favorite::getType, FavoriteEnum.FAVORITE_TYPE_ARTICLE.getType())));
+            vo.setPreArticleId(preArticle == null ? 0 : preArticle.getId());
+            vo.setPreArticleTitle(preArticle == null ? "" : preArticle.getArticleTitle());
+            vo.setNextArticleId(nextArticle == null ? 0 : nextArticle.getId());
+            vo.setNextArticleTitle(nextArticle == null ? "" : nextArticle.getArticleTitle());
+        });
+    }
+
+    @Override
+    public List<RelatedArticleVO> relatedArticleList(Integer categoryId, Integer articleId) {
+        // 文章id不等于当前文章id,相关推荐排除自己，5条
+        List<Article> articles = articleMapper.selectList(
+                new LambdaQueryWrapper<Article>()
+                        .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                        .and(i -> i.eq(Article::getCategoryId, categoryId))
+                        .ne(Article::getId, articleId)
+        );
+        List<Article> articlesLimit5 = articles.stream().limit(SQLConst.RELATED_ARTICLE_COUNT).toList();
+        return articlesLimit5.stream().map(article -> article.asViewObject(RelatedArticleVO.class)).toList();
+    }
+
+    @Override
+    public List<CategoryArticleVO> listCategoryArticle(Integer type, Long typeId) {
+        List<Article> articles;
+        if (type == 1)
+            articles = articleMapper.selectList(new LambdaQueryWrapper<Article>()
+                    .eq(Article::getCategoryId, typeId)
+                    .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                    .orderByDesc(Article::getCreateTime)
+                    .orderByDesc(Article::getId));
+        else if (type == 2) {
+            List<Long> articleIds = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getTagId, typeId)).stream().map(ArticleTag::getArticleId).toList();
+            if (!articleIds.isEmpty()) articles = articleMapper.selectList(new LambdaQueryWrapper<Article>()
+                    .in(Article::getId, articleIds)
+                    .eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE)
+                    .orderByDesc(Article::getCreateTime)
+                    .orderByDesc(Article::getId));
+            else articles = List.of();
+        } else articles = List.of();
+
+        if (Objects.isNull(articles) || articles.isEmpty()) return List.of();
+        List<ArticleTag> articleTags = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>()
+                .in(ArticleTag::getArticleId, articles.stream().map(Article::getId).toList()));
+        List<Tag> tags = tagMapper.selectBatchIds(articleTags.stream().map(ArticleTag::getTagId).toList());
+
+        return articles.stream().map(article -> article.asViewObject(CategoryArticleVO.class, item -> {
+            item.setCategoryId(articles.stream().filter(art -> Objects.equals(art.getId(), article.getId())).findFirst().orElseThrow().getCategoryId());
+            item.setTags(tags.stream().filter(tag -> articleTags.stream().anyMatch(articleTag -> Objects.equals(articleTag.getArticleId(), article.getId()) && Objects.equals(articleTag.getTagId(), tag.getId()))).map(tag -> tag.asViewObject(TagVO.class)).toList());
+        })).toList();
+    }
+
+    @Override
+    public void addVisitCount(Long id) {
+        // 访问量去重
+        HttpServletRequest request = SecurityUtils.getCurrentHttpRequest();
+        // key + id + ip + time(秒)
+        String KEY = RedisConst.ARTICLE_VISIT_COUNT_LIMIT + id + ":" + IpUtils.getIpAddr(request);
+        if (redisCache.getCacheObject(KEY) == null) {
+            // 设置间隔时间
+            redisCache.setCacheObject(KEY, 1, RedisConst.ARTICLE_VISIT_COUNT_INTERVAL, TimeUnit.SECONDS);
+
+            if (redisCache.isHasKey(RedisConst.ARTICLE_VISIT_COUNT + id))
+                redisCache.increment(RedisConst.ARTICLE_VISIT_COUNT + id, 1L);
+            else redisCache.setCacheObject(RedisConst.ARTICLE_VISIT_COUNT + id, 0);
+        }
+
+    }
+
+    @Override
+    public ResponseResult<String> uploadArticleCover(MultipartFile articleCover) {
+        String articleCoverUrl = null;
+        try {
+            try {
+                articleCoverUrl = fileUploadUtils.upload(UploadEnum.ARTICLE_COVER, articleCover);
+            } catch (FileUploadException e) {
+                return ResponseResult.failure(e.getMessage());
+            }
+            if (StringUtils.isNotNull(articleCoverUrl)) {
+                articleCoverLifecycle.register(articleCoverUrl);
+                return ResponseResult.success(articleCoverUrl);
+            } else
+                return ResponseResult.failure("上传格式错误");
+        } catch (Exception e) {
+            if (articleCoverUrl != null) {
+                try {
+                    if (!fileUploadUtils.deleteTrustedFile(articleCoverUrl, xyz.luyu.service.ArticleCoverLifecycle.PURPOSE))
+                        log.warn("新封面登记失败后的孤儿对象待重试清理");
+                } catch (RuntimeException cleanupFailed) { log.warn("新封面登记失败后的清理待核实"); }
+            }
+            log.warn("文章封面上传或授权登记失败 ({})", e.getClass().getSimpleName());
+            return ResponseResult.failure("封面上传或授权登记失败，请重新上传");
+        }
+    }
+
+    @Resource
+    private ArticleTagService articleTagService;
+
+    @Transactional
+    @Override
+    public ResponseResult<Void> publish(ArticleDTO articleDTO) {
+        Category category = categoryMapper.selectById(articleDTO.getCategoryId());
+        if (category == null || Objects.equals(category.getIsDeleted(), 1)) {
+            return ResponseResult.failure("所选分类不存在，请重新选择");
+        }
+        List<Long> requestedTags = articleDTO.getTagId();
+        if (requestedTags == null || requestedTags.isEmpty() || requestedTags.stream().anyMatch(Objects::isNull)) {
+            return ResponseResult.failure("请至少选择一个有效标签");
+        }
+        Set<Long> tagIds = new HashSet<>(requestedTags);
+        List<Tag> tags = tagMapper.selectBatchIds(tagIds);
+        if (tags.size() != tagIds.size() || tags.stream().anyMatch(tag -> Objects.equals(tag.getIsDeleted(), 1))) {
+            return ResponseResult.failure("所选标签不存在，请重新选择");
+        }
+        try (var publication = articleCoverLifecycle.publication(articleDTO)) {
+          Article article = articleDTO.asViewObject(Article.class, v -> v.setUserId(SecurityUtils.getUserId()));
+          if (this.saveOrUpdate(article)) {
+            // 清除标签关系
+            articleTagMapper.deleteById(article.getId());
+            // 新增标签关系
+            List<ArticleTag> articleTags = articleDTO.getTagId().stream().map(articleTag -> ArticleTag.builder().articleId(article.getId()).tagId(articleTag).build()).toList();
+            if (!articleTagService.saveBatch(articleTags)) throw new IllegalStateException("文章标签保存失败");
+            publication.complete();
+            return ResponseResult.success();
+          }
+          return ResponseResult.failure();
+        }
+    }
+
+    @Override
+    public ResponseResult<Void> deleteArticleCover(String articleCoverUrl) {
+        try {
+            articleCoverLifecycle.cancel(articleCoverUrl);
+            return ResponseResult.success();
+        } catch (Exception e) {
+            log.warn("取消临时封面失败 ({})", e.getClass().getSimpleName());
+            return ResponseResult.failure(e instanceof IllegalArgumentException || e instanceof IllegalStateException
+                    ? e.getMessage() : "封面清理暂不可用，请稍后重试");
+        }
+    }
+
+    @Override
+    public ResponseResult<String> uploadArticleImage(MultipartFile articleImage) {
+        try {
+            String url = fileUploadUtils.upload(UploadEnum.ARTICLE_IMAGE, articleImage);
+            if (StringUtils.isNotNull(url))
+                return ResponseResult.success(url);
+            else
+                return ResponseResult.failure("上传格式错误");
+        } catch (Exception e) {
+            log.error("文章图片上传失败", e);
+        }
+        return null;
+    }
+
+    @Override
+    public PageVO<List<ArticleListVO>> listArticle(Integer pageNum, Integer pageSize) {
+        SearchArticleDTO search = new SearchArticleDTO();
+        search.setPageNum(pageNum);
+        search.setPageSize(pageSize);
+        return searchArticle(search);
+    }
+
+    @Override
+    public PageVO<List<ArticleListVO>> searchArticle(SearchArticleDTO searchArticleDTO) {
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(StringUtils.isNotNull(searchArticleDTO.getArticleTitle()), Article::getArticleTitle, searchArticleDTO.getArticleTitle())
+                .eq(StringUtils.isNotNull(searchArticleDTO.getCategoryId()), Article::getCategoryId, searchArticleDTO.getCategoryId())
+                .eq(StringUtils.isNotNull(searchArticleDTO.getStatus()), Article::getStatus, searchArticleDTO.getStatus())
+                .eq(StringUtils.isNotNull(searchArticleDTO.getIsTop()), Article::getIsTop, searchArticleDTO.getIsTop())
+                .orderByDesc(Article::getCreateTime)
+                .orderByDesc(Article::getId);
+        Page<Article> page = new Page<>(searchArticleDTO.getPageNum(), searchArticleDTO.getPageSize());
+        articleMapper.selectPage(page, wrapper);
+        return new PageVO<>(toArticleListVOs(page.getRecords()), page.getTotal());
+    }
+
+    private List<ArticleListVO> toArticleListVOs(List<Article> articles) {
+        if (articles.isEmpty()) return Collections.emptyList();
+
+        Set<Long> categoryIds = articles.stream().map(Article::getCategoryId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<Long> userIds = articles.stream().map(Article::getUserId).filter(Objects::nonNull).collect(Collectors.toSet());
+        List<Long> articleIds = articles.stream().map(Article::getId).toList();
+
+        Map<Long, String> categoryNames = categoryIds.isEmpty() ? Collections.emptyMap() : categoryMapper.selectBatchIds(categoryIds)
+                .stream().collect(Collectors.toMap(Category::getId, Category::getCategoryName));
+        Map<Long, String> userNames = userIds.isEmpty() ? Collections.emptyMap() : userMapper.selectBatchIds(userIds)
+                .stream().collect(Collectors.toMap(User::getId, User::getUsername));
+        List<ArticleTag> relations = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getArticleId, articleIds));
+        Set<Long> tagIds = relations.stream().map(ArticleTag::getTagId).filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, String> tagNames = tagIds.isEmpty() ? Collections.emptyMap() : tagMapper.selectBatchIds(tagIds)
+                .stream().collect(Collectors.toMap(Tag::getId, Tag::getTagName));
+        Map<Long, List<String>> articleTags = relations.stream().collect(Collectors.groupingBy(
+                ArticleTag::getArticleId,
+                Collectors.mapping(relation -> tagNames.get(relation.getTagId()),
+                        Collectors.filtering(Objects::nonNull, Collectors.toList()))));
+
+        return articles.stream().map(article -> {
+            ArticleListVO vo = article.asViewObject(ArticleListVO.class);
+            vo.setCategoryName(categoryNames.get(article.getCategoryId()));
+            vo.setUserName(userNames.get(article.getUserId()));
+            vo.setTagsName(articleTags.getOrDefault(article.getId(), Collections.emptyList()));
+            return vo;
+        }).toList();
+    }
+
+    @Override
+    public ResponseResult<Void> updateStatus(Long id, Integer status) {
+        if (this.update(new LambdaUpdateWrapper<Article>().eq(Article::getId, id).set(Article::getStatus, status))) {
+            return ResponseResult.success();
+        }
+        return ResponseResult.failure();
+    }
+
+    @Override
+    public ResponseResult<Void> updateIsTop(Long id, Integer isTop) {
+        if (this.update(new LambdaUpdateWrapper<Article>().eq(Article::getId, id).set(Article::getIsTop, isTop))) {
+            return ResponseResult.success();
+        }
+        return ResponseResult.failure();
+    }
+
+    @Override
+    public ArticleDTO getArticleDTO(Long id) {
+        ArticleDTO articleDTO = articleMapper.selectById(id).asViewObject(ArticleDTO.class);
+        if (StringUtils.isNotNull(articleDTO)) {
+            // 查询文章标签
+            List<Long> tagIds = articleTagMapper.selectList(new LambdaQueryWrapper<ArticleTag>().eq(ArticleTag::getArticleId, articleDTO.getId())).stream().map(ArticleTag::getTagId).toList();
+            articleDTO.setTagId(tagMapper.selectBatchIds(tagIds).stream().map(Tag::getId).toList());
+            return articleDTO;
+        }
+        return null;
+    }
+
+    @Transactional
+    @Override
+    public ResponseResult<Void> deleteArticle(List<Long> ids) {
+        if (this.removeByIds(ids)) {
+            // 删除标签关系
+            articleTagMapper.delete(new LambdaQueryWrapper<ArticleTag>().in(ArticleTag::getArticleId, ids));
+            // 删除点赞、收藏、评论
+            likeMapper.delete(new LambdaQueryWrapper<Like>().eq(Like::getType, LikeEnum.LIKE_TYPE_ARTICLE.getType()).and(a -> a.in(Like::getTypeId, ids)));
+            favoriteMapper.delete(new LambdaQueryWrapper<Favorite>().eq(Favorite::getType, FavoriteEnum.FAVORITE_TYPE_ARTICLE.getType()).and(a -> a.in(Favorite::getTypeId, ids)));
+            commentMapper.delete(new LambdaQueryWrapper<Comment>().eq(Comment::getType, CommentEnum.COMMENT_TYPE_ARTICLE.getType()).and(a -> a.in(Comment::getTypeId, ids)));
+            return ResponseResult.success();
+        }
+        return ResponseResult.failure();
+    }
+
+    @Override
+    public List<InitSearchTitleVO> initSearchByTitle() {
+        List<Article> articles = this.list(new LambdaQueryWrapper<Article>().eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE));
+        Map<Long, String> categoryMap = categoryMapper.selectList(null).stream().collect(Collectors.toMap(Category::getId, Category::getCategoryName));
+        if (articles.isEmpty()) {
+            return List.of();
+        }
+        return articles.stream().map(article -> article.asViewObject(InitSearchTitleVO.class, item -> item.setCategoryName(categoryMap.get(article.getCategoryId())))).toList();
+    }
+
+    @Override
+    public List<HotArticleVO> listHotArticle() {
+        List<Article> articles = articleMapper.selectList(new LambdaQueryWrapper<Article>().eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE).orderByDesc(Article::getVisitCount).last("LIMIT 5"));
+        if (!articles.isEmpty()) {
+            return articles.stream().map(article -> article.asViewObject(HotArticleVO.class)).toList();
+        }
+        return List.of();
+    }
+
+    @Override
+    public List<SearchArticleByContentVO> searchArticleByContent(String keyword) {
+        List<Article> articles = articleMapper.selectList(new LambdaQueryWrapper<Article>().like(Article::getArticleContent, keyword).eq(Article::getStatus, SQLConst.PUBLIC_ARTICLE));
+        Map<Long, String> categoryMap = categoryMapper.selectList(null).stream().collect(Collectors.toMap(Category::getId, Category::getCategoryName));
+        if (!articles.isEmpty()) {
+            List<SearchArticleByContentVO> listVos = articles.stream().map(article -> article.asViewObject(SearchArticleByContentVO.class, vo -> {
+                vo.setCategoryName(categoryMap.get(article.getCategoryId()));
+            })).toList();
+            int index = -1;
+            for (SearchArticleByContentVO articleVo : listVos) {
+                String content = articleVo.getArticleContent();
+                index = content.toLowerCase().indexOf(keyword.toLowerCase());
+                if (index != -1) {
+                    int end = Math.min(content.length(), index + keyword.length() + 20);
+                    String highlighted = keyword + content.substring(index + keyword.length(), end);
+                    articleVo.setArticleContent(stripMarkdown(highlighted));
+                }
+            }
+            if (index != -1) {
+                return listVos;
+            }
+        }
+        return List.of();
+    }
+
+    /**
+     * 去掉markdown格式
+     *
+     * @param markdown markdown
+     * @return txt
+     */
+    private String stripMarkdown(String markdown) {
+        return markdown.replaceAll("(?m)^\\s*#.*$", "") // 去掉标题
+                .replaceAll("\\*\\*(.*?)\\*\\*", "$1") // 去掉加粗
+                .replaceAll("\\*(.*?)\\*", "$1") // 去掉斜体
+                .replaceAll("`([^`]*)`", "$1") // 去掉行内代码
+                .replaceAll("~~(.*?)~~", "$1") // 去掉删除线
+                .replaceAll("\\[(.*?)\\]\\(.*?\\)", "$1") // 去掉链接
+                .replaceAll("!\\[.*?\\]\\(.*?\\)", "") // 去掉图片
+                .replaceAll(">\\s?", "") // 去掉引用
+                .replaceAll("(?m)^\\s*[-*+]\\s+", "") // 去掉无序列表
+                .replaceAll("(?m)^\\s*\\d+\\.\\s+", "") // 去掉有序列表
+                .replaceAll("\\n", " "); // 去掉换行符
+    }
+}

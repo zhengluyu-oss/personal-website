@@ -1,0 +1,66 @@
+package xyz.luyu.controller;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import xyz.luyu.annotation.AccessLimit;
+import xyz.luyu.annotation.LogAnnotation;
+import xyz.luyu.constants.LogConst;
+import xyz.luyu.domain.response.ResponseResult;
+import xyz.luyu.service.PublicService;
+import xyz.luyu.service.EmailDeliveryService;
+import java.util.Map;
+import xyz.luyu.utils.ControllerUtils;
+
+/**
+ * @author luyu
+ * <p>
+ * 创建时间：2023/10/16 17:00
+ * 公共接口
+ */
+@RestController
+@Tag(name = "公共接口")
+@RequestMapping("/public")
+@Validated
+public class PublicController {
+
+    @Resource
+    private PublicService publicService;
+
+    @Resource private EmailDeliveryService emailDeliveryService;
+
+    /**
+     * 邮件发送
+     */
+    @Operation(summary = "邮件发送")
+    @Parameters({
+            @Parameter(name = "email", description = "邮箱", required = true),
+            @Parameter(name = "type", description = "邮箱类型", required = true)
+    })
+    @AccessLimit(seconds = 60, maxCount = 1)
+    @LogAnnotation(module="邮件发送",operation= LogConst.EMAIL_SEND)
+    @GetMapping("/ask-code")
+    public ResponseResult<Map<String, String>> askVerifyCode(
+            @RequestParam @Email String email,
+            @RequestParam @Pattern(regexp = "(register|reset|resetEmail)",message = "邮箱类型错误" ) String type
+    ) {
+        return ResponseResult.success(Map.of("taskId", publicService.registerEmailVerifyCode(type, email)), "发送请求已提交");
+    }
+
+    @GetMapping("/email-delivery")
+    @AccessLimit(seconds = 60, maxCount = 60)
+    public ResponseResult<EmailDeliveryService.Status> emailDelivery(
+            @RequestParam @Pattern(regexp = "[0-9a-f]{64}") String taskId) {
+        return ResponseResult.success(emailDeliveryService.status(taskId));
+    }
+
+}

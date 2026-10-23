@@ -4,8 +4,8 @@ import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-const req = createRequire(new URL('../../blog-frontend/kuailemao-blog/package.json', import.meta.url))
-const admin = createRequire(new URL('../../blog-frontend/kuailemao-admin/package.json', import.meta.url))
+const req = createRequire(new URL('../../blog-frontend/luyu-blog/package.json', import.meta.url))
+const admin = createRequire(new URL('../../blog-frontend/luyu-admin/package.json', import.meta.url))
 const { JSDOM } = admin('jsdom')
 const dom = new JSDOM('<html><body></body></html>', { url: 'https://fixture.invalid/knowledge' })
 for (const key of ['window', 'document', 'Document', 'Element', 'HTMLElement', 'SVGElement', 'Node', 'navigator'])
@@ -25,7 +25,7 @@ globalThis.__knowledgeReaderFixture = { user, request: async (method, path, data
   if (path === '/view/entries/' + id) return structuredClone(entry)
   throw new Error('Unexpected request ' + method + ' ' + path)
 } }
-const root = fileURLToPath(new URL('../../blog-frontend/kuailemao-blog/', import.meta.url))
+const root = fileURLToPath(new URL('../../blog-frontend/luyu-blog/', import.meta.url))
 const filename = root + '/src/views/Knowledge/Workspace.vue'
 const { descriptor } = parse(readFileSync(filename, 'utf8'), { filename })
 const source = compileScript(descriptor, { id: 'knowledge-reader-fixture', inlineTemplate: true }).content

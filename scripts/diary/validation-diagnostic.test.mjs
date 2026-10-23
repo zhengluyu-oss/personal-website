@@ -3,18 +3,18 @@ import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-const req = createRequire(new URL('../../blog-frontend/kuailemao-blog/package.json', import.meta.url))
-const admin = createRequire(new URL('../../blog-frontend/kuailemao-admin/package.json', import.meta.url))
+const req = createRequire(new URL('../../blog-frontend/luyu-blog/package.json', import.meta.url))
+const admin = createRequire(new URL('../../blog-frontend/luyu-admin/package.json', import.meta.url))
 const { JSDOM } = admin('jsdom')
 const dom = new JSDOM('<html><body></body></html>', { url: 'https://fixture.invalid/diary' })
 for (const key of ['window', 'document', 'Element', 'HTMLElement', 'SVGElement', 'Node', 'navigator']) Object.defineProperty(globalThis, key, { configurable: true, value: dom.window[key] })
 const Vue = req('vue'), { parse, compileScript } = req('vue/compiler-sfc'), { build } = createRequire(req.resolve('vite/package.json'))('esbuild')
 const calls = []; let state, delayed
 globalThis.__diagnosticFixture = { call: async (method, path) => { calls.push([method, path]); if (method === 'DELETE') { state = { ...state, status: 'DELETED', raw: undefined, sources: [] }; return } if (path.includes('body=true') && delayed) return delayed; return path.includes('body=true') ? { ...state } : { ...state, raw: undefined, sources: [] } } }
-const filename = fileURLToPath(new URL('../../blog-frontend/kuailemao-blog/src/views/Diary/DiaryValidationDiagnostic.vue', import.meta.url))
+const filename = fileURLToPath(new URL('../../blog-frontend/luyu-blog/src/views/Diary/DiaryValidationDiagnostic.vue', import.meta.url))
 const { descriptor } = parse(readFileSync(filename, 'utf8').replace('</script>', 'defineExpose({load});\n</script>'), { filename })
 const source = compileScript(descriptor, { id: 'diagnostic', inlineTemplate: true }).content
-const result = await build({ stdin: { contents: source, loader: 'ts', resolveDir: fileURLToPath(new URL('../../blog-frontend/kuailemao-blog/', import.meta.url)) }, bundle: true, write: false, platform: 'node', format: 'cjs', external: ['vue'], plugins: [{ name: 'fixture', setup(b) { b.onResolve({ filter: /^(element-plus|@\/)/ }, a => ({ path: a.path, namespace: 'fixture' })); b.onLoad({ filter: /.*/, namespace: 'fixture' }, a => ({ loader: 'js', contents: a.path === 'element-plus' ? 'export const ElMessageBox={confirm:async()=>{}};' : 'export const diaryRequest=(...a)=>globalThis.__diagnosticFixture.call(...a);' })) } }] })
+const result = await build({ stdin: { contents: source, loader: 'ts', resolveDir: fileURLToPath(new URL('../../blog-frontend/luyu-blog/', import.meta.url)) }, bundle: true, write: false, platform: 'node', format: 'cjs', external: ['vue'], plugins: [{ name: 'fixture', setup(b) { b.onResolve({ filter: /^(element-plus|@\/)/ }, a => ({ path: a.path, namespace: 'fixture' })); b.onLoad({ filter: /.*/, namespace: 'fixture' }, a => ({ loader: 'js', contents: a.path === 'element-plus' ? 'export const ElMessageBox={confirm:async()=>{}};' : 'export const diaryRequest=(...a)=>globalThis.__diagnosticFixture.call(...a);' })) } }] })
 const module = { exports: {} }; new Function('require', 'module', 'exports', result.outputFiles[0].text)(req, module, module.exports)
 async function flush() { await new Promise(r => setImmediate(r)); await Vue.nextTick() }
 function mount() { calls.length = 0; delayed = undefined; state = { status: 'AVAILABLE', reason: 'QUOTE_MISMATCH', fieldPath: '$.summary.quotes[0].text', expiresAt: new Date(Date.now() + 60000).toISOString(), raw: '<img src=x onerror="PRIVATE_PROBE">', sources: [{ sourceId: 'S1', kind: 'D', text: 'PRIVATE_SOURCE' }] }; const host = document.createElement('div'); document.body.append(host); const app = Vue.createApp(module.exports.default, { id: 'fixture-id', kind: 'REVIEW' }); app.component('el-button', { props: ['disabled'], setup: (p, { slots, attrs }) => () => Vue.h('button', { ...attrs, disabled: p.disabled }, slots.default?.()) }); const vm = app.mount(host); return { vm, host, close() { app.unmount(); host.remove() } } }

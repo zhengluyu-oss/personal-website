@@ -16,7 +16,7 @@ class ReleaseGateTest(unittest.TestCase):
     def jar(self, extra=None):
         path = self.root / "qa.jar"
         with zipfile.ZipFile(path, "w") as archive:
-            for name in ["application.yml", "META-INF/spring.factories", "xyz/kuailemao/config/ProductionConfigurationGuard.class"]:
+            for name in ["application.yml", "META-INF/spring.factories", "xyz/luyu/config/ProductionConfigurationGuard.class"]:
                 archive.writestr("BOOT-INF/classes/" + name, b"safe")
             for name, data in (extra or {}).items():
                 archive.writestr(name, data)

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { DiarySaver, diaryValidation, type DiaryWrite, type DiaryAck } from '../../blog-frontend/kuailemao-blog/src/utils/diary-save.ts'
+import { DiarySaver, diaryValidation, type DiaryWrite, type DiaryAck } from '../../blog-frontend/luyu-blog/src/utils/diary-save.ts'
 const ack = (request: DiaryWrite): DiaryAck => ({ entryId: request.entryId, mutationId: request.mutationId, revision: request.expectedRevision + 1, savedAt: '2026-10-15T04:00:00Z' })
 function queue() { const calls: { request: DiaryWrite; resolve: (value: DiaryAck) => void; reject: (error: unknown) => void }[] = []; const saver = new DiarySaver(request => new Promise((resolve, reject) => calls.push({ request, resolve, reject })), () => {}); return { saver, calls } }
 test('只读取或打开新草稿不写入；两秒停顿后自动保存', async t => {
