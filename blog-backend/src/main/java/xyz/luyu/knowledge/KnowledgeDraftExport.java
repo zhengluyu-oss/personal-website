@@ -29,7 +29,7 @@ public final class KnowledgeDraftExport {
                 throw KnowledgeFailure.invalid("来源版本或片段无效");
             // A generated article must never accidentally contain a private object pointer or bearer token.
             String lower=body.toLowerCase(Locale.ROOT);
-            if(lower.contains("/knowledge/view/files/") || lower.contains("oss://")
+            if(lower.contains("/knowledge/view/files/") || lower.contains("knowledge-image:") || lower.contains("oss://")
                     || lower.contains("authorization:") || lower.contains("bearer "))
                 throw KnowledgeFailure.invalid("草稿正文包含私有地址或凭据，请先移除");
         }

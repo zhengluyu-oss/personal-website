@@ -19,7 +19,7 @@ public final class KnowledgeStore {
     <T>T tx(long owner,Supplier<T> operation){var tx=new TransactionTemplate(manager);tx.setTimeout(8);try{return tx.execute(status->{jdbc.queryForObject("SELECT set_config('knowledge.owner_id',:owner,true)",Map.of("owner",Long.toString(owner)),String.class);return operation.get();});}catch(KnowledgeFailure f){throw f;}catch(RuntimeException f){throw KnowledgeFailure.unavailable();}}
     static String hash(Object value){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(JSON.toJSONString(value).getBytes(StandardCharsets.UTF_8)));}catch(Exception e){throw KnowledgeFailure.unavailable();}}
     static MapSqlParameterSource params(long owner,UUID id){return new MapSqlParameterSource("owner",owner).addValue("id",id);}
-    public boolean available(long owner){try{return tx(owner,()->Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT FROM knowledge.schema_version WHERE version=1) AND (SELECT count(*)=12 AND bool_and(c.relrowsecurity AND c.relforcerowsecurity AND r.rolname='knowledge_migrator') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname='knowledge' AND c.relkind='r' AND c.relname<>'schema_version') AND current_user='knowledge_runtime' AND NOT EXISTS(SELECT FROM pg_roles WHERE rolname=current_user AND (rolsuper OR rolbypassrls))",Map.of(),Boolean.class)));}catch(KnowledgeFailure f){return false;}}
+    public boolean available(long owner){try{return tx(owner,()->Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT FROM knowledge.schema_version WHERE version=1) AND EXISTS(SELECT FROM knowledge.schema_version WHERE version=2) AND (SELECT count(*)=13 AND bool_and(c.relrowsecurity AND c.relforcerowsecurity AND r.rolname='knowledge_migrator') FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_roles r ON r.oid=c.relowner WHERE n.nspname='knowledge' AND c.relkind='r' AND c.relname<>'schema_version') AND current_user='knowledge_runtime' AND NOT EXISTS(SELECT FROM pg_roles WHERE rolname=current_user AND (rolsuper OR rolbypassrls))",Map.of(),Boolean.class)));}catch(KnowledgeFailure f){return false;}}
     void lockOwner(long owner){jdbc.update("INSERT INTO knowledge.owner_control(owner_id) VALUES(:owner) ON CONFLICT DO NOTHING",Map.of("owner",owner));jdbc.queryForObject("SELECT owner_id FROM knowledge.owner_control WHERE owner_id=:owner FOR UPDATE",Map.of("owner",owner),Long.class);}
     private Content content(ResultSet r)throws SQLException {UUID category=r.getObject("category_id",UUID.class);List<UUID> tags=jdbc.query("SELECT tag_id FROM knowledge.entry_tag WHERE owner_id=:owner AND entry_id=:id ORDER BY tag_id",params(r.getLong("owner_id"),r.getObject("id",UUID.class)),(a,n)->a.getObject(1,UUID.class));return new Content(Kind.valueOf(r.getString("kind")),r.getString("title"),r.getString("body"),r.getString("source_url"),category,tags);}
     private Entry map(ResultSet r,int n)throws SQLException{return new Entry(r.getObject("id",UUID.class),r.getLong("revision"),content(r),r.getObject("current_file_version",UUID.class),r.getTimestamp("created_at").toInstant(),r.getTimestamp("updated_at").toInstant(),r.getTimestamp("deleted_at")==null?null:r.getTimestamp("deleted_at").toInstant());}
@@ -95,8 +95,8 @@ public final class KnowledgeStore {
     public PurgeResult purgeExpired(long owner){return tx(owner,()->{
         lockOwner(owner);
         var p=new MapSqlParameterSource("owner",owner);
-        long blocked=jdbc.queryForObject("SELECT count(*) FROM knowledge.entry e WHERE e.owner_id=:owner AND e.deleted_at<now()-interval '30 days' AND EXISTS(SELECT FROM knowledge.file_version f WHERE f.owner_id=e.owner_id AND f.entry_id=e.id AND f.state<>'CLEANED')",p,Long.class);
-        List<UUID> ids=jdbc.query("SELECT e.id FROM knowledge.entry e WHERE e.owner_id=:owner AND e.deleted_at<now()-interval '30 days' AND NOT EXISTS(SELECT FROM knowledge.file_version f WHERE f.owner_id=e.owner_id AND f.entry_id=e.id AND f.state<>'CLEANED') ORDER BY e.deleted_at,e.id LIMIT 50 FOR UPDATE OF e SKIP LOCKED",p,(r,n)->r.getObject(1,UUID.class));
+        long blocked=jdbc.queryForObject("SELECT count(*) FROM knowledge.entry e WHERE e.owner_id=:owner AND e.deleted_at<now()-interval '30 days' AND (EXISTS(SELECT FROM knowledge.file_version f WHERE f.owner_id=e.owner_id AND f.entry_id=e.id AND f.state<>'CLEANED') OR EXISTS(SELECT FROM knowledge.image i WHERE i.owner_id=e.owner_id AND i.entry_id=e.id AND i.state<>'CLEANED'))",p,Long.class);
+        List<UUID> ids=jdbc.query("SELECT e.id FROM knowledge.entry e WHERE e.owner_id=:owner AND e.deleted_at<now()-interval '30 days' AND NOT EXISTS(SELECT FROM knowledge.file_version f WHERE f.owner_id=e.owner_id AND f.entry_id=e.id AND f.state<>'CLEANED') AND NOT EXISTS(SELECT FROM knowledge.image i WHERE i.owner_id=e.owner_id AND i.entry_id=e.id AND i.state<>'CLEANED') ORDER BY e.deleted_at,e.id LIMIT 50 FOR UPDATE OF e SKIP LOCKED",p,(r,n)->r.getObject(1,UUID.class));
         for(UUID id:ids){
             var item=params(owner,id).addValue("entryKey",id.toString());
             jdbc.update("DELETE FROM knowledge.relation WHERE owner_id=:owner AND ((from_kind='ENTRY' AND from_id=:entryKey) OR (to_kind='ENTRY' AND to_id=:entryKey))",item);
@@ -105,6 +105,7 @@ public final class KnowledgeStore {
             jdbc.update("DELETE FROM knowledge.extracted_segment WHERE owner_id=:owner AND entry_id=:id",item);
             jdbc.update("UPDATE knowledge.entry SET current_file_version=NULL WHERE owner_id=:owner AND id=:id",item);
             jdbc.update("DELETE FROM knowledge.file_version WHERE owner_id=:owner AND entry_id=:id AND state='CLEANED'",item);
+            jdbc.update("DELETE FROM knowledge.image WHERE owner_id=:owner AND entry_id=:id AND state='CLEANED'",item);
             jdbc.update("DELETE FROM knowledge.entry_tag WHERE owner_id=:owner AND entry_id=:id",item);
             jdbc.update("DELETE FROM knowledge.entry_revision WHERE owner_id=:owner AND entry_id=:id",item);
             jdbc.update("DELETE FROM knowledge.mutation WHERE owner_id=:owner AND result->>'id'=:entryKey",item);
@@ -123,7 +124,7 @@ public final class KnowledgeStore {
             Entry entry=entry(owner,id,false,true);
             if(entry.content().kind()!=Kind.DOCUMENT)throw KnowledgeFailure.invalid("请先创建文件资料条目");
             if(entry.revision()!=revision)throw KnowledgeFailure.conflict();
-            long used=jdbc.queryForObject("SELECT coalesce(sum(size_bytes),0) FROM knowledge.file_version WHERE owner_id=:owner AND state<>'CLEANED'",Map.of("owner",owner),Long.class);
+            long used=jdbc.queryForObject("SELECT (SELECT coalesce(sum(size_bytes),0) FROM knowledge.file_version WHERE owner_id=:owner AND state<>'CLEANED')+(SELECT coalesce(sum(size_bytes),0) FROM knowledge.image WHERE owner_id=:owner AND state<>'CLEANED')",Map.of("owner",owner),Long.class);
             if(size>quota-used)throw KnowledgeFailure.invalid("知识库文件空间不足，保留版本也计入配额");
             var p=params(owner,id).addValue("version",version).addValue("next",revision+1).addValue("objectKey",objectKey)
                 .addValue("filename",filename).addValue("mime",mime).addValue("size",size).addValue("digest",digest);
@@ -182,8 +183,72 @@ public final class KnowledgeStore {
     record JobTicket(UUID jobId,UUID entryId,UUID version,UUID fence,String objectKey,String mime,long size) {}
     record OutboxMessage(UUID id,UUID jobId) {}
     record FileCleanup(UUID version,String objectKey) {}
+    record ImageCommit(UUID id,boolean accepted) {}
+    record ImageInfo(UUID entryId,String objectKey,String mime,long sizeBytes) {}
+    record ImageCleanup(UUID id,String objectKey) {}
+    List<ImageCleanup> staleImages(long owner){return tx(owner,()->jdbc.query("""
+        SELECT i.id,i.object_key FROM knowledge.image i
+          JOIN knowledge.entry e ON e.owner_id=i.owner_id AND e.id=i.entry_id
+         WHERE i.owner_id=:owner AND i.state IN('ACTIVE','CLEANUP_PENDING')
+           AND i.created_at<now()-interval '1 day'
+           AND (e.deleted_at<now()-interval '30 days' OR
+                (e.deleted_at IS NULL
+                 AND position('knowledge-image:'||i.id::text in e.body)=0
+                 AND NOT EXISTS(SELECT FROM knowledge.entry_revision r
+                                  WHERE r.owner_id=i.owner_id AND r.entry_id=i.entry_id
+                                    AND position('knowledge-image:'||i.id::text in r.content->>'body')>0)))
+         ORDER BY i.created_at,i.id LIMIT 10
+        """,Map.of("owner",owner),(r,n)->new ImageCleanup(r.getObject(1,UUID.class),r.getString(2))));}
+    boolean markImageCleanupPending(long owner,UUID id){return tx(owner,()->jdbc.update("""
+        UPDATE knowledge.image i SET state='CLEANUP_PENDING'
+         FROM knowledge.entry e
+         WHERE i.owner_id=:owner AND i.id=:id AND i.state IN('ACTIVE','CLEANUP_PENDING')
+           AND e.owner_id=i.owner_id AND e.id=i.entry_id
+           AND i.created_at<now()-interval '1 day'
+           AND (e.deleted_at<now()-interval '30 days' OR
+                (e.deleted_at IS NULL
+                 AND position('knowledge-image:'||i.id::text in e.body)=0
+                 AND NOT EXISTS(SELECT FROM knowledge.entry_revision r
+                                  WHERE r.owner_id=i.owner_id AND r.entry_id=i.entry_id
+                                    AND position('knowledge-image:'||i.id::text in r.content->>'body')>0)))
+        """,params(owner,id))==1);}
+    void markImageCleaned(long owner,UUID id){tx(owner,()->{jdbc.update("UPDATE knowledge.image SET state='CLEANED' WHERE owner_id=:owner AND id=:id AND state='CLEANUP_PENDING'",params(owner,id));return null;});}
+    ImageCommit attachImage(long owner,UUID entryId,UUID mutationId,UUID imageId,String objectKey,
+            String mime,long size,int width,int height,String sha256,long quota){
+        if(mutationId==null||imageId==null||size<1||size>quota)throw KnowledgeFailure.invalid("图片请求无效");
+        String digest=hash(List.of(entryId,mime,size,width,height,sha256));
+        return tx(owner,()->{
+            lockOwner(owner);
+            var old=jdbc.query("SELECT id,request_hash FROM knowledge.image WHERE owner_id=:owner AND mutation_id=:mutation",
+                new MapSqlParameterSource("owner",owner).addValue("mutation",mutationId),
+                (r,n)->new String[]{r.getString(1),r.getString(2)});
+            if(!old.isEmpty()){
+                if(!digest.equals(old.get(0)[1]))throw KnowledgeFailure.conflict();
+                return new ImageCommit(UUID.fromString(old.get(0)[0]),false);
+            }
+            entry(owner,entryId,false,true);
+            long used=jdbc.queryForObject("SELECT (SELECT coalesce(sum(size_bytes),0) FROM knowledge.file_version WHERE owner_id=:owner AND state<>'CLEANED')+(SELECT coalesce(sum(size_bytes),0) FROM knowledge.image WHERE owner_id=:owner AND state<>'CLEANED')",Map.of("owner",owner),Long.class);
+            if(size>quota-used)throw KnowledgeFailure.invalid("知识库文件空间不足");
+            var p=params(owner,imageId).addValue("entry",entryId).addValue("mutation",mutationId).addValue("digest",digest)
+                .addValue("key",objectKey).addValue("mime",mime).addValue("size",size).addValue("width",width).addValue("height",height);
+            jdbc.update("INSERT INTO knowledge.image(owner_id,id,entry_id,mutation_id,request_hash,object_key,mime,size_bytes,width,height,state) VALUES(:owner,:id,:entry,:mutation,:digest,:key,:mime,:size,:width,:height,'ACTIVE')",p);
+            return new ImageCommit(imageId,true);
+        });
+    }
+    ImageInfo image(long owner,UUID imageId,boolean allowUnreferenced){return tx(owner,()->{
+        var p=params(owner,imageId);
+        var rows=jdbc.query("SELECT i.entry_id,i.object_key,i.mime,i.size_bytes,e.body FROM knowledge.image i JOIN knowledge.entry e ON e.owner_id=i.owner_id AND e.id=i.entry_id WHERE i.owner_id=:owner AND i.id=:id AND i.state='ACTIVE' AND e.deleted_at IS NULL",p,
+            (r,n)->new Object[]{r.getObject(1,UUID.class),r.getString(2),r.getString(3),r.getLong(4),r.getString(5)});
+        if(rows.isEmpty())throw new KnowledgeFailure(404,"图片不存在或不可访问");
+        Object[] row=rows.get(0);UUID entryId=(UUID)row[0];
+        if(!allowUnreferenced&&!((String)row[4]).contains("knowledge-image:"+imageId)){
+            boolean historical=Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT FROM knowledge.entry_revision WHERE owner_id=:owner AND entry_id=:entry AND position(:reference in content->>'body')>0)",p.addValue("entry",entryId).addValue("reference","knowledge-image:"+imageId),Boolean.class));
+            if(!historical)throw new KnowledgeFailure(404,"图片不存在或不可访问");
+        }
+        return new ImageInfo(entryId,(String)row[1],(String)row[2],(long)row[3]);
+    });}
     boolean registeredObjectKey(long owner,String objectKey){return tx(owner,()->Boolean.TRUE.equals(jdbc.queryForObject(
-        "SELECT EXISTS(SELECT FROM knowledge.file_version WHERE owner_id=:owner AND object_key=:key AND state<>'CLEANED')",
+        "SELECT EXISTS(SELECT FROM knowledge.file_version WHERE owner_id=:owner AND object_key=:key AND state<>'CLEANED') OR EXISTS(SELECT FROM knowledge.image WHERE owner_id=:owner AND object_key=:key AND state<>'CLEANED')",
         Map.of("owner",owner,"key",objectKey),Boolean.class)));}
     List<FileCleanup> staleFiles(long owner){return tx(owner,()->jdbc.query("SELECT f.id,f.object_key FROM knowledge.file_version f JOIN knowledge.entry e ON e.owner_id=f.owner_id AND e.id=f.entry_id WHERE f.owner_id=:owner AND f.state IN('CLAIMED','CLEANUP_PENDING') AND f.id IS DISTINCT FROM e.current_file_version AND f.created_at<now()-interval '30 days' OR f.owner_id=:owner AND f.state IN('CLAIMED','CLEANUP_PENDING') AND e.deleted_at<now()-interval '30 days' ORDER BY f.created_at LIMIT 10",Map.of("owner",owner),(r,n)->new FileCleanup(r.getObject(1,UUID.class),r.getString(2))));}
     void markCleanupPending(long owner,UUID version){tx(owner,()->{jdbc.update("UPDATE knowledge.file_version SET state='CLEANUP_PENDING' WHERE owner_id=:owner AND id=:id AND state='CLAIMED'",params(owner,version));return null;});}

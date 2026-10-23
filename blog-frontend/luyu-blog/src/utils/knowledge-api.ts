@@ -37,3 +37,16 @@ export async function knowledgeDownloadFile(entryId: string, version: string, fi
   try { const link = document.createElement('a'); link.href = url; link.download = filename; link.click() }
   finally { setTimeout(() => URL.revokeObjectURL(url), 60000) }
 }
+
+export async function knowledgeImageBlob(imageId: string): Promise<Blob> {
+  const token = GET_TOKEN()
+  if (new URL(client.defaults.baseURL || '/api', location.href).origin !== location.origin) throw new Error('知识库仅允许同源读取')
+  try {
+    const response = await client.get(`/knowledge/view/images/${imageId}/content`, { headers: { ...(token ? { Authorization: Jwt_Prefix + token } : {}) }, responseType: 'blob', timeout: 30000 })
+    return response.data as Blob
+  } catch (failure: any) {
+    const status = Number(failure.status || failure.response?.status)
+    if ([401, 403].includes(status) && GET_TOKEN() === token) window.dispatchEvent(new CustomEvent('knowledge-access-invalid'))
+    throw new Error(failure.response?.data?.msg || failure.message || '图片读取失败')
+  }
+}

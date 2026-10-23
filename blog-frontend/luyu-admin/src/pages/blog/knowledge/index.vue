@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
-import { MdPreview } from 'md-editor-v3'
+import { MdEditor } from 'md-editor-v3'
 import Connections from './Connections.vue'
 import Draft from './Draft.vue'
+import PrivateMarkdown from './PrivateMarkdown.vue'
 import 'md-editor-v3/lib/style.css'
-import { sanitizePrivateDiary } from '~/utils/knowledge-preview'
 import { useAuthorization } from '~/composables/authorization'
-import { knowledgeRequest as request, knowledgeUploadFile, knowledgeDownloadFile, type KnowledgeFileInfo, type KnowledgeAck, type KnowledgeCapability, type KnowledgeContent, type KnowledgeEntry, type KnowledgeLabel, type KnowledgePage } from '~/utils/knowledge-api'
+import { knowledgeRequest as request, knowledgeUploadFile, knowledgeDownloadFile, knowledgeUploadImage, type KnowledgeFileInfo, type KnowledgeAck, type KnowledgeCapability, type KnowledgeContent, type KnowledgeEntry, type KnowledgeLabel, type KnowledgePage } from '~/utils/knowledge-api'
 
 const authorization = useAuthorization()
 const capability = ref<KnowledgeCapability>(), rows = ref<KnowledgeEntry[]>([]), labels = ref<KnowledgeLabel[]>([])
@@ -15,7 +15,8 @@ const selected = ref<KnowledgeEntry>(), editor = ref<KnowledgeContent>(), baseli
 const keyword = ref(''), kind = ref(''), category = ref(''), tag = ref(''), trash = ref(false), page = ref(1), total = ref(0)
 const busy = ref(false), saving = ref(false), error = ref(''), notice = ref(''), preview = ref(true)
 const history = ref<{ revision: number; content: KnowledgeContent; savedAt: string }[]>([])
-const currentFile = ref<KnowledgeFileInfo>(), uploadingFile = ref(false)
+const currentFile = ref<KnowledgeFileInfo>(), uploadingFile = ref(false), uploadingImage = ref(false)
+const imageMutations = new Map<string, string>()
 type ExtractedSegment = { ordinal: number; page: number | null; fromLine: number | null; toLine: number | null; text: string }
 const fileSegments = ref<ExtractedSegment[]>([]), fileSegmentsPage = ref(1), fileSegmentsTotal = ref(0), fileSegmentsVisible = ref(false)
 type SearchLocation = { excerpt: string; page: number | null; fromLine: number | null; toLine: number | null }
@@ -30,7 +31,7 @@ let generation = 0, listSequence = 0, detailSequence = 0, fileSegmentsSequence =
 let pending: { snapshot: string; mutationId: string } | undefined
 let filePending: { entryId: string; revision: number; fingerprint: string; mutationId: string } | undefined
 let timer: ReturnType<typeof setInterval> | undefined
-const discard = () => !dirty.value || window.confirm('编辑尚未获得服务器保存确认，确定离开并放弃吗？')
+const discard = () => !uploadingImage.value && (!dirty.value || window.confirm('编辑尚未获得服务器保存确认，确定离开并放弃吗？'))
 function clearPrivate() { generation++; listSequence++; detailSequence++; fileSegmentsSequence++; rows.value = []; labels.value = []; searchLocations.value = {}; selected.value = undefined; editor.value = undefined; currentFile.value = undefined; fileSegments.value = []; fileSegmentsVisible.value = false; history.value = []; total.value = 0; pending = undefined; filePending = undefined; baseline.value = ''; saving.value = false; busy.value = false }
 function denied() { clearPrivate(); capability.value = undefined; error.value = '查看资格已变化，请重新确认权限。' }
 async function check(reset = false) {
@@ -121,8 +122,8 @@ async function changeFileJob(retry: boolean) {
     if (current === generation && seq === detailSequence && selected.value?.id === entryId) currentFile.value = result
   } catch (failure: any) { if (current === generation) error.value = failure.message }
 }
-async function save() {
-  if (!editor.value || saving.value) return
+async function save(): Promise<boolean> {
+  if (!editor.value || saving.value) return false
   const snapshot = JSON.stringify(editor.value), current = generation, detail = detailSequence
   if (!pending || pending.snapshot !== snapshot) pending = { snapshot, mutationId: crypto.randomUUID() }
   const id = selected.value?.id || crypto.randomUUID()
@@ -131,10 +132,34 @@ async function save() {
   saving.value = true; error.value = ''; notice.value = '正在等待服务器保存确认…'
   try {
     const ack = await request<KnowledgeAck>('POST', '/manage/entries', { mutationId: pending.mutationId, entryId: id, expectedRevision: selected.value.revision, content: JSON.parse(snapshot) })
-    if (current !== generation || detail !== detailSequence || selected.value?.id !== id || disposed) return
+    if (current !== generation || detail !== detailSequence || selected.value?.id !== id || disposed) return false
     selected.value.revision = ack.revision; baseline.value = snapshot; pending = undefined; notice.value = '已可靠保存 · 版本 ' + ack.revision; await load()
-  } catch (e: any) { if (current === generation && detail === detailSequence && selected.value?.id === id) { error.value = e.status === 409 ? '服务器版本已变化。编辑仍保留，请先复制正文，再重新打开条目核对。' : e.message; notice.value = '尚未确认保存，请保留编辑' } }
+    return true
+  } catch (e: any) { if (current === generation && detail === detailSequence && selected.value?.id === id) { error.value = e.status === 409 ? '服务器版本已变化。编辑仍保留，请先复制正文，再重新打开条目核对。' : e.message; notice.value = '尚未确认保存，请保留编辑' } return false }
   finally { if (current === generation) saving.value = false }
+}
+async function uploadBodyImages(files: File[], callback: (urls: string[]) => void) {
+  if (!editor.value || uploadingImage.value) return
+  if (!editor.value.title.trim()) { error.value = '请先填写标题，再插入图片'; return }
+  if (!selected.value?.revision && !await save()) return
+  const entryId = selected.value?.id
+  if (!entryId) return
+  uploadingImage.value = true; error.value = ''; notice.value = '正在私密上传图片…'
+  try {
+    const urls: string[] = []
+    for (const file of files) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) throw new Error('仅支持小于 5 MiB 的 JPG、PNG 或 WebP 图片')
+      const fingerprint = `${entryId}:${file.name}:${file.size}:${file.lastModified}`
+      const mutation = imageMutations.get(fingerprint) || crypto.randomUUID()
+      imageMutations.set(fingerprint, mutation)
+      const imageId = await knowledgeUploadImage(entryId, mutation, file)
+      imageMutations.delete(fingerprint)
+      urls.push(`knowledge-image:${imageId}`)
+    }
+    callback(urls)
+    notice.value = '图片已私密上传，请保存正文以保留引用。'
+  } catch (failure: any) { error.value = failure.message || '图片上传失败，请重试'; notice.value = '正文未插入失败图片' }
+  finally { uploadingImage.value = false }
 }
 async function action(name: 'delete' | 'restore' | 'recover', sourceRevision?: number) {
   if (!selected.value || !discard() || !window.confirm(name === 'delete' ? '移入回收站？将立即停止对外显示。' : '确认恢复？将产生新的版本。')) return
@@ -172,7 +197,7 @@ async function purgeExpired() {
     await load()
   } catch (failure: any) { error.value = failure.message }
 }
-function beforeUnload(e: BeforeUnloadEvent) { if (dirty.value) { e.preventDefault(); e.returnValue = '' } }
+function beforeUnload(e: BeforeUnloadEvent) { if (dirty.value || uploadingImage.value) { e.preventDefault(); e.returnValue = '' } }
 const refresh = () => { void check() }
 watch(() => authorization.value, () => { void check(true) }, { immediate: true, flush: 'sync' })
 onBeforeRouteLeave(discard)
@@ -204,7 +229,7 @@ onBeforeUnmount(() => { disposed = true; clearPrivate(); clearInterval(timer); w
               <div class="metadata"><label>类型<select v-model="editor.kind" :disabled="!!selected?.revision || saving"><option v-for="(name, key) in kindNames" :key="key" :value="key">{{ name }}</option></select></label><label>分类<select v-model="editor.categoryId" :disabled="saving"><option :value="null">未分类</option><option v-for="l in categoryOptions" :key="l.id" :value="l.id">{{ l.name }}</option></select></label></div>
               <label>来源链接（仅记录）<input v-model="editor.sourceUrl" maxlength="2000" :disabled="saving" placeholder="https://…"></label>
               <fieldset class="tag-picker" :disabled="saving"><legend>标签（最多20个）</legend><p v-if="!tagOptions.length">暂无标签，请先在“分类与标签”中添加。</p><label v-for="l in tagOptions" :key="l.id"><input v-model="editor.tagIds" type="checkbox" :value="l.id" :disabled="saving || (!editor.tagIds.includes(l.id) && editor.tagIds.length >= 20)">{{ l.name }}</label></fieldset>
-              <label>Markdown 正文<textarea v-model="editor.body" :disabled="saving" rows="18" spellcheck="false" /></label>
+              <div class="markdown-field"><span class="field-title">Markdown 正文</span><MdEditor v-model="editor.body" :disabled="saving || uploadingImage" :preview="false" style="height:460px" @onUploadImg="uploadBodyImages" /></div>
               <div class="actions"><button :disabled="saving || !editor.title.trim()" @click="save">{{ saving ? '正在保存…' : '保存条目' }}</button><button @click="preview = !preview">{{ preview ? '收起预览' : '阅读预览' }}</button><button v-if="selected?.revision" @click="versions">历史版本</button><button v-if="selected?.revision" @click="action('delete')">移入回收站</button></div><p role="status">{{ notice }}{{ dirty ? ' · 有未确认编辑' : '' }}</p>
             </template>
             <template v-else><h2>{{ editor.title }}</h2><p v-if="editor.sourceUrl">来源：<a :href="editor.sourceUrl" rel="noopener noreferrer" target="_blank">{{ editor.sourceUrl }}</a></p><button v-if="capability.canManage && selected?.deletedAt" @click="action('restore')">恢复条目</button></template>
@@ -217,7 +242,7 @@ onBeforeUnmount(() => { disposed = true; clearPrivate(); clearInterval(timer); w
               <div v-if="fileSegmentsVisible" class="extracted-content"><article v-for="segment in fileSegments" :key="segment.ordinal"><strong>{{ segment.page ? `第 ${segment.page} 页` : `第 ${segment.fromLine}–${segment.toLine} 行` }}</strong><pre>{{ segment.text }}</pre></article><nav><button :disabled="fileSegmentsPage <= 1" @click="showFileSegments(fileSegmentsPage - 1)">上一页</button><span>{{ fileSegmentsPage }} / {{ Math.max(1, Math.ceil(fileSegmentsTotal / 20)) }}</span><button :disabled="fileSegmentsPage * 20 >= fileSegmentsTotal" @click="showFileSegments(fileSegmentsPage + 1)">下一页</button></nav></div>
               <small>仅站主可上传；有知识库查看权限的读者可下载当前文件。历史版本不提供下载。</small>
             </section>
-            <MdPreview v-if="preview || !capability.canManage" :model-value="editor.body" :sanitize="sanitizePrivateDiary" />
+            <PrivateMarkdown v-if="preview || !capability.canManage" :body="editor.body" />
             <Connections v-if="selected && selected.revision > 0 && !selected.deletedAt" :key="selected.id" :entry="selected" :candidates="rows" :can-manage="capability.canManage" @open="open" />
             <details v-if="history.length" open><summary>历史版本（最近20版）</summary><div v-for="v in history" :key="v.revision" class="version"><strong>版本 {{ v.revision }} · {{ v.content.title }}</strong><button @click="action('recover', v.revision)">恢复此版本</button></div></details>
           </template>
@@ -232,4 +257,5 @@ onBeforeUnmount(() => { disposed = true; clearPrivate(); clearInterval(timer); w
 <style scoped>
 .knowledge-workspace{max-width:1280px;margin:0 auto 50px;padding:24px;color:#24364b}header{display:flex;justify-content:space-between;align-items:center;gap:20px;border-bottom:1px solid #dfe5ed;padding-bottom:24px}h1{font-size:32px;margin:5px 0}p{line-height:1.8}.eyebrow,small,time{color:#64748b;font-size:12px}.filters,.metadata,.actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.filters{padding:22px 0}.columns{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px}aside,.detail{border:1px solid #dfe5ed;border-radius:12px;padding:20px;background:#fff}ul{list-style:none;padding:0}li button{display:grid;text-align:left;width:100%;gap:7px;margin:8px 0;padding:14px}.active{border-color:#285de0;background:#edf3ff}.detail label{display:grid;gap:8px;margin-bottom:18px}.search-context{margin-bottom:20px;padding:14px;border-left:3px solid #285de0;background:#edf3ff;overflow-wrap:anywhere}.search-context p{margin:6px 0 0}.extracted-content{border-top:1px solid #dfe5ed;margin-top:16px;padding-top:12px}.extracted-content article{padding:12px 0;border-bottom:1px solid #e4e9ef}.extracted-content pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:420px;overflow:auto;font:inherit;line-height:1.7}input,select,textarea,button{font:inherit;border:1px solid #cdd6e2;border-radius:6px;padding:9px 12px;max-width:100%;box-sizing:border-box}button{cursor:pointer;background:transparent;color:inherit}button:disabled{opacity:.5;cursor:default}textarea{resize:vertical;width:100%;line-height:1.8}input[type=checkbox]{width:auto}.filters>input{flex:1;min-width:160px}.metadata>label{flex:1}nav{display:flex;align-items:center;justify-content:space-between}.empty{padding:35px 10px}.error{border-left:3px solid #b23d32;background:#fff1ee;padding:14px}.version{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid #e1e6ed}strong{overflow-wrap:anywhere}a{color:#285de0}@media(max-width:760px){.knowledge-workspace{padding:16px}.columns{grid-template-columns:1fr}header{align-items:flex-start}.detail,aside{padding:16px}.version{flex-wrap:wrap}}
 .tag-picker{display:flex;flex-wrap:wrap;gap:8px 16px;margin:0 0 18px;border:1px solid #cdd6e2;border-radius:6px;padding:12px}.tag-picker legend{padding:0 4px}.tag-picker label{display:inline-flex;align-items:center;gap:6px;margin:0;cursor:pointer}.tag-picker input{margin:0}.tag-picker p{margin:0}
+.markdown-field{margin-bottom:18px}.field-title{display:block;margin-bottom:8px}
 </style>

@@ -63,6 +63,24 @@ export async function knowledgeUploadFile(entryId: string, revision: number, mut
     return response.data.data as KnowledgeFileCommit
   } catch (error) { return failure(error) }
 }
+
+export async function knowledgeUploadImage(entryId: string, mutationId: string, file: File): Promise<string> {
+  sameOrigin()
+  const body = new FormData(); body.append('mutationId', mutationId); body.append('file', file, file.name)
+  try {
+    const response = await client.post(`/knowledge/manage/entries/${entryId}/images`, body, { headers: { Authorization: 'Bearer ' + token() }, timeout: 120000 })
+    if (response.data?.code !== 200 || typeof response.data.data !== 'string') throw new Error(response.data?.msg || '图片上传失败')
+    return response.data.data
+  } catch (error) { return failure(error) }
+}
+
+export async function knowledgeImageBlob(imageId: string): Promise<Blob> {
+  sameOrigin()
+  try {
+    const response = await client.get(`/knowledge/view/images/${imageId}/content`, { headers: { Authorization: 'Bearer ' + token() }, responseType: 'blob', timeout: 30000 })
+    return response.data as Blob
+  } catch (error) { return failure(error) }
+}
 export async function knowledgeDownloadFile(entryId: string, version: string, filename: string): Promise<void> {
   sameOrigin()
   try {

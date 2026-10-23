@@ -79,6 +79,13 @@ public final class KnowledgeProcessing {
                     store.markCleaned(owner,file.version());
                 }catch(Exception ignored){/* Retry this object in the next pass without blocking other cleanup. */}
             }
+            for(var image:store.staleImages(owner)){
+                try{
+                    if(!store.markImageCleanupPending(owner,image.id()))continue;
+                    objects.delete(image.objectKey());
+                    store.markImageCleaned(owner,image.id());
+                }catch(Exception ignored){/* Keep pending state so the next scan retries deletion. */}
+            }
             // An upload can reach OSS but fail before its PostgreSQL claim is committed.
             // Wait a day before reclaiming such objects so an in-flight upload is never deleted.
             for(String key:objects.oldObjectKeys(Instant.now().minus(1,ChronoUnit.DAYS))){

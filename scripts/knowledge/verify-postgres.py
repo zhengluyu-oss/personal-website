@@ -26,6 +26,8 @@ try:
     assert sql(broken,False).returncode!=0
     assert sql("SELECT to_regnamespace('knowledge') IS NULL").stdout.strip()=='t'
     sql(migration);sql(migration)
+    image_migration=(ROOT/'scripts/knowledge/002-private-images.sql').read_text(encoding='utf-8')
+    sql(image_migration);sql(image_migration)
     env=os.environ.copy();env['BLOG_KNOWLEDGE_QA']='true'
     missing=pathlib.Path(os.environ.get('TEMP','.'))/('qa-missing-'+uuid.uuid4().hex)
     jvm=['-DargLine=-Djdk.net.unixdomain.tmpdir='+missing.as_posix()] if os.name=='nt' else []

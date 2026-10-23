@@ -22,7 +22,7 @@ exec 9>"$backup_root/.backup.lock"
 flock -n 9 || { echo 'KNOWLEDGE_BACKUP_BUSY' >&2; exit 1; }
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 pending=$(mktemp -d "$backup_root/.pending-$stamp-XXXXXXXX")
-final="$backup_root/knowledge-v1-$stamp"
+final="$backup_root/knowledge-v2-$stamp"
 [[ ! -e $final ]]
 trap 'echo "KNOWLEDGE_BACKUP_INCOMPLETE $pending" >&2' ERR
 
@@ -41,7 +41,7 @@ mysqldump --defaults-extra-file="$KNOWLEDGE_MYSQL_DEFAULTS_FILE" --single-transa
 # of object bytes; OSS durability/versioning and a separate object copy are
 # required for recovery after Bucket loss.
 runuser -u postgres -- psql --no-psqlrc --quiet --tuples-only --dbname="$KNOWLEDGE_PG_DATABASE" \
-  --command="COPY (SELECT owner_id,id,entry_id,object_key,sha256,size_bytes,state FROM knowledge.file_version WHERE state IN ('CLAIMED','CLEANUP_PENDING') ORDER BY owner_id,id) TO STDOUT WITH (FORMAT csv,HEADER true)" |
+  --command="COPY (SELECT owner_id,id,entry_id,object_key,sha256,size_bytes,state FROM knowledge.file_version WHERE state IN ('CLAIMED','CLEANUP_PENDING') UNION ALL SELECT owner_id,id,entry_id,object_key,'' AS sha256,size_bytes,state FROM knowledge.image WHERE state IN ('ACTIVE','CLEANUP_PENDING') ORDER BY owner_id,id) TO STDOUT WITH (FORMAT csv,HEADER true)" |
   age --recipient "$recipient" --output "$pending/private-object-inventory.csv.age"
 
 for file in "$pending"/*.age; do test -s "$file"; done
@@ -49,7 +49,7 @@ for file in "$pending"/*.age; do test -s "$file"; done
   cd "$pending"
   sha256sum -- *.age > SHA256SUMS
 )
-printf 'format=knowledge-v1\ncreated_utc=%s\npg_database=%s\nmysql_database=%s\nobject_inventory=database-referenced-only\n' \
+printf 'format=knowledge-v2\ncreated_utc=%s\npg_database=%s\nmysql_database=%s\nobject_inventory=database-referenced-only\n' \
   "$stamp" "$KNOWLEDGE_PG_DATABASE" "$KNOWLEDGE_MYSQL_DATABASE" > "$pending/MANIFEST"
 chmod 0600 "$pending"/*
 mv -- "$pending" "$final"

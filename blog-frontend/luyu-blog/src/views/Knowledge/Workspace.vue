@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { MdPreview } from 'md-editor-v3'
+import PrivateMarkdown from './PrivateMarkdown.vue'
 import Connections from './Connections.vue'
 import 'md-editor-v3/lib/style.css'
-import { sanitizePrivateDiary } from '@/utils/diary-preview'
 import useUserStore from '@/store/modules/user'
 import { knowledgeRequest as request, knowledgeDownloadFile, type KnowledgeCapability, type KnowledgeEntry, type KnowledgeFileInfo, type KnowledgeLabel, type KnowledgePage } from '@/utils/knowledge-api'
 
@@ -117,7 +116,7 @@ onBeforeUnmount(() => { disposed = true; clear(); clearInterval(timer); window.r
             <h2>{{ selected.content.title }}</h2>
             <p v-if="selected.content.sourceUrl">来源：<a :href="selected.content.sourceUrl" rel="noopener noreferrer" target="_blank">{{ selected.content.sourceUrl }}</a></p>
             <section v-if="selected.content.kind === 'DOCUMENT' && selected.fileVersion && capability.filesAvailable" class="knowledge-file"><h3>原始文件</h3><p v-if="currentFile">{{ currentFile.filename }} · {{ (currentFile.sizeBytes / 1048576).toFixed(1) }} MiB · {{ currentFile.state === 'READY' ? '文字已提取，可检索' : '文字提取尚未完成' }}</p><button v-if="currentFile" @click="download">下载原文件</button><button v-if="currentFile?.state === 'READY'" @click="showSegments ? showSegments = false : loadSegments()">{{ showSegments ? '收起提取内容' : '查看提取内容与页码' }}</button><div v-if="showSegments" class="extracted-content"><article v-for="segment in segments" :key="segment.ordinal"><strong>{{ segment.page ? `第 ${segment.page} 页` : `第 ${segment.fromLine}–${segment.toLine} 行` }}</strong><pre>{{ segment.text }}</pre></article><nav><button :disabled="segmentPage <= 1" @click="loadSegments(segmentPage - 1)">上一页</button><span>{{ segmentPage }} / {{ Math.max(1, Math.ceil(segmentTotal / 20)) }}</span><button :disabled="segmentPage * 20 >= segmentTotal" @click="loadSegments(segmentPage + 1)">下一页</button></nav></div></section>
-            <MdPreview :model-value="selected.content.body" :sanitize="sanitizePrivateDiary" />
+            <PrivateMarkdown :body="selected.content.body" />
             <Connections :key="selected.id" :entry="selected" @open="open" />
           </template>
           <div v-else class="empty"><h2>从一条笔记开始</h2><p>选择左侧资料阅读；维护知识库请前往管理后台。</p></div>

@@ -44,6 +44,28 @@ class KnowledgeStorePostgresTest {
         assertThrows(Exception.class,()->store.jdbc.queryForObject("SELECT count(*) FROM diary.canary",Map.of(),Long.class));
         assertTrue(store.available(201));
     }
+    @Test void privateImagesRespectOwnerReferencesHistoryAndCleanup(){
+        long owner=880;UUID entry=UUID.randomUUID(),image=UUID.randomUUID(),mutation=UUID.randomUUID();
+        store.save(owner,write(entry,0,"初稿"));
+        String key="knowledge/private/objects/"+UUID.randomUUID();
+        var first=store.attachImage(owner,entry,mutation,image,key,"image/png",128,8,8,"a".repeat(64),1024);
+        assertEquals(image,first.id());assertTrue(first.accepted());
+        assertEquals(image,store.attachImage(owner,entry,mutation,UUID.randomUUID(),"knowledge/private/objects/"+UUID.randomUUID(),"image/png",128,8,8,"a".repeat(64),1024).id());
+        assertEquals(409,assertThrows(KnowledgeFailure.class,()->store.attachImage(owner,entry,mutation,UUID.randomUUID(),key,"image/png",129,8,8,"a".repeat(64),1024)).status());
+        assertEquals(404,assertThrows(KnowledgeFailure.class,()->store.image(owner,image,false)).status());
+        assertEquals(404,assertThrows(KnowledgeFailure.class,()->store.image(owner+1,image,true)).status());
+        store.save(owner,write(entry,1,"![图](knowledge-image:"+image+")"));
+        assertEquals(key,store.image(owner,image,false).objectKey());
+        store.tx(owner,()->{store.jdbc.update("UPDATE knowledge.image SET created_at=now()-interval '2 days' WHERE owner_id=:owner AND id=:id",KnowledgeStore.params(owner,image));return null;});
+        assertTrue(store.staleImages(owner).isEmpty());
+        store.save(owner,write(entry,2,"已移除图片"));
+        assertTrue(store.staleImages(owner).isEmpty());
+        store.action(owner,entry,new Action(UUID.randomUUID(),3,null),"DELETE");
+        store.tx(owner,()->{store.jdbc.update("UPDATE knowledge.entry SET deleted_at=now()-interval '31 days' WHERE owner_id=:owner AND id=:id",KnowledgeStore.params(owner,entry));return null;});
+        assertEquals(image,store.staleImages(owner).get(0).id());
+        store.markImageCleanupPending(owner,image);store.markImageCleaned(owner,image);
+        assertEquals(1,store.purgeExpired(owner).purged());
+    }
     @Test void deletedEntriesDisappearAndRestoreWithNewRevision(){
         long owner=300;UUID id=UUID.randomUUID();store.save(owner,write(id,0,"正文"));
         Action remove=new Action(UUID.randomUUID(),1,null);Ack ack=store.action(owner,id,remove,"DELETE");
