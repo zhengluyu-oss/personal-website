@@ -118,8 +118,7 @@ onBeforeUnmount(() => { disposed = true; clear(); clearInterval(timer); window.r
       </form>
       <div class="columns" :class="{ 'reading-mode': selected }">
         <aside v-if="!selected"><p>{{ total }} 个条目</p><ul><li v-for="row in rows" :key="row.id"><button @click="open(row.id)"><small>{{ kinds[row.content.kind] }}</small><strong>{{ row.content.title }}</strong><span v-if="keyword">{{ matches[row.id]?.excerpt }}</span><small v-if="keyword && matches[row.id]?.page">命中第 {{ matches[row.id].page }} 页</small><small v-else-if="keyword && matches[row.id]?.fromLine">命中第 {{ matches[row.id].fromLine }}–{{ matches[row.id].toLine }} 行</small><time>{{ new Date(row.updatedAt).toLocaleDateString('zh-CN') }}</time></button></li></ul><p v-if="!busy && !rows.length">当前范围没有条目。</p><nav><button :disabled="page <= 1 || busy" @click="page--; load()">上一页</button><span>{{ page }}</span><button :disabled="page * 20 >= total || busy" @click="page++; load()">下一页</button></nav></aside>
-        <section class="detail">
-          <template v-if="selected">
+        <section v-if="selected" class="detail">
             <button class="back-to-list" type="button" @click="closeDetail">← 返回条目列表</button>
             <div v-if="keyword && matches[selected.id]?.excerpt" class="search-context"><strong>本次检索命中</strong><span v-if="matches[selected.id].page"> · 文件第 {{ matches[selected.id].page }} 页</span><span v-else-if="matches[selected.id].fromLine"> · 第 {{ matches[selected.id].fromLine }}–{{ matches[selected.id].toLine }} 行</span><p>{{ matches[selected.id].excerpt }}</p></div>
             <h2>{{ selected.content.title }}</h2>
@@ -127,8 +126,6 @@ onBeforeUnmount(() => { disposed = true; clear(); clearInterval(timer); window.r
             <section v-if="selected.content.kind === 'DOCUMENT' && selected.fileVersion && capability.filesAvailable" class="knowledge-file"><h3>原始文件</h3><p v-if="currentFile">{{ currentFile.filename }} · {{ (currentFile.sizeBytes / 1048576).toFixed(1) }} MiB · {{ currentFile.state === 'READY' ? '文字已提取，可检索' : '文字提取尚未完成' }}</p><button v-if="currentFile" @click="download">下载原文件</button><button v-if="currentFile?.state === 'READY'" @click="showSegments ? showSegments = false : loadSegments()">{{ showSegments ? '收起提取内容' : '查看提取内容与页码' }}</button><div v-if="showSegments" class="extracted-content"><article v-for="segment in segments" :key="segment.ordinal"><strong>{{ segment.page ? `第 ${segment.page} 页` : `第 ${segment.fromLine}–${segment.toLine} 行` }}</strong><pre>{{ segment.text }}</pre></article><nav><button :disabled="segmentPage <= 1" @click="loadSegments(segmentPage - 1)">上一页</button><span>{{ segmentPage }} / {{ Math.max(1, Math.ceil(segmentTotal / 20)) }}</span><button :disabled="segmentPage * 20 >= segmentTotal" @click="loadSegments(segmentPage + 1)">下一页</button></nav></div></section>
             <PrivateMarkdown :key="selected.id" :body="selected.content.body" />
             <Connections :key="selected.id" :entry="selected" @open="open" />
-          </template>
-          <div v-else class="empty"><h2>从一条笔记开始</h2><p>选择左侧资料阅读；维护知识库请前往管理后台。</p></div>
         </section>
       </div>
     </template>
@@ -139,6 +136,11 @@ onBeforeUnmount(() => { disposed = true; clear(); clearInterval(timer); window.r
 .knowledge-reader{max-width:1280px;margin:90px auto 50px;padding:24px;color:var(--font-color,#24364b)}header{border-bottom:1px solid #dfe5ed;padding-bottom:24px}h1{font-size:32px;margin:5px 0}p{line-height:1.8}.eyebrow,small,time{color:#64748b;font-size:12px}.filters,nav{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.filters{padding:22px 0}.filters>input{flex:1;min-width:160px}.columns{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px}aside,.detail{border:1px solid #dfe5ed;border-radius:12px;padding:20px;background:var(--card-bg,#fff)}ul{list-style:none;padding:0}li button{display:grid;text-align:left;width:100%;gap:7px;margin:8px 0;padding:14px}.active,.search-context{background:#edf3ff}.search-context{padding:14px;border-left:3px solid #285de0;overflow-wrap:anywhere}.knowledge-file,.extracted-content{border-top:1px solid #dfe5ed;margin-top:16px;padding-top:12px}.extracted-content pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:420px;overflow:auto;font:inherit;line-height:1.7}input,select,button{font:inherit;border:1px solid #cdd6e2;border-radius:6px;padding:9px 12px;max-width:100%;box-sizing:border-box}button{cursor:pointer;background:transparent;color:inherit}button:disabled{opacity:.5;cursor:default}.empty{padding:35px 10px}.error{border-left:3px solid #b23d32;background:#fff1ee;padding:14px}strong{overflow-wrap:anywhere}a{color:#285de0}@media(max-width:760px){.knowledge-reader{padding:16px;margin-top:70px}.columns{grid-template-columns:1fr}aside,.detail{padding:16px}}
 .knowledge-reader{box-sizing:border-box;width:100%;min-width:0}
 .columns,aside,.detail{min-width:0}
+.columns{grid-template-columns:minmax(0,1fr)}
+aside ul{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:12px;margin:16px 0 20px}
+aside li{min-width:0}
+aside li button{height:100%;margin:0;align-content:start}
+aside li time{align-self:end}
 .columns.reading-mode{grid-template-columns:minmax(0,1fr)}
 .back-to-list{margin-bottom:12px;border:0;padding:8px 0;color:var(--brand-accent-strong,#285de0);font-weight:600}
 .back-to-list:hover{text-decoration:underline}
