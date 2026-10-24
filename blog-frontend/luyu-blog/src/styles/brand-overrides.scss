@@ -30,9 +30,16 @@ nav:has(#menu-left) {
 }
 
 nav:has(#menu-left) #blog-info a,
-nav:has(#menu-left) .menus_item > span {
+nav:has(#menu-left) .menus_item > span,
+nav:has(#menu-left) .blog-menu > .blog-destination,
+nav:has(#menu-left) .blog-menu > .category-toggle {
   color: var(--brand-ink) !important;
   text-shadow: none !important;
+}
+
+nav:has(#menu-left) .blog-menu > .blog-destination .el-icon,
+nav:has(#menu-left) .blog-menu > .category-toggle .el-icon {
+  color: inherit !important;
 }
 
 nav:has(#menu-left) #blog-info a {
@@ -40,7 +47,9 @@ nav:has(#menu-left) #blog-info a {
   letter-spacing: -.025em;
 }
 
-nav:has(#menu-left) .menus_item:hover > span {
+nav:has(#menu-left) .menus_item:hover > span,
+nav:has(#menu-left) .blog-menu:hover > .blog-destination,
+nav:has(#menu-left) .blog-menu:hover > .category-toggle {
   color: var(--brand-accent) !important;
 }
 

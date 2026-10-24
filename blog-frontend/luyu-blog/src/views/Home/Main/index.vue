@@ -171,7 +171,6 @@ onBeforeUnmount(() => { active = false })
 .snapshot {
   position: relative;
   z-index: 2;
-  margin-top: -1.5rem;
   padding: 1.35rem 0 1.1rem;
   border-block: 1px solid var(--brand-line);
   background: var(--brand-canvas);
