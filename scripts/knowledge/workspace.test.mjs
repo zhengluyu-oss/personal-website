@@ -34,7 +34,8 @@ const module={exports:{}};new Function('require','module','exports',built.output
 async function flush(){await new Promise(r=>setImmediate(r));await Vue.nextTick()}
 async function mount(manage=true){canManage=manage;allowed=true;saveError=undefined;readReply=undefined;saveReply=undefined;calls.length=0;authorization.value='fixture';const host=document.createElement('div');document.body.append(host);const app=Vue.createApp(module.exports.default);app.config.warnHandler=()=>{};app.mount(host);await flush();return{host,close(){app.unmount();host.remove();labelReply=[]}}}
 function button(host,label){const b=[...host.querySelectorAll('button')].find(b=>b.textContent.includes(label));assert.ok(b,label);return b}
-function fill(host,label,value){const el=[...host.querySelectorAll('label')].find(l=>l.textContent.startsWith(label))?.querySelector('input,textarea');assert.ok(el,label);el.value=value;el.dispatchEvent(new window.Event('input',{bubbles:true}))}
+function fill(host,label,value){const el=label==='Markdown 正文'?host.querySelector('.markdown-field textarea'):[...host.querySelectorAll('label')].find(l=>l.textContent.startsWith(label))?.querySelector('input,textarea');assert.ok(el,label);el.value=value;el.dispatchEvent(new window.Event('input',{bubbles:true}))}
+test('Markdown editor is not nested in a label that opens its file picker',async()=>{const f=await mount();try{button(f.host,'新建条目').click();await flush();const editor=f.host.querySelector('.markdown-field textarea');assert.ok(editor);assert.equal(editor.closest('label'),null)}finally{f.close()}})
 test('new note saves with a stable mutation and entry id after an uncertain response',async()=>{const f=await mount();try{
   button(f.host,'新建条目').click();await flush();fill(f.host,'标题','新的笔记');fill(f.host,'Markdown 正文','需要保留的正文');await flush()
   saveError=new Error('请求未获确认');button(f.host,'保存条目').click();await flush();assert.match(f.host.textContent,/尚未确认保存/)
