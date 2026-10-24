@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: 知识文件使用私有存储并鉴权读取
-系统 SHALL 将文件存放到独立私有OSS Bucket的知识库前缀，MUST NOT 复用永久公开图片URL或修改公开媒体Bucket策略。原文件读取逐次校验当前模块权限、条目未删和有效版本，不接受任意对象键/URL，不暴露长期直链。
+系统 SHALL 将文件存放到现有OSS Bucket的独立知识库前缀并在写入请求中明确指定private Object ACL，复用现有服务器凭据，MUST NOT 复用永久公开图片URL或修改公开媒体Bucket策略。启用文件能力前必须验证OSS原域名及媒体域名匿名读取均被拒绝。原文件读取逐次校验当前模块权限、条目未删和有效版本，不接受任意对象键/URL，不暴露长期直链。
 
 #### Scenario: 匿名猜测对象地址
 - **WHEN** 请求者未经授权直接请求私有OSS对象或知识库下载接口
@@ -12,8 +12,8 @@
 - **THEN** 服务器流式返回附件及 no-store/nosniff/noindex 头，不在URL中附加token、不返回可绕过撤权的签名链接
 
 #### Scenario: 私有配置缺失
-- **WHEN** 无法确认目标Bucket为私有或私有存储未配置
-- **THEN** 文件能力失败关闭，不回退到公共Bucket，笔记与原博客仍可独立运行
+- **WHEN** 无法确认知识对象的private ACL或任一公开域名匿名读取被拒绝
+- **THEN** 文件能力失败关闭，不回退到公开访问方式，笔记与原博客仍可独立运行
 
 ### Requirement: 上传类型和资源受限
 首版 SHALL 仅接受文本型PDF、UTF-8 Markdown/TXT，默认PDF<=20MiB/300页、文本文件<=5MiB、单条提取结果<=2MiB、文件版本总配额1GiB。校验扩展名、特征与实际大小，所有层限制一致；来源URL只记录不抓取。

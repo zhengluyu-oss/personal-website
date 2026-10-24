@@ -1,6 +1,6 @@
 ## Context
 
-发布页 `kuailemao-admin/src/pages/blog/essay/publish/index.vue` 的 `onFinish` 在 `publishArticle` 成功后：
+发布页 `luyu-admin/src/pages/blog/essay/publish/index.vue` 的 `onFinish` 在 `publishArticle` 成功后：
 
 - **已有封面、未重新选文件**：只 `message.success`，留在当前页。
 - **新上传封面**：成功后清空 `articleTitle` / `articleContent` 等，但编辑态 `formData.id` 仍在。再次发布会把空内容写回同一篇文章。

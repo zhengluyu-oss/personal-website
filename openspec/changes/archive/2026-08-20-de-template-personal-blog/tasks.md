@@ -1,7 +1,7 @@
 ## 1. Site identity constants
 
-- [x] 1.1 Extend `blog-frontend/kuailemao-blog/src/config/site.ts` with About intro fields (headline, short bio, tagline) for 陆屿求职向文案
-- [x] 1.2 Grep frontend for leftover template owner strings (`小张`, `ruyu-blog`, `kuailemao.xyz` cursor, 修仙 About 段) and list files to touch
+- [x] 1.1 Extend `blog-frontend/luyu-blog/src/config/site.ts` with About intro fields (headline, short bio, tagline) for 陆屿求职向文案
+- [x] 1.2 Grep frontend for leftover template owner strings (`小张`, `ruyu-blog`, `luyu.xyz` cursor, 修仙 About 段) and list files to touch
 
 ## 2. Copy cleanup (A)
 
@@ -12,7 +12,7 @@
 ## 3. Feature trim (B)
 
 - [x] 3.1 Stop mounting `ChargingList` in SideBar (or gate with `SHOW_CHARGING=false`); clear hardcoded donation sample array
-- [x] 3.2 Remove `image.kuailemao.xyz` custom cursor rules from `styles/cursor.scss` (system default)
+- [x] 3.2 Remove `image.luyu.xyz` custom cursor rules from `styles/cursor.scss` (system default)
 - [x] 3.3 Confirm music player remains hidden when `VITE_MUSIC_SERVE` empty; no new template music promo UI
 
 ## 4. Verify and ship

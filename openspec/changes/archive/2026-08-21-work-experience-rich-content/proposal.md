@@ -26,4 +26,4 @@
 - 后端：Entity/DTO/VO、`WorkExperienceController` 公开详情与列表字段裁剪
 - 管理端：`pages/blog/experience` 接入 MdEditor + 图片上传
 - 前台：Experience 列表交互、新详情页与路由、API 封装
-- 部署：执行迁移 SQL 后发布 backend / admin / blog；不改包名与 `kuailemao-*` 目录名
+- 部署：执行迁移 SQL 后发布 backend / admin / blog；不改包名与 `luyu-*` 目录名

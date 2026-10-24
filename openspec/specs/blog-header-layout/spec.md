@@ -2,9 +2,7 @@
 
 ## Purpose
 Desktop header presentation for the blog frontend: website title stays on one line and primary navigation uses the flexible space between the brand and the right toolbar. Primary destinations include work experience; category/tag remain under secondary grouping. The home header remains readable over bright banners.
-
 ## Requirements
-
 ### Requirement: Site title stays on one line in the header
 The blog frontend header SHALL display the configured website name on a single line at typical desktop widths and MUST NOT wrap the title into multiple lines solely due to an undersized title container.
 
@@ -71,8 +69,31 @@ The blog frontend header SHALL provide visible hover, active and keyboard focus 
 - **THEN** each interactive item shows a visible focus state and expandable navigation remains operable
 
 ### Requirement: Header adapts to narrow screens without horizontal overflow
-The blog frontend header MUST collapse the desktop navigation into the existing mobile entry at narrow widths and SHALL keep the brand and essential actions legible without horizontal overflow.
+The blog frontend header MUST collapse the desktop navigation into the existing mobile entry at narrow widths and SHALL keep the brand and essential actions legible without horizontal overflow. On mobile widths, the fixed top bar SHALL expose only the navigation opener, brand, search, and account/login controls; secondary destinations such as diary and knowledge MUST remain reachable from the mobile drawer menu rather than crowding the top bar. Interactive brand and login controls SHALL expose a minimum touch target of 44×44 CSS pixels (including padding).
 
 #### Scenario: Mobile header is displayed
 - **WHEN** the viewport width is 375px
 - **THEN** the brand and mobile navigation entry remain visible, touch targets are usable, and the page does not scroll horizontally
+
+#### Scenario: Mobile top bar stays uncrowded
+- **WHEN** a visitor views the mobile header at approximately 390px width
+- **THEN** the fixed top bar does not place diary or knowledge as persistent top-bar links beside the brand
+- **AND** those destinations remain reachable after opening the mobile navigation drawer
+- **AND** the brand and login/account controls each expose at least a 44×44 CSS-pixel hit area
+
+### Requirement: Brand mark outranks utility chrome
+The desktop header SHALL visually prioritize the site brand title over utility controls so the first glance reads as a personal site, while keeping search and login reachable.
+
+#### Scenario: Desktop header hierarchy
+- **WHEN** a visitor views the blog header on a desktop-width viewport
+- **THEN** the brand title SHALL be the strongest text signal in the bar
+- **AND** search and login SHALL appear as secondary controls without a competing saturated accent color
+
+### Requirement: Navigation icons stay quiet
+Primary header navigation MAY show icons, but those icons SHALL use the same ink or muted brand color as the labels and MUST NOT introduce a second accent palette or dominate the label text.
+
+#### Scenario: Nav icons do not overpower labels
+- **WHEN** a visitor views primary header destinations with icons enabled
+- **THEN** icons SHALL match the nav label color family
+- **AND** active state emphasis SHALL remain on the label or shared accent underline rather than a loud multicolor icon row
+

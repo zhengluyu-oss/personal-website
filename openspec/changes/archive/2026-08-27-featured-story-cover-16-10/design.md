@@ -63,7 +63,7 @@
 ## Migration Plan
 
 - 仅 blog 前端静态资源发布。
-- 部署 `kuailemao-blog` 或全量 deploy。
+- 部署 `luyu-blog` 或全量 deploy。
 - 回滚：还原 `Category/index.vue` 样式即可。
 
 ## Open Questions

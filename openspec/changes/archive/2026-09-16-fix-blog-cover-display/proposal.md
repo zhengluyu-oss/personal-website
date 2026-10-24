@@ -21,7 +21,7 @@
 
 ## Impact
 
-- 主要涉及 `blog-frontend/kuailemao-blog/src/views/Pigeonhole/Category/index.vue`，覆盖 `/blog` 及分类页面。
+- 主要涉及 `blog-frontend/luyu-blog/src/views/Pigeonhole/Category/index.vue`，覆盖 `/blog` 及分类页面。
 - 复用现有布局、设计变量、背景和图片回退；不增加依赖。
 - 不修改文章数据、TDK、网址、后台上传规则、API 或数据库；首页等其他区域不在范围内。
 - 上线需要重新构建与发布博客前端；本次提案阶段不执行部署。

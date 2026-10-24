@@ -1,6 +1,6 @@
 ## Context
 
-`blog-work-experience` 已落地：表 `t_work_experience`、公开列表 API、后台 CRUD、前台 `/experience` 时间线。当前字段仅公司/岗位/日期/纯文本 `highlights`，无法承载图文履历。用户选定方案 A：结构化元数据 + Markdown `content` + 列表/详情双页；图片复用文章 OSS 上传。约束：不改 `xyz.kuailemao` 包名与 `kuailemao-*` 目录名。
+`blog-work-experience` 已落地：表 `t_work_experience`、公开列表 API、后台 CRUD、前台 `/experience` 时间线。当前字段仅公司/岗位/日期/纯文本 `highlights`，无法承载图文履历。用户选定方案 A：结构化元数据 + Markdown `content` + 列表/详情双页；图片复用文章 OSS 上传。约束：不改 `xyz.luyu` 包名与 `luyu-*` 目录名。
 
 ## Goals / Non-Goals
 

@@ -1,0 +1,192 @@
+[
+  {
+    "clientWidth": 1440,
+    "page": "articles",
+    "scrollWidth": 1440,
+    "width": 1440
+  },
+  {
+    "clientWidth": 1280,
+    "page": "articles",
+    "scrollWidth": 1280,
+    "width": 1280
+  },
+  {
+    "clientWidth": 768,
+    "page": "articles",
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "clientWidth": 390,
+    "page": "articles",
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "clientWidth": 1440,
+    "columns": "819px 300px",
+    "page": "editor",
+    "scrollWidth": 1440,
+    "width": 1440
+  },
+  {
+    "clientWidth": 1280,
+    "columns": "659px 300px",
+    "page": "editor",
+    "scrollWidth": 1280,
+    "width": 1280
+  },
+  {
+    "clientWidth": 768,
+    "columns": "541.188px",
+    "page": "editor",
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "clientWidth": 390,
+    "columns": "303px",
+    "page": "editor",
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "clientWidth": 1440,
+    "page": "workspace",
+    "scrollWidth": 1440,
+    "width": 1440
+  },
+  {
+    "clientWidth": 1280,
+    "page": "workspace",
+    "scrollWidth": 1280,
+    "width": 1280
+  },
+  {
+    "clientWidth": 768,
+    "page": "workspace",
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "clientWidth": 390,
+    "page": "workspace",
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "page": "comments",
+    "clientWidth": 1440,
+    "scrollWidth": 1440,
+    "width": 1440
+  },
+  {
+    "page": "comments",
+    "clientWidth": 1280,
+    "scrollWidth": 1280,
+    "width": 1280
+  },
+  {
+    "page": "comments",
+    "clientWidth": 768,
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "page": "comments",
+    "clientWidth": 390,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "page": "site",
+    "clientWidth": 1440,
+    "scrollWidth": 1440,
+    "width": 1440
+  },
+  {
+    "page": "site",
+    "clientWidth": 1280,
+    "scrollWidth": 1280,
+    "width": 1280
+  },
+  {
+    "page": "site",
+    "clientWidth": 768,
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "page": "site",
+    "clientWidth": 1440,
+    "scrollWidth": 1440,
+    "width": 1440
+  },
+  {
+    "page": "site",
+    "clientWidth": 1280,
+    "scrollWidth": 1280,
+    "width": 1280
+  },
+  {
+    "page": "site",
+    "clientWidth": 768,
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "page": "site",
+    "clientWidth": 390,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "page": "users",
+    "clientWidth": 1440,
+    "scrollWidth": 1440,
+    "width": 1440
+  },
+  {
+    "page": "users",
+    "clientWidth": 1280,
+    "scrollWidth": 1280,
+    "width": 1280
+  },
+  {
+    "page": "users",
+    "clientWidth": 768,
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "page": "users",
+    "clientWidth": 390,
+    "scrollWidth": 390,
+    "width": 390
+  },
+  {
+    "page": "roles",
+    "clientWidth": 1440,
+    "scrollWidth": 1440,
+    "width": 1440
+  },
+  {
+    "page": "roles",
+    "clientWidth": 1280,
+    "scrollWidth": 1280,
+    "width": 1280
+  },
+  {
+    "page": "roles",
+    "clientWidth": 768,
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "page": "roles",
+    "clientWidth": 390,
+    "scrollWidth": 390,
+    "width": 390
+  }
+]

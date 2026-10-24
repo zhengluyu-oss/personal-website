@@ -6,7 +6,7 @@
 
 ## 1. 统一响应格式
 
-来源：`xyz.kuailemao.domain.response.ResponseResult`。
+来源：`xyz.luyu.domain.response.ResponseResult`。
 
 ```json
 { "code": 200, "msg": "success", "data": {} }
@@ -85,9 +85,9 @@
 |---|---|---|
 | 前台 Vite | `/api` rewrite 去掉 | `VITE_SERVE` `http://localhost:8088` |
 | 前台 Vite | `/wapi` rewrite 去掉 | `VITE_MUSIC_SERVE`（音乐，非本 API） |
-| 前台 nginx | `/api/` | `http://kuailemao.xyz:8088/` |
+| 前台 nginx | `/api/` | `http://luyu.xyz:8088/` |
 | 后台 Vite | `[VITE_APP_BASE_API]` | `VITE_APP_BASE_URL`（仓库为空） |
-| 后台 nginx | `/api/` | `http://kuailemao.xyz:8088/` |
+| 后台 nginx | `/api/` | `http://luyu.xyz:8088/` |
 
 ---
 
@@ -398,7 +398,7 @@
 
 ### 7.28 前台非后端接口（音乐）
 
-`kuailemao-blog/src/apis/music/index.ts`，前缀 `/wapi`：
+`luyu-blog/src/apis/music/index.ts`，前缀 `/wapi`：
 
 - GET `/wapi/toplist/detail`
 - GET `/wapi/playlist/track/all`

@@ -19,8 +19,8 @@
 
 ```mermaid
 flowchart LR
-  Visitor[访客浏览器] --> BlogSPA[kuailemao-blog :99]
-  Admin[站长浏览器] --> AdminSPA[kuailemao-admin :6678]
+  Visitor[访客浏览器] --> BlogSPA[luyu-blog :99]
+  Admin[站长浏览器] --> AdminSPA[luyu-admin :6678]
   BlogSPA -->|/api 代理| API[blog-backend :8088]
   AdminSPA -->|需配置 BASE_API| API
   BlogSPA -->|/wapi| Music[网易云风格 API :3000]
@@ -36,14 +36,14 @@ flowchart LR
   LogL --> MySQL
 ```
 
-部署期（`kuailemao-blog/default.conf`）：
+部署期（`luyu-blog/default.conf`）：
 
-- `kuailemao.xyz:80` → 前台静态 + `/api/` → `:8088` + `/wapi/` → `:3000`
-- `blog.kuailemao.xyz` → 反代后台 `:81`
+- `luyu.xyz:80` → 前台静态 + `/api/` → `:8088` + `/wapi/` → `:3000`
+- `blog.luyu.xyz` → 反代后台 `:81`
 
 ## 3. 代码分层与模块组织
 
-后端包根：`xyz.kuailemao`（`blog-backend/src/main/java/xyz/kuailemao/`）。
+后端包根：`xyz.luyu`（`blog-backend/src/main/java/xyz/luyu/`）。
 
 | 层 | 包 | 职责 |
 |---|---|---|
@@ -68,7 +68,7 @@ flowchart LR
 
 以访客打开 `/article/:id` 为例。
 
-1. **路由**：`kuailemao-blog/src/router/routers.ts` 中 `path: '/article/:id'`，组件 `views/Article/index.vue`（不走 Layout）。
+1. **路由**：`luyu-blog/src/router/routers.ts` 中 `path: '/article/:id'`，组件 `views/Article/index.vue`（不走 Layout）。
 2. **拉详情**：`src/apis/article/index.ts` → `GET /article/detail/{id}`。axios（`utils/http.ts`）设置 `baseURL=/api`、`X-Client-Type: Frontend`，可选 `Authorization: Bearer`。
 3. **开发代理**：Vite 把 `/api` 去掉后转到 `localhost:8088`。
 4. **安全过滤器**：`SecurityConfiguration` L32–37：`/article/detail/**` **不在** `AUTH_CHECK_ARRAY`，`permitAll()`。`JwtAuthorizeFilter` 有 token 则解析，无 token 也放行。
@@ -82,14 +82,14 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-  subgraph front [前台 kuailemao-blog]
+  subgraph front [前台 luyu-blog]
     Pages[页面 views]
     APIs[apis]
     Pinia[Pinia user/website/music]
     Pages --> APIs
     Pages --> Pinia
   end
-  subgraph admin [后台 kuailemao-admin]
+  subgraph admin [后台 luyu-admin]
     AdminPages[pages]
     AdminAPI[api]
     UserStore[userStore 动态路由]
@@ -210,9 +210,9 @@ sys_user ── sys_user_role ── sys_role
 | `@CheckBlacklist` 无实现 | 注解无效 | `annotation/CheckBlacklist.java` | 中 |
 | 权限每次请求查库 | 高并发下 RBAC 查询放大 | `JwtUtils.getAuthorities` | 中 |
 | 业务表几乎无二级索引/外键 | 列表筛选、关联靠应用层 | `sql/v1.5.0` | 中 |
-| 后台 env 空 | `pnpm dev` 默认打不到后端 | `kuailemao-admin/.env.development` | 高 |
+| 后台 env 空 | `pnpm dev` 默认打不到后端 | `luyu-admin/.env.development` | 高 |
 | 相册页存在但种子菜单无 `/blog/photo` | 升级后需手工配菜单 | `sql/v1.6.0/README.md` | 中 |
-| nginx `default.conf` 写死 `kuailemao.xyz` | 换域名必须改镜像配置 | 两个 `default.conf` | 中 |
+| nginx `default.conf` 写死 `luyu.xyz` | 换域名必须改镜像配置 | 两个 `default.conf` | 中 |
 | 前台音乐 persist 无插件 | 刷新丢失播放状态 | `store/modules/music.ts` | 低 |
 | Knife4j 匿名可访问 | 接口暴露面 | Security permitAll | 中（视部署网络） |
 | `sys_user_role.role_id` 类型 varchar | 与 `sys_role.id` bigint 不一致 | `sql/v1.5.0` | 中 |

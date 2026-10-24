@@ -51,7 +51,7 @@
 
 后台页面：`pages/system/{user,role,menu,permission}` 及隐藏授权页 `user-role`、`role-user`、`role-permission`。
 
-**核心：** `MenuServiceImpl.getMenuList(typeId==0)` 返回当前用户菜单（角色拥有 **或** 未绑定角色的菜单）。`kuailemao-admin/src/stores/user.ts` `generateDynamicRoutes` → `generateTreeRoutes` / `generateFlatRoutes`。组件解析 `router/router-modules.ts`：`import.meta.glob('~/pages/**/*.vue')`。
+**核心：** `MenuServiceImpl.getMenuList(typeId==0)` 返回当前用户菜单（角色拥有 **或** 未绑定角色的菜单）。`luyu-admin/src/stores/user.ts` `generateDynamicRoutes` → `generateTreeRoutes` / `generateFlatRoutes`。组件解析 `router/router-modules.ts`：`import.meta.glob('~/pages/**/*.vue')`。
 
 **风险：** 未绑定角色的菜单对所有已登录用户可见。改菜单后需重新登录。`sys_user_role.role_id` 为 varchar。
 
@@ -132,7 +132,7 @@
 
 **入口：** `BlackListController` `blackList`；拦截器 `AccessLimitInterceptor`（全局 `/**`，仅注解方法限流）。
 
-文档：`blog-backend/src/test/java/xyz/kuailemao/黑名单功能文档.md`。前台 axios 对 code `1012` 提示封禁。
+文档：`blog-backend/src/test/java/xyz/luyu/黑名单功能文档.md`。前台 axios 对 code `1012` 提示封禁。
 
 **风险：** `@CheckBlacklist` 未实现。
 

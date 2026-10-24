@@ -1,6 +1,6 @@
 ## Context
 
-生产站 `www.zhengluyu.com` 在 390×844 / 320×700 视口下的 Playwright 审查表明：首页、文章详情、网站分享列表已有可用断点；真正破坏体验的是少数定宽组件、空嵌入、移动顶栏过载，以及后台登录卡片。后端 API 无独立“手机布局层”；问题集中在 `kuailemao-blog` 与 `kuailemao-admin` 登录页。
+生产站 `www.zhengluyu.com` 在 390×844 / 320×700 视口下的 Playwright 审查表明：首页、文章详情、网站分享列表已有可用断点；真正破坏体验的是少数定宽组件、空嵌入、移动顶栏过载，以及后台登录卡片。后端 API 无独立“手机布局层”；问题集中在 `luyu-blog` 与 `luyu-admin` 登录页。
 
 现有 `blog-header-layout` 已要求窄屏不横溢且触控可用，但实现上顶栏仍塞入日记/知识库链接，品牌与登录触控区小于约 44px。`experience-mobile-layout` 仅覆盖工作经历，不覆盖树洞/音乐/相册/登录等。
 

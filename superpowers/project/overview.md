@@ -11,9 +11,9 @@
 | 仓库路径 | `f:\guochuang\my_project\myOwnWebsite\Ruyu-Blog` |
 | 一句话描述 | 前后端分离的个人博客系统：前台展示文章/评论/相册/树洞/友链，后台做 RBAC 内容与系统管理 |
 | 目标用户 | 个人站长（部署自用）；前台访客；后台管理员 / 测试账号 |
-| 上游开源 | Gitee `kuailemao/ruyu-blog`；GitHub `kuailemao/Ruyu-Blog`（`README.md` L71–73） |
+| 上游开源 | Gitee `luyu/ruyu-blog`；GitHub `luyu/Ruyu-Blog`（`README.md` L71–73） |
 | 本克隆 remote | `origin` = `https://github.com/zhengluyu-oss/personal-website.git`，分支 `master` |
-| License | 根目录 Apache-2.0（`LICENSE`）；后台脚手架 Antdv Pro 为 MIT（`blog-frontend/kuailemao-admin/LICENSE`） |
+| License | 根目录 Apache-2.0（`LICENSE`）；后台脚手架 Antdv Pro 为 MIT（`blog-frontend/luyu-admin/LICENSE`） |
 | 成熟度 | 可运行的完整开源博客（作者自称独立开发约 3 个月）。线上预览与仓库可能不同步。未完成项见 README：后台导入导出、图片资源管理、数据大屏、App/小程序。本地 **缺少 gitignored 的 `application-dev.yml` / `application-prod.yml`**，后端无法直接启动 |
 
 ## 2. 技术栈全景（含版本）
@@ -42,7 +42,7 @@
 | Lombok | 随 Boot |
 | Thymeleaf + Mail | 邮件模板 |
 
-### 前台博客 `blog-frontend/kuailemao-blog/package.json`
+### 前台博客 `blog-frontend/luyu-blog/package.json`
 
 | 技术 | 版本 |
 |---|---|
@@ -60,7 +60,7 @@
 | GSAP | 3.12.5 |
 | vue3-danmaku | 1.6.0 |
 
-### 后台管理 `blog-frontend/kuailemao-admin/package.json`
+### 后台管理 `blog-frontend/luyu-admin/package.json`
 
 | 技术 | 版本 |
 |---|---|
@@ -108,18 +108,18 @@ Ruyu-Blog/
 │   ├── Dockerfile                    # openjdk:17，拷贝预构建 jar，暴露 8088
 │   ├── README.md                     # 登录失败原因、X-Client-Type、Gitee 登录步骤
 │   └── src/main/
-│       ├── java/xyz/kuailemao/       # 见 architecture.md
+│       ├── java/xyz/luyu/       # 见 architecture.md
 │       └── resources/
 │           ├── application.yml       # 仅 port + profile 占位；其余配置被注释且真实 yml gitignore
 │           ├── mapper/*.xml
 │           └── templates/*-email-template.html
 └── blog-frontend/
-    ├── kuailemao-blog/               # 访客前台（职责：展示与互动）
+    ├── luyu-blog/               # 访客前台（职责：展示与互动）
     │   ├── src/{apis,views,components,router,store,utils}
     │   ├── vite.config.ts            # 开发端口 99，/api → 8088，/wapi → 音乐服务
     │   ├── Dockerfile + default.conf # nginx:80，反代 /api 与 /wapi
     │   └── .env.development / .env.production
-    └── kuailemao-admin/              # 站长后台（职责：RBAC + 内容审核）
+    └── luyu-admin/              # 站长后台（职责：RBAC + 内容审核）
         ├── src/{api,pages,router,stores,layouts}
         ├── vite.config.ts            # 开发端口 6678
         ├── mist.config.ts
@@ -143,9 +143,9 @@ Ruyu-Blog/
 
 三个独立可部署单元，**无 Maven 多模块、无 pnpm workspace**：
 
-1. **blog-backend**：Spring Boot 单体。入口 `xyz.kuailemao.BlogBackendApplication`（`@MapperScan` + `@EnableMethodSecurity`）。
-2. **kuailemao-blog**：Vite + Vue3 前台，静态路由。
-3. **kuailemao-admin**：Antdv Pro 二次开发，菜单/路由由后端 `sys_menu` 动态下发。
+1. **blog-backend**：Spring Boot 单体。入口 `xyz.luyu.BlogBackendApplication`（`@MapperScan` + `@EnableMethodSecurity`）。
+2. **luyu-blog**：Vite + Vue3 前台，静态路由。
+3. **luyu-admin**：Antdv Pro 二次开发，菜单/路由由后端 `sys_menu` 动态下发。
 
 通信方式：HTTP REST。前台通过 Vite `/api` 代理或 nginx `/api/` 转到后端 `8088`。后台同样走 `/api/`（生产 nginx）；开发环境 `VITE_APP_BASE_URL` / `VITE_APP_BASE_API` **提交值为空**，需本地填写。
 
@@ -193,7 +193,7 @@ Ruyu-Blog/
 ### 5.4 前台博客
 
 ```bash
-cd blog-frontend/kuailemao-blog
+cd blog-frontend/luyu-blog
 pnpm install
 pnpm dev          # vite，端口 99（vite.config.ts）
 ```
@@ -204,7 +204,7 @@ pnpm dev          # vite，端口 99（vite.config.ts）
 ### 5.5 后台管理
 
 ```bash
-cd blog-frontend/kuailemao-admin
+cd blog-frontend/luyu-admin
 pnpm install
 # 必须先填写 .env.development 的 VITE_APP_BASE_URL / VITE_APP_BASE_API
 pnpm dev          # mist → vite，端口 6678
@@ -217,9 +217,9 @@ pnpm dev          # mist → vite，端口 6678
 
 | 端 | URL |
 |---|---|
-| 前台 | https://kuailemao.xyz |
-| 后台 | https://blog.kuailemao.xyz |
-| 接口文档 | http://kuailemao.xyz:8088/doc.html#/home |
+| 前台 | https://luyu.xyz |
+| 后台 | https://blog.luyu.xyz |
+| 接口文档 | http://luyu.xyz:8088/doc.html#/home |
 
 ## 6. 环境变量与配置
 
@@ -246,7 +246,7 @@ pnpm dev          # mist → vite，端口 6678
 | `mail.article-email-notice` 等 | true/false | 各类邮件开关 |
 | `mybatis-plus.global-config.db-config.logic-delete-field` | `isDeleted` | 逻辑删除 |
 | `oauth.gitee.*` / `oauth.github.*` | 空 | JustAuth |
-| `web.index.path` | `http://kuailemao.xyz/` | OAuth 回调后的前台首页 |
+| `web.index.path` | `http://luyu.xyz/` | OAuth 回调后的前台首页 |
 | `minio.endpoint/accessKey/secretKey/bucketName` | 空 | 对象存储 |
 | `knife4j.enable` | true | 文档增强 |
 
@@ -299,8 +299,8 @@ pnpm dev          # mist → vite，端口 6678
 | Entity `@TableName` | 25（含无 DDL 的 `t_chat_gpt`） | `domain/entity` |
 | MySQL 表（最新） | 34（v1.5.0 的 33 + `t_photo`） | `sql/` |
 | REST 方法（含 Security 登录/登出） | 约 154 | 见 `api-system.md` |
-| 前台 `.vue` | 77 | `kuailemao-blog/src` |
-| 后台 `.vue` | 102 | `kuailemao-admin/src` |
+| 前台 `.vue` | 77 | `luyu-blog/src` |
+| 后台 `.vue` | 102 | `luyu-admin/src` |
 | 前台静态路由页 | 约 18 条 | `src/router/routers.ts` |
 | 后台页面（pages） | 56 个 vue（含弹窗） | `src/pages` |
 
@@ -310,11 +310,11 @@ pnpm dev          # mist → vite，端口 6678
 
 | 文档 | 路径 |
 |---|---|
-| 项目介绍 / 部署入口 | `README.md`（部署指向 https://kuailemao.xyz/article/48 或 Wiki；仓库无 Wiki 目录） |
+| 项目介绍 / 部署入口 | `README.md`（部署指向 https://luyu.xyz/article/48 或 Wiki；仓库无 Wiki 目录） |
 | SQL 导入 | `sql/README.md`、`sql/v1.6.0/README.md` |
 | 登录 / OAuth 备忘 | `blog-backend/README.md` |
-| 黑名单说明 | `blog-backend/src/test/java/xyz/kuailemao/黑名单功能文档.md` |
-| 后台权限指令 | `blog-frontend/kuailemao-admin/README.md` |
+| 黑名单说明 | `blog-backend/src/test/java/xyz/luyu/黑名单功能文档.md` |
+| 后台权限指令 | `blog-frontend/luyu-admin/README.md` |
 | 接口文档 | 运行时 Knife4j `/doc.html` |
 | 被 gitignore 的外部文档 | `.gitignore` L13 `ruyu-blog-doc/`（不在本仓库） |
 

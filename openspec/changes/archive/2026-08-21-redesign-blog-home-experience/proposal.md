@@ -22,6 +22,6 @@
 
 ## Impact
 
-- 主要影响 `blog-frontend/kuailemao-blog/src/views/Home` 与 `src/views/Experience` 下的 Vue/SCSS 页面。
+- 主要影响 `blog-frontend/luyu-blog/src/views/Home` 与 `src/views/Experience` 下的 Vue/SCSS 页面。
 - 不修改后端 API、数据结构、路由地址和管理端。
 - 不新增运行时依赖；继续使用现有 Swiper、Element Plus、MdPreview 与主题变量。

@@ -22,6 +22,6 @@
 
 ## Impact
 
-- **前端（blog）**: `blog-frontend/kuailemao-blog/src/views/Pigeonhole/Category/index.vue`（Featured Story 样式与响应式断点）。
+- **前端（blog）**: `blog-frontend/luyu-blog/src/views/Pigeonhole/Category/index.vue`（Featured Story 样式与响应式断点）。
 - **无后端 / API / 数据库变更**。
 - **视觉影响**: 桌面端推荐位封面变「不那么宽」，右侧文案区域相对占比可能略增；需验收各断点版式。

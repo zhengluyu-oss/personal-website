@@ -22,12 +22,12 @@ The blog frontend SHALL NOT display the hardcoded sample donation (`ChargingList
 - **AND** no fabricated donor messages from the original template SHALL appear
 
 ### Requirement: No legacy template CDN cursor assets
-The blog frontend MUST NOT load custom cursor files from `image.kuailemao.xyz` (or other retired template CDN hosts) for default browsing cursors.
+The blog frontend MUST NOT load custom cursor files from `image.luyu.xyz` (or other retired template CDN hosts) for default browsing cursors.
 
 #### Scenario: Default system cursor
 - **WHEN** a visitor browses the blog with default theme styles applied
 - **THEN** cursor styles SHALL use the browser/system default (or non-template-hosted assets only)
-- **AND** the browser MUST NOT request cursor URLs under `image.kuailemao.xyz`
+- **AND** the browser MUST NOT request cursor URLs under `image.luyu.xyz`
 
 ### Requirement: About navigation avoids duplicate template social tiles
 The About page SHALL provide clear personal navigation without two identical large GitHub icons that convey a unfinished template layout.

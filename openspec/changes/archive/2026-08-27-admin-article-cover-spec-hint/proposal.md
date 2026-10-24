@@ -21,6 +21,6 @@
 
 ## Impact
 
-- **前端（admin）**: `blog-frontend/kuailemao-admin/src/pages/blog/essay/publish/index.vue`（封面上传 UI）。
+- **前端（admin）**: `blog-frontend/luyu-admin/src/pages/blog/essay/publish/index.vue`（封面上传 UI）。
 - **无后端 / 数据库 / API 变更**。
 - **无博客前台变更**（用户统一规格后，现有 `object-fit: contain` 列表将自然减少留白；可选后续变更不在本 scope）。
