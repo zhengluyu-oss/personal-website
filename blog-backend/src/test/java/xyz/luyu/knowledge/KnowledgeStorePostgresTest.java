@@ -94,10 +94,27 @@ class KnowledgeStorePostgresTest {
         assertEquals("",hit.records().get(0).entry().content().body());
     }
     @Test void labelsCannotBeDeletedWhileInUse(){
-        long owner=500;UUID tag=UUID.randomUUID();store.saveLabel(owner,new LabelWrite(tag,"TAG","测试",0));
-        UUID id=UUID.randomUUID();store.save(owner,new Write(UUID.randomUUID(),id,0,new Content(Kind.CONCEPT,"概念","内容","",null,List.of(tag))));
+        long owner=500;UUID category=UUID.randomUUID(),tag=UUID.randomUUID();
+        store.saveLabel(owner,new LabelWrite(category,"CATEGORY","测试分类",null,0));
+        store.saveLabel(owner,new LabelWrite(tag,"TAG","测试",category,0));
+        UUID id=UUID.randomUUID();store.save(owner,new Write(UUID.randomUUID(),id,0,new Content(Kind.CONCEPT,"概念","内容","",category,List.of(tag))));
         assertEquals(400,assertThrows(KnowledgeFailure.class,()->store.deleteLabel(owner,tag,1)).status());
+        assertEquals(400,assertThrows(KnowledgeFailure.class,()->store.deleteLabel(owner,category,1)).status());
         assertEquals("内容",store.read(owner,id,false).content().body());
+    }
+    @Test void tagsBelongToOneCategoryAndCannotBeMixed(){
+        long owner=501;UUID first=UUID.randomUUID(),second=UUID.randomUUID(),tag=UUID.randomUUID();
+        store.saveLabel(owner,new LabelWrite(first,"CATEGORY","基础",null,0));
+        store.saveLabel(owner,new LabelWrite(second,"CATEGORY","其他",null,0));
+        store.saveLabel(owner,new LabelWrite(tag,"TAG","命令",first,0));
+        assertEquals(first,store.labels(owner).stream().filter(label->label.id().equals(tag)).findFirst().orElseThrow().parentCategoryId());
+        assertEquals(400,assertThrows(KnowledgeFailure.class,()->store.save(owner,
+            new Write(UUID.randomUUID(),UUID.randomUUID(),0,new Content(Kind.NOTE,"错误分类","正文","",second,List.of(tag))))).status());
+        UUID entry=UUID.randomUUID();
+        store.save(owner,new Write(UUID.randomUUID(),entry,0,new Content(Kind.NOTE,"正确分类","正文","",first,List.of(tag))));
+        assertEquals(400,assertThrows(KnowledgeFailure.class,()->store.saveLabel(owner,
+            new LabelWrite(tag,"TAG","命令",second,1))).status());
+        assertEquals(first,store.read(owner,entry,false).content().categoryId());
     }
     @Test void fileJobsAreVersionFencedAndSearchOnlyReadyCurrentSegments(){
         long owner=510;UUID id=UUID.randomUUID();
@@ -189,10 +206,11 @@ class KnowledgeStorePostgresTest {
         assertEquals("PARSER_TIMEOUT",store.file(owner,id,version).errorCode());
     }
     @Test void searchRanksTitleThenTagBeforeBodyAndPaginatesWithoutDuplicates(){
-        long owner=600;UUID title=UUID.randomUUID(),tagged=UUID.randomUUID(),body=UUID.randomUUID(),tag=UUID.randomUUID();
+        long owner=600;UUID title=UUID.randomUUID(),tagged=UUID.randomUUID(),body=UUID.randomUUID(),tag=UUID.randomUUID(),category=UUID.randomUUID();
         store.save(owner,write(body,0,"知识关联 正文匹配"));
-        store.saveLabel(owner,new LabelWrite(tag,"TAG","知识关联",0));
-        store.save(owner,new Write(UUID.randomUUID(),tagged,0,new Content(Kind.NOTE,"标签匹配","资料正文","",null,List.of(tag))));
+        store.saveLabel(owner,new LabelWrite(category,"CATEGORY","搜索分类",null,0));
+        store.saveLabel(owner,new LabelWrite(tag,"TAG","知识关联",category,0));
+        store.save(owner,new Write(UUID.randomUUID(),tagged,0,new Content(Kind.NOTE,"标签匹配","资料正文","",category,List.of(tag))));
         store.save(owner,new Write(UUID.randomUUID(),title,0,new Content(Kind.NOTE,"知识关联 标题匹配","资料正文","",null,List.of())));
         List<UUID> ids=new ArrayList<>();
         for(int page=1;page<=3;page++){

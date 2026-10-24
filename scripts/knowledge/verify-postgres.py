@@ -28,6 +28,31 @@ try:
     sql(migration);sql(migration)
     image_migration=(ROOT/'scripts/knowledge/002-private-images.sql').read_text(encoding='utf-8')
     sql(image_migration);sql(image_migration)
+    sql("""
+INSERT INTO knowledge.label(owner_id,id,kind,name,revision) VALUES
+ (1,md5('basic')::uuid,'CATEGORY','基础知识复习',1),
+ (1,md5('life')::uuid,'CATEGORY','人生指南',1),
+ (1,md5('git-tag')::uuid,'TAG','git基础知识',1),
+ (1,md5('life-tag')::uuid,'TAG','高性价比人生指南',1);
+INSERT INTO knowledge.entry(owner_id,id,kind,title,body,revision)
+VALUES (1,md5('unclassified-git')::uuid,'NOTE','Git 笔记','正文',1);
+INSERT INTO knowledge.entry_tag(owner_id,entry_id,tag_id)
+VALUES (1,md5('unclassified-git')::uuid,md5('git-tag')::uuid);
+INSERT INTO knowledge.entry_revision(owner_id,entry_id,revision,content,saved_at,action)
+VALUES (1,md5('unclassified-git')::uuid,1,'{"kind":"NOTE","title":"Git 笔记","body":"正文","sourceUrl":"","categoryId":null,"tagIds":[]}',now(),'SAVE');
+""")
+    hierarchy_migration=(ROOT/'scripts/knowledge/003-category-tag-hierarchy.sql').read_text(encoding='utf-8')
+    sql(hierarchy_migration);sql(hierarchy_migration)
+    assert sql("""SELECT count(*) FROM knowledge.label t JOIN knowledge.label c
+      ON c.owner_id=t.owner_id AND c.id=t.parent_category_id
+     WHERE t.kind='TAG' AND c.kind='CATEGORY'""").stdout.strip()=='2'
+    assert sql("""SELECT e.revision=2 AND e.category_id=md5('basic')::uuid
+      AND r.content->>'categoryId'=md5('basic')::uuid::text
+      FROM knowledge.entry e JOIN knowledge.entry_revision r
+        ON r.owner_id=e.owner_id AND r.entry_id=e.id AND r.revision=2
+     WHERE e.id=md5('unclassified-git')::uuid""").stdout.strip()=='t'
+    assert sql("""INSERT INTO knowledge.label(owner_id,id,kind,name,parent_category_id,revision)
+      VALUES (1,md5('bad-tag')::uuid,'TAG','错误',md5('git-tag')::uuid,1)""",False).returncode!=0
     env=os.environ.copy();env['BLOG_KNOWLEDGE_QA']='true'
     missing=pathlib.Path(os.environ.get('TEMP','.'))/('qa-missing-'+uuid.uuid4().hex)
     jvm=['-DargLine=-Djdk.net.unixdomain.tmpdir='+missing.as_posix()] if os.name=='nt' else []

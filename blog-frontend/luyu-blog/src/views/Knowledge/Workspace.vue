@@ -15,7 +15,7 @@ const keyword = ref(''), kind = ref(''), category = ref(''), tag = ref(''), page
 const segmentPage = ref(1), segmentTotal = ref(0), showSegments = ref(false)
 const matches = ref<Record<string, SearchLocation>>({}), busy = ref(false), error = ref('')
 const categories = computed(() => labels.value.filter(item => item.kind === 'CATEGORY'))
-const tags = computed(() => labels.value.filter(item => item.kind === 'TAG'))
+const tags = computed(() => labels.value.filter(item => item.kind === 'TAG' && (!category.value || item.parentCategoryId === category.value)))
 const kinds = { NOTE: '笔记', DOCUMENT: '文件资料', CONCEPT: '概念' }
 let generation = 0, listSequence = 0, detailSequence = 0, segmentSequence = 0, disposed = false
 let listScrollY = 0
@@ -112,7 +112,7 @@ onBeforeUnmount(() => { disposed = true; clear(); clearInterval(timer); window.r
       <form v-if="!selected" class="filters" @submit.prevent="page = 1; load()">
         <input v-model="keyword" aria-label="关键词" placeholder="搜索标题、正文、标签…" maxlength="100">
         <select v-model="kind" aria-label="条目类型"><option value="">全部类型</option><option v-for="(name, key) in kinds" :key="key" :value="key">{{ name }}</option></select>
-        <select v-model="category" aria-label="分类"><option value="">全部分类</option><option v-for="item in categories" :key="item.id" :value="item.id">{{ item.name }}</option></select>
+        <select v-model="category" aria-label="分类" @change="tag = ''; page = 1"><option value="">全部分类</option><option v-for="item in categories" :key="item.id" :value="item.id">{{ item.name }}</option></select>
         <select v-model="tag" aria-label="标签"><option value="">全部标签</option><option v-for="item in tags" :key="item.id" :value="item.id">{{ item.name }}</option></select>
         <button :disabled="busy">{{ busy ? '读取中…' : '查找' }}</button>
       </form>

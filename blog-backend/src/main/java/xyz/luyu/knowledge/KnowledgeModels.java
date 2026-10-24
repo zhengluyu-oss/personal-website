@@ -16,6 +16,7 @@ public final class KnowledgeModels {
             if(kind==null||title==null||title.isBlank()||title.codePointCount(0,title.length())>200||title.indexOf('\0')>=0)throw KnowledgeFailure.invalid("标题需为1至200字，并选择条目类型");
             if(body==null||body.indexOf('\0')>=0||body.getBytes(StandardCharsets.UTF_8).length>2097152)throw KnowledgeFailure.invalid("正文不能超过2MiB或含无效字符");
             if(tagIds==null||tagIds.size()>20||tagIds.stream().anyMatch(Objects::isNull)||new HashSet<>(tagIds).size()!=tagIds.size()||categoryId!=null&&tagIds.contains(categoryId))throw KnowledgeFailure.invalid("最多选择20个不重复标签");
+            if(!tagIds.isEmpty()&&categoryId==null)throw KnowledgeFailure.invalid("选择标签前请先选择分类");
             if(sourceUrl!=null&&!sourceUrl.isBlank())try{URI uri=URI.create(sourceUrl);if(sourceUrl.length()>2000||!Set.of("http","https").contains(uri.getScheme())||uri.getHost()==null||uri.getUserInfo()!=null)throw new IllegalArgumentException();}catch(RuntimeException e){throw KnowledgeFailure.invalid("来源链接需为有效HTTP或HTTPS地址；系统不会抓取该链接");}
         }
     }
@@ -31,8 +32,8 @@ public final class KnowledgeModels {
         public int number(){return page==null?1:page;}public int size(){return pageSize==null?20:pageSize;}
         public void validate(){if(number()<1||number()>10000||size()<1||size()>50||keyword!=null&&(keyword.isBlank()||keyword.codePointCount(0,keyword.length())>100)||updatedFrom!=null&&updatedTo!=null&&updatedFrom.isAfter(updatedTo))throw KnowledgeFailure.invalid("筛选条件无效，关键词1至100字，每页最多50条");}
     }
-    public record Label(UUID id,String kind,String name,long revision) {}
-    public record LabelWrite(UUID id,String kind,String name,long expectedRevision) {}
+    public record Label(UUID id,String kind,String name,UUID parentCategoryId,long revision) {}
+    public record LabelWrite(UUID id,String kind,String name,UUID parentCategoryId,long expectedRevision) {}
     public record Capabilities(boolean allowed,boolean available,boolean canManage,boolean filesAvailable,int maxTitleBytes,long maxBodyBytes,long maxPdfBytes,long maxTextBytes,long quotaBytes,String message) {}
     public record Segment(int ordinal,Integer page,Integer fromLine,Integer toLine,String text) {}
     public record SearchHit(Entry entry,String excerpt,Integer page,Integer fromLine,Integer toLine) {}

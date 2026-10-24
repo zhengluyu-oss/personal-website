@@ -103,11 +103,13 @@ sequenceDiagram
 
 后台动态菜单需要执行 `sql/knowledge-admin-menu.sql` 后才会出现“网站管理 → 知识库管理”。该菜单仅授予 ADMIN 角色作导航，服务端仍逐次核对 `knowledge.owner-user-id`，其他管理员不能维护。前台阅读组件不包含写入工具；后台组件使用后台登录令牌。两套页面共享原有知识库接口和数据，无需迁移 PG 条目。
 
+每个标签隶属于一个分类。新建标签时先选父分类；条目选择分类后，只能选择该分类下的标签。服务端对保存和历史恢复均校验这一关系；分类若仍含子标签则不能删除。迁移 `scripts/knowledge/003-category-tag-hierarchy.sql` 将现有“高性价比人生指南”归入“人生指南”，其余现有标签归入“基础知识复习”，并为带 Git 标签但未分类的条目补上分类和新历史版本。
+
 所有接口位于 `/api/knowledge/`（应用内部路由为 `/knowledge/`）。`GET view/capabilities` 返回是否可读、可用及可管理；其余 `view/**` 每次实时检查模块权限，`manage/**` 仅站主。主要接口包括 `view/entries/search`、`view/entries/{id}`、`view/search`、`view/relations/graph`、`view/files/{entryId}/{version}/content`；写入包括 `manage/entries`、`manage/entries/{id}/files`、`manage/relations` 和 `manage/exports/{prepare,create}`。原文件 API 只接受条目 ID 与版本，不接受任意 OSS 键。完整请求 DTO、限制和状态以 OpenSpec 变更 `add-knowledge-library-and-connections` 的规格与 `implementation-contract.md` 为准。
 
 ## 部署、监控与回退
 
-- 部署先备份 PG `knowledge` schema、MySQL 文章及幂等映射、知识前缀对象清单和当前应用产物。迁移脚本为 `scripts/knowledge/000-roles.sql`、`001-knowledge.sql` 及相应 MySQL 迁移；必须用隔离数据库先演练，不能让测试默认连接生产。
+- 部署先备份 PG `knowledge` schema、MySQL 文章及幂等映射、知识前缀对象清单和当前应用产物。迁移脚本依次为 `scripts/knowledge/000-roles.sql`、`001-knowledge.sql`、`002-private-images.sql`、`003-category-tag-hierarchy.sql` 及相应 MySQL 迁移；必须用隔离数据库先演练，不能让测试默认连接生产。
 - 手动加密元数据备份脚本为 `scripts/knowledge/backup-production.sh`。运行前显式提供 `KNOWLEDGE_PG_DATABASE`、`KNOWLEDGE_MYSQL_DATABASE`、权限为 0600 的 `KNOWLEDGE_MYSQL_DEFAULTS_FILE`、`KNOWLEDGE_BACKUP_RECIPIENT_FILE`；输出版本目录包含 PG custom dump、MySQL 映射 SQL、私有对象 CSV 清单和 SHA256 校验。不要把明文密钥放入命令行或提交到仓库。用 `python scripts/knowledge/verify-backup-restore.py` 在本机隔离容器重复恢复演练。该清单只记录数据库引用的对象，并不保存 OSS 文件字节；Bucket 级灾难恢复仍依赖独立对象副本或版本保护，不能只靠此脚本。
 - 配置 `knowledge.owner-user-id`、独立 PG 运行角色/连接、现有 OSS 凭据和 Bucket。启动时先保持 `knowledge.enabled=false`；确认首页、博客、日记正常，再启用知识库。前端模块授权仍需在后台配置。文件能力须先通过真实私有对象的双域名匿名拒绝探针。
 - 观察 JVM 与解析子进程 RSS、CPU、临时磁盘、PG 连接池、`processing_job` 中 RUNNING/RETRY_WAIT/FAILED、Rabbit v1/v2/dead 队列积压、OSS orphan 清理和 MySQL 导出映射。4 核/4 GiB/40 GiB 的机器保持解析单并发，不通过加常驻服务解决性能问题。

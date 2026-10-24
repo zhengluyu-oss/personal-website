@@ -58,6 +58,8 @@ def main():
         pg((ROOT / "scripts/knowledge/001-knowledge.sql").read_text(encoding="utf-8"))
         pg((ROOT / "scripts/knowledge/002-private-images.sql").read_text(encoding="utf-8"))
         pg((ROOT / "scripts/knowledge/002-private-images.sql").read_text(encoding="utf-8"))
+        pg((ROOT / "scripts/knowledge/003-category-tag-hierarchy.sql").read_text(encoding="utf-8"))
+        pg((ROOT / "scripts/knowledge/003-category-tag-hierarchy.sql").read_text(encoding="utf-8"))
         mysql((ROOT / "sql/knowledge-article-export.sql").read_text(encoding="utf-8"))
         seed_pg = """
 INSERT INTO knowledge.entry(owner_id,id,kind,title,body,revision)

@@ -120,7 +120,7 @@ def build(checkout: Path) -> tuple[str, dict]:
         "  END IF;",
         "END $$;",
         f"INSERT INTO knowledge.owner_control(owner_id) VALUES ({OWNER}) ON CONFLICT DO NOTHING;",
-        f"INSERT INTO knowledge.label(owner_id,id,kind,name,revision) VALUES ({OWNER},'{category}','CATEGORY',{encoded_text('人生指南')},1),({OWNER},'{tag}','TAG',{encoded_text('高性价比人生指南')},1);",
+        f"INSERT INTO knowledge.label(owner_id,id,kind,name,parent_category_id,revision) VALUES ({OWNER},'{category}','CATEGORY',{encoded_text('人生指南')},NULL,1),({OWNER},'{tag}','TAG',{encoded_text('高性价比人生指南')},'{category}',1);",
     ]
     for record in records:
         entry_id = record["id"]

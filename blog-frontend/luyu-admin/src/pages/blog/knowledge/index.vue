@@ -21,10 +21,13 @@ type ExtractedSegment = { ordinal: number; page: number | null; fromLine: number
 const fileSegments = ref<ExtractedSegment[]>([]), fileSegmentsPage = ref(1), fileSegmentsTotal = ref(0), fileSegmentsVisible = ref(false)
 type SearchLocation = { excerpt: string; page: number | null; fromLine: number | null; toLine: number | null }
 const searchLocations = ref<Record<string, SearchLocation>>({})
-const labelManager = ref(false), labelName = ref(''), labelKind = ref<'CATEGORY' | 'TAG'>('TAG')
+const labelManager = ref(false), labelName = ref(''), labelKind = ref<'CATEGORY' | 'TAG'>('TAG'), labelParentCategoryId = ref('')
+const labelParentDrafts = ref<Record<string, string>>({})
 const dirty = computed(() => !!editor.value && JSON.stringify(editor.value) !== baseline.value)
 const categoryOptions = computed(() => labels.value.filter(l => l.kind === 'CATEGORY'))
 const tagOptions = computed(() => labels.value.filter(l => l.kind === 'TAG'))
+const searchTagOptions = computed(() => tagOptions.value.filter(l => !category.value || l.parentCategoryId === category.value))
+const editorTagOptions = computed(() => tagOptions.value.filter(l => l.parentCategoryId === editor.value?.categoryId))
 const kindNames = { NOTE: '笔记', DOCUMENT: '文件资料', CONCEPT: '概念' }
 const extractionErrors: Record<string, string> = { ENCRYPTED_PDF: 'PDF 已加密，无法提取文字', NEEDS_OCR: '扫描件没有可提取文字，需要先做 OCR', PAGE_LIMIT: 'PDF 超过 300 页', OUTPUT_LIMIT: '文字提取量超过限制', INVALID_FILE: '文件内容无法解析', TIMEOUT: '解析超时', RESOURCE_LIMIT: '解析进程内存不足或被系统终止', PARSER_UNAVAILABLE: '解析服务暂不可用', STORAGE_UNAVAILABLE: '私有文件存储暂不可用', LEASE_EXPIRED: '解析中断' }
 let generation = 0, listSequence = 0, detailSequence = 0, fileSegmentsSequence = 0, disposed = false
@@ -54,6 +57,7 @@ async function load() {
     ])
     if (disposed || seq !== listSequence || current !== generation) return
     rows.value = entries.records.map(hit => hit.entry); searchLocations.value = Object.fromEntries(entries.records.map(({ entry, excerpt, page, fromLine, toLine }) => [entry.id, { excerpt, page, fromLine, toLine }])); total.value = entries.total; labels.value = options
+    labelParentDrafts.value = Object.fromEntries(options.filter(l => l.kind === 'TAG').map(l => [l.id, l.parentCategoryId || '']))
   } catch (e: any) { if (seq === listSequence && current === generation) error.value = e.message }
   finally { if (seq === listSequence && current === generation) busy.value = false }
 }
@@ -71,6 +75,10 @@ function create() {
   if (!discard()) return
   detailSequence++; fileSegmentsSequence++; selected.value = undefined; history.value = []; currentFile.value = undefined; fileSegments.value = []; fileSegmentsVisible.value = false; pending = undefined; filePending = undefined
   editor.value = { kind: 'NOTE', title: '', body: '', sourceUrl: '', categoryId: null, tagIds: [] }; baseline.value = ''; notice.value = '新条目尚未保存'
+}
+function changeEditorCategory() {
+  if (!editor.value) return
+  editor.value.tagIds = editor.value.tagIds.filter(id => editorTagOptions.value.some(tag => tag.id === id))
 }
 async function refreshFile(entryId: string, version: string, current = generation, seq = detailSequence) {
   try {
@@ -178,16 +186,19 @@ async function versions() {
     if (current === generation && id === selected.value?.id) history.value = result.records
   } catch (e: any) { if (current === generation) error.value = e.message }
 }
-async function manageLabel(existing?: KnowledgeLabel, remove = false) {
+async function manageLabel(existing?: KnowledgeLabel, remove = false, updateParentOnly = false) {
   const current = generation
-  const name = existing && !remove ? window.prompt('修改名称', existing.name) : labelName.value
+  const name = existing && !remove && !updateParentOnly ? window.prompt('修改名称', existing.name) : existing?.name || labelName.value
   if (!remove && !name?.trim()) return
   if (remove && !window.confirm('删除此分类或标签？仍有条目使用时会拒绝删除。')) return
+  const kind = existing?.kind || labelKind.value
+  const parentCategoryId = kind === 'TAG' ? (existing ? labelParentDrafts.value[existing.id] : labelParentCategoryId.value) : null
+  if (!remove && kind === 'TAG' && !parentCategoryId) { error.value = '请先选择标签所属分类'; return }
   try {
     if (remove && existing) await request('DELETE', `/manage/labels/${existing.id}?revision=${existing.revision}`)
-    else await request('POST', '/manage/labels', { id: existing?.id || crypto.randomUUID(), kind: existing?.kind || labelKind.value, name: name?.trim(), expectedRevision: existing?.revision || 0 })
+    else await request('POST', '/manage/labels', { id: existing?.id || crypto.randomUUID(), kind, name: name?.trim(), parentCategoryId, expectedRevision: existing?.revision || 0 })
     if (current === generation) { labelName.value = ''; await load() }
-  } catch (e: any) { if (current === generation) error.value = e.message }
+  } catch (e: any) { if (current === generation) { error.value = e.message; if (existing) labelParentDrafts.value[existing.id] = existing.parentCategoryId || '' } }
 }
 async function purgeExpired() {
   if (!capability.value?.canManage || !window.confirm('清理移入回收站超过30天且不含私有文件的条目？此操作不可撤销。')) return
@@ -211,12 +222,12 @@ onBeforeUnmount(() => { disposed = true; clearPrivate(); clearInterval(timer); w
     <p v-if="error" role="alert" class="error">{{ error }}</p>
     <section v-if="!capability?.canManage || !capability.available" class="empty"><h2>仅站主可以管理知识库</h2><p>{{ capability?.message || '正在确认后台管理权限…' }}</p><button @click="check(true)">重新检查</button></section>
     <template v-else>
-      <details v-if="capability.canManage && labelManager" open><summary>分类与标签管理</summary><form class="filters" @submit.prevent="manageLabel()"><select v-model="labelKind" aria-label="分类或标签"><option value="CATEGORY">分类</option><option value="TAG">标签</option></select><input v-model="labelName" placeholder="名称，最多80字" maxlength="80" aria-label="新分类标签名称"><button>添加</button></form><div v-for="l in labels" :key="l.id" class="version"><span>{{ l.kind === 'TAG' ? '标签' : '分类' }} · {{ l.name }}</span><div><button @click="manageLabel(l)">改名</button><button @click="manageLabel(l, true)">删除</button></div></div></details>
+      <details v-if="capability.canManage && labelManager" open><summary>分类与标签管理</summary><form class="filters" @submit.prevent="manageLabel()"><select v-model="labelKind" aria-label="分类或标签"><option value="CATEGORY">分类</option><option value="TAG">标签</option></select><select v-if="labelKind === 'TAG'" v-model="labelParentCategoryId" aria-label="标签所属分类" required><option value="" disabled>选择所属分类</option><option v-for="l in categoryOptions" :key="l.id" :value="l.id">{{ l.name }}</option></select><input v-model="labelName" placeholder="名称，最多80字" maxlength="80" aria-label="新分类标签名称"><button>添加</button></form><div v-for="l in labels" :key="l.id" class="version"><span>{{ l.kind === 'TAG' ? (categoryOptions.find(c => c.id === l.parentCategoryId)?.name || '未归类') + ' / ' : '分类 · ' }}{{ l.name }}</span><div><select v-if="l.kind === 'TAG'" v-model="labelParentDrafts[l.id]" :aria-label="`${l.name} 所属分类`"><option v-for="c in categoryOptions" :key="c.id" :value="c.id">{{ c.name }}</option></select><button v-if="l.kind === 'TAG' && labelParentDrafts[l.id] !== l.parentCategoryId" @click="manageLabel(l, false, true)">保存归属</button><button @click="manageLabel(l)">改名</button><button @click="manageLabel(l, true)">删除</button></div></div></details>
       <form class="filters" @submit.prevent="page = 1; load()">
         <input v-model="keyword" aria-label="关键词" placeholder="搜索标题、正文、标签…" maxlength="100">
         <select v-model="kind" aria-label="条目类型"><option value="">全部类型</option><option v-for="(name, key) in kindNames" :key="key" :value="key">{{ name }}</option></select>
-        <select v-model="category" aria-label="分类"><option value="">全部分类</option><option v-for="l in categoryOptions" :key="l.id" :value="l.id">{{ l.name }}</option></select>
-        <select v-model="tag" aria-label="标签"><option value="">全部标签</option><option v-for="l in tagOptions" :key="l.id" :value="l.id">{{ l.name }}</option></select>
+        <select v-model="category" aria-label="分类" @change="tag = ''; page = 1"><option value="">全部分类</option><option v-for="l in categoryOptions" :key="l.id" :value="l.id">{{ l.name }}</option></select>
+        <select v-model="tag" aria-label="标签"><option value="">全部标签</option><option v-for="l in searchTagOptions" :key="l.id" :value="l.id">{{ l.name }}</option></select>
         <label v-if="capability.canManage"><input v-model="trash" type="checkbox">回收站</label><button :disabled="busy">{{ busy ? '读取中…' : '查找' }}</button><button v-if="capability.canManage && trash" type="button" @click="purgeExpired">清理30天前的回收站</button>
       </form>
       <div class="columns">
@@ -226,9 +237,9 @@ onBeforeUnmount(() => { disposed = true; clearPrivate(); clearInterval(timer); w
             <div v-if="keyword && selected && searchLocations[selected.id]?.excerpt" class="search-context"><strong>本次检索命中</strong><span v-if="searchLocations[selected.id].page"> · 文件第 {{ searchLocations[selected.id].page }} 页</span><span v-else-if="searchLocations[selected.id].fromLine"> · 第 {{ searchLocations[selected.id].fromLine }}–{{ searchLocations[selected.id].toLine }} 行</span><p>{{ searchLocations[selected.id].excerpt }}</p></div>
             <template v-if="capability.canManage && !selected?.deletedAt">
               <label>标题<input v-model="editor.title" maxlength="200" :disabled="saving"></label>
-              <div class="metadata"><label>类型<select v-model="editor.kind" :disabled="!!selected?.revision || saving"><option v-for="(name, key) in kindNames" :key="key" :value="key">{{ name }}</option></select></label><label>分类<select v-model="editor.categoryId" :disabled="saving"><option :value="null">未分类</option><option v-for="l in categoryOptions" :key="l.id" :value="l.id">{{ l.name }}</option></select></label></div>
+              <div class="metadata"><label>类型<select v-model="editor.kind" :disabled="!!selected?.revision || saving"><option v-for="(name, key) in kindNames" :key="key" :value="key">{{ name }}</option></select></label><label>分类<select v-model="editor.categoryId" :disabled="saving" @change="changeEditorCategory"><option :value="null">未分类</option><option v-for="l in categoryOptions" :key="l.id" :value="l.id">{{ l.name }}</option></select></label></div>
               <label>来源链接（仅记录）<input v-model="editor.sourceUrl" maxlength="2000" :disabled="saving" placeholder="https://…"></label>
-              <fieldset class="tag-picker" :disabled="saving"><legend>标签（最多20个）</legend><p v-if="!tagOptions.length">暂无标签，请先在“分类与标签”中添加。</p><label v-for="l in tagOptions" :key="l.id"><input v-model="editor.tagIds" type="checkbox" :value="l.id" :disabled="saving || (!editor.tagIds.includes(l.id) && editor.tagIds.length >= 20)">{{ l.name }}</label></fieldset>
+              <fieldset class="tag-picker" :disabled="saving || !editor.categoryId"><legend>当前分类的标签（最多20个）</legend><p v-if="!editor.categoryId">请先选择分类。</p><p v-else-if="!editorTagOptions.length">当前分类暂无标签，请先在“分类与标签”中添加。</p><label v-for="l in editorTagOptions" :key="l.id"><input v-model="editor.tagIds" type="checkbox" :value="l.id" :disabled="saving || (!editor.tagIds.includes(l.id) && editor.tagIds.length >= 20)">{{ l.name }}</label></fieldset>
               <div class="markdown-field"><span class="field-title">Markdown 正文</span><MdEditor v-model="editor.body" :disabled="saving || uploadingImage" :preview="false" style="height:460px" @onUploadImg="uploadBodyImages" /></div>
               <div class="actions"><button :disabled="saving || !editor.title.trim()" @click="save">{{ saving ? '正在保存…' : '保存条目' }}</button><button @click="preview = !preview">{{ preview ? '收起预览' : '阅读预览' }}</button><button v-if="selected?.revision" @click="versions">历史版本</button><button v-if="selected?.revision" @click="action('delete')">移入回收站</button></div><p role="status">{{ notice }}{{ dirty ? ' · 有未确认编辑' : '' }}</p>
             </template>

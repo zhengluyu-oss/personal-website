@@ -41,11 +41,15 @@ test('new note saves with a stable mutation and entry id after an uncertain resp
   saveError=new Error('请求未获确认');button(f.host,'保存条目').click();await flush();assert.match(f.host.textContent,/尚未确认保存/)
   saveError=undefined;button(f.host,'保存条目').click();await flush();const writes=calls.filter(c=>c.path==='/manage/entries');assert.equal(writes.length,2);assert.deepEqual(writes[0].data,writes[1].data);assert.match(f.host.textContent,/已可靠保存/)
 }finally{f.close()}})
-test('new entry tag checkboxes save selected IDs and can be cleared',async()=>{labelReply=[{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',kind:'TAG',name:'Git',revision:1}];const f=await mount();try{
+test('new entry only offers tags from its category and clears them when category changes',async()=>{const categoryId='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',otherId='cccccccc-cccc-4ccc-8ccc-cccccccccccc';labelReply=[{id:categoryId,kind:'CATEGORY',name:'基础知识',parentCategoryId:null,revision:1},{id:otherId,kind:'CATEGORY',name:'其他',parentCategoryId:null,revision:1},{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',kind:'TAG',name:'Git',parentCategoryId:categoryId,revision:1}];const f=await mount();try{
   button(f.host,'新建条目').click();await flush();fill(f.host,'标题','有标签的笔记');
+  assert.equal(f.host.querySelector('.tag-picker input[type="checkbox"]'),null)
+  const category=f.host.querySelectorAll('.metadata select')[1];category.value=categoryId;category.dispatchEvent(new window.Event('change',{bubbles:true}));await flush()
   const tag=f.host.querySelector('.tag-picker input[type="checkbox"]');assert.ok(tag);tag.click();await flush();assert.equal(tag.checked,true);
-  button(f.host,'保存条目').click();await flush();assert.deepEqual(calls.find(c=>c.path==='/manage/entries').data.content.tagIds,[labelReply[0].id]);
-  tag.click();await flush();assert.equal(tag.checked,false)
+  button(f.host,'保存条目').click();await flush();assert.deepEqual(calls.find(c=>c.path==='/manage/entries').data.content.tagIds,[labelReply[2].id]);
+  category.value=otherId;category.dispatchEvent(new window.Event('change',{bubbles:true}));await flush()
+  assert.equal(f.host.querySelector('.tag-picker input[type="checkbox"]'),null)
+  button(f.host,'保存条目').click();await flush();assert.deepEqual(calls.filter(c=>c.path==='/manage/entries').at(-1).data.content.tagIds,[])
 }finally{f.close()}})
 test('non-owner cannot use the admin knowledge editor',async()=>{const f=await mount(false);try{assert.equal([...f.host.querySelectorAll('button')].some(b=>b.textContent.includes('新建条目')),false);assert.match(f.host.textContent,/仅站主可以管理知识库/);assert.equal(f.host.querySelector('textarea'),null)}finally{f.close()}})
 test('revocation clears content and ignores a late detail response',async()=>{const f=await mount();let finish;try{readReply=new Promise(r=>{finish=r});button(f.host,'合成笔记').click();await flush();window.dispatchEvent(new window.CustomEvent('knowledge-access-invalid'));await flush();finish(entry);await flush();assert.equal(f.host.querySelector('textarea'),null);assert.doesNotMatch(f.host.textContent,/合成正文/)}finally{finish?.(entry);f.close()}})

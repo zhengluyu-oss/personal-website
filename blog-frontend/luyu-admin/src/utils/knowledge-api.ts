@@ -7,7 +7,7 @@ export interface KnowledgeEntry { id: string; revision: number; content: Knowled
 export interface KnowledgePage<T> { records: T[]; total: number; page: number; pageSize: number }
 export interface KnowledgeCapability { allowed: boolean; available: boolean; canManage: boolean; filesAvailable: boolean; message: string }
 export interface KnowledgeAck { id: string; revision: number; savedAt: string; deleted: boolean }
-export interface KnowledgeLabel { id: string; kind: 'CATEGORY' | 'TAG'; name: string; revision: number }
+export interface KnowledgeLabel { id: string; kind: 'CATEGORY' | 'TAG'; name: string; parentCategoryId: string | null; revision: number }
 export interface KnowledgeFileInfo { version: string; filename: string; mime: string; sizeBytes: number; state: 'QUEUED' | 'RUNNING' | 'READY' | 'RETRY_WAIT' | 'FAILED' | 'NEEDS_OCR' | 'CANCELED'; errorCode: string | null }
 export interface KnowledgeFileCommit { ack: KnowledgeAck; accepted: boolean; version: string | null }
 
