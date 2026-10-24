@@ -128,4 +128,12 @@ onBeforeUnmount(() => { disposed = true; clear(); clearInterval(timer); window.r
 
 <style scoped>
 .knowledge-reader{max-width:1280px;margin:90px auto 50px;padding:24px;color:var(--font-color,#24364b)}header{border-bottom:1px solid #dfe5ed;padding-bottom:24px}h1{font-size:32px;margin:5px 0}p{line-height:1.8}.eyebrow,small,time{color:#64748b;font-size:12px}.filters,nav{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.filters{padding:22px 0}.filters>input{flex:1;min-width:160px}.columns{display:grid;grid-template-columns:280px minmax(0,1fr);gap:28px}aside,.detail{border:1px solid #dfe5ed;border-radius:12px;padding:20px;background:var(--card-bg,#fff)}ul{list-style:none;padding:0}li button{display:grid;text-align:left;width:100%;gap:7px;margin:8px 0;padding:14px}.active,.search-context{background:#edf3ff}.search-context{padding:14px;border-left:3px solid #285de0;overflow-wrap:anywhere}.knowledge-file,.extracted-content{border-top:1px solid #dfe5ed;margin-top:16px;padding-top:12px}.extracted-content pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:420px;overflow:auto;font:inherit;line-height:1.7}input,select,button{font:inherit;border:1px solid #cdd6e2;border-radius:6px;padding:9px 12px;max-width:100%;box-sizing:border-box}button{cursor:pointer;background:transparent;color:inherit}button:disabled{opacity:.5;cursor:default}.empty{padding:35px 10px}.error{border-left:3px solid #b23d32;background:#fff1ee;padding:14px}strong{overflow-wrap:anywhere}a{color:#285de0}@media(max-width:760px){.knowledge-reader{padding:16px;margin-top:70px}.columns{grid-template-columns:1fr}aside,.detail{padding:16px}}
+.knowledge-reader{box-sizing:border-box;width:100%;min-width:0}
+.columns,aside,.detail{min-width:0}
+.detail :deep(.md-editor){max-width:100%;min-width:0}
+.detail :deep(.md-editor-preview){max-width:100%;min-width:0;overflow-wrap:anywhere}
+.detail :deep(.md-editor-preview img){max-width:100%;height:auto}
+.detail :deep(.md-editor-preview pre){max-width:100%;overflow-x:auto}
+.detail :deep(.md-editor-preview table){display:block;max-width:100%;overflow-x:auto}
+@media(max-width:760px){.columns{grid-template-columns:minmax(0,1fr)}}
 </style>
