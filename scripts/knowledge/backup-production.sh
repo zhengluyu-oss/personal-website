@@ -26,9 +26,13 @@ final="$backup_root/knowledge-v2-$stamp"
 [[ ! -e $final ]]
 trap 'echo "KNOWLEDGE_BACKUP_INCOMPLETE $pending" >&2' ERR
 
-# PostgreSQL schema dump includes entry history, labels, relations, jobs,
-# outbox and export snapshots. It is intentionally limited to knowledge.
-runuser -u postgres -- pg_dump --no-password --format=custom --schema=knowledge "$KNOWLEDGE_PG_DATABASE" |
+# PostgreSQL schema dump also includes assistant usage when its migration exists.
+pg_schemas=(--schema=knowledge)
+if [[ $(runuser -u postgres -- psql --no-psqlrc --quiet --tuples-only --dbname="$KNOWLEDGE_PG_DATABASE" \
+  --command="SELECT to_regnamespace('knowledge_assistant') IS NOT NULL" | tr -d '[:space:]') == t ]]; then
+  pg_schemas+=(--schema=knowledge_assistant)
+fi
+runuser -u postgres -- pg_dump --no-password --format=custom "${pg_schemas[@]}" "$KNOWLEDGE_PG_DATABASE" |
   age --recipient "$recipient" --output "$pending/postgres-knowledge.dump.age"
 
 # Only the knowledge/article idempotency mapping is copied from MySQL;

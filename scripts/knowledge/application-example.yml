@@ -22,3 +22,19 @@ knowledge:
     text-bytes: 5242880
     output-bytes: 2097152
     temporary-bytes: 268435456
+  assistant:
+    # Keep false until migration 004, isolated tests, provider approval and a backup pass.
+    enabled: false
+    endpoint: ""
+    allowed-hosts: []
+    api-key: ""
+    model: ""
+    data-policy: ""
+    daily-per-account: 10
+    daily-site: 100
+    max-concurrent: 2
+    max-question-chars: 500
+    max-evidence: 4
+    max-evidence-chars: 4800
+    max-output-tokens: 800
+    timeout-seconds: 20

@@ -60,6 +60,8 @@ def main():
         pg((ROOT / "scripts/knowledge/002-private-images.sql").read_text(encoding="utf-8"))
         pg((ROOT / "scripts/knowledge/003-category-tag-hierarchy.sql").read_text(encoding="utf-8"))
         pg((ROOT / "scripts/knowledge/003-category-tag-hierarchy.sql").read_text(encoding="utf-8"))
+        pg((ROOT / "scripts/knowledge/004-assistant-usage.sql").read_text(encoding="utf-8"))
+        pg((ROOT / "scripts/knowledge/004-assistant-usage.sql").read_text(encoding="utf-8"))
         mysql((ROOT / "sql/knowledge-article-export.sql").read_text(encoding="utf-8"))
         seed_pg = """
 INSERT INTO knowledge.entry(owner_id,id,kind,title,body,revision)
@@ -80,6 +82,7 @@ INSERT INTO knowledge.article_export(owner_id,id,request_hash,snapshot,state,art
 VALUES (9001,md5('export')::uuid,repeat('b',64),'{"title":"draft"}','CREATED',123);
 """
         pg(seed_pg)
+        pg("INSERT INTO knowledge_assistant.usage(owner_id,id,account_id,usage_day,state) VALUES(9001,md5('assistant-usage')::uuid,42,current_date,'UNCERTAIN');")
         mysql("INSERT INTO t_knowledge_article_export(owner_id,export_id,request_hash,article_id) VALUES(9001,'11111111-1111-1111-1111-111111111111',REPEAT('b',64),123);")
         inventory_sql = "SELECT object_key,sha256,size_bytes,state FROM knowledge.file_version WHERE owner_id=9001 UNION ALL SELECT object_key,'' AS sha256,size_bytes,state FROM knowledge.image WHERE owner_id=9001 ORDER BY object_key;"
         inventory = pg(inventory_sql)
@@ -88,7 +91,7 @@ VALUES (9001,md5('export')::uuid,repeat('b',64),'{"title":"draft"}','CREATED',12
         if b"knowledge/private/objects/restore-image" not in inventory:
             raise RuntimeError("private image inventory missing")
 
-        dump_pg = run(["docker", "exec", PG, "pg_dump", "-U", "postgres", "-Fc", "-n", "knowledge", "knowledge_source"])
+        dump_pg = run(["docker", "exec", PG, "pg_dump", "-U", "postgres", "-Fc", "-n", "knowledge", "-n", "knowledge_assistant", "knowledge_source"])
         dump_mysql = run(["docker", "exec", MYSQL, "mysqldump", "-uroot", "-pisolated-knowledge-restore",
                           "--single-transaction", "--no-tablespaces", "--set-gtid-purged=OFF",
                           "knowledge_source", "t_knowledge_article_export"])
@@ -104,7 +107,9 @@ VALUES (9001,md5('export')::uuid,repeat('b',64),'{"title":"draft"}','CREATED',12
             ("SELECT count(*) FROM knowledge.article_export WHERE article_id=123;", "1"),
             ("SELECT count(*) FROM knowledge.file_version;", "1"),
             ("SELECT count(*) FROM knowledge.image;", "1"),
+            ("SELECT count(*) FROM knowledge_assistant.usage WHERE account_id=42 AND state='UNCERTAIN';", "1"),
             ("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='knowledge' AND c.relkind='r' AND c.relrowsecurity AND c.relforcerowsecurity;", "13"),
+            ("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('knowledge','knowledge_assistant') AND c.relkind='r' AND c.relrowsecurity AND c.relforcerowsecurity;", "14"),
         ]:
             check_row(query, expected, "knowledge_restored")
         if pg(inventory_sql, "knowledge_restored") != inventory:
@@ -112,6 +117,8 @@ VALUES (9001,md5('export')::uuid,repeat('b',64),'{"title":"draft"}','CREATED',12
         if mysql("SELECT COUNT(*) FROM t_knowledge_article_export WHERE article_id=123;", "knowledge_restored").strip().splitlines()[-1:] != [b"1"]:
             raise RuntimeError("MySQL export mapping missing")
         check_row("BEGIN; SET ROLE knowledge_runtime; SELECT count(*) FROM knowledge.entry; COMMIT;", "0", "knowledge_restored")
+        check_row("BEGIN; SET ROLE knowledge_runtime; SELECT count(*) FROM knowledge_assistant.usage; COMMIT;", "0", "knowledge_restored")
+        check_row("BEGIN; SET ROLE knowledge_runtime; SELECT set_config('knowledge.owner_id','9001',true); SELECT count(*) FROM knowledge_assistant.usage; COMMIT;", "9001\n1", "knowledge_restored")
         check_row("BEGIN; SET ROLE knowledge_runtime; SELECT set_config('knowledge.owner_id','9001',true); SELECT count(*) FROM knowledge.entry; COMMIT;", "9001\n2", "knowledge_restored")
         pg("CREATE SCHEMA diary; CREATE TABLE diary.canary(secret text);")
         denied = pg("BEGIN; SET ROLE knowledge_runtime; SELECT * FROM diary.canary;", "knowledge_restored", check=False)
@@ -123,7 +130,7 @@ VALUES (9001,md5('export')::uuid,repeat('b',64),'{"title":"draft"}','CREATED',12
                 raise RuntimeError("knowledge runtime can read diary")
         print(json.dumps({"postgresCustomDumpBytes": len(dump_pg), "mysqlSqlDumpBytes": len(dump_mysql),
                           "history": 2, "relations": 1, "exports": 1, "privateObjectManifest": 2,
-                          "forcedRlsTables": 13, "runtimeWithoutOwnerRows": 0,
+                          "forcedRlsTables": 14, "assistantUsageRows": 1, "runtimeWithoutOwnerRows": 0,
                           "runtimeWithOwnerRows": 2, "diaryDenied": True}, ensure_ascii=False))
     finally:
         for name, cid in created:

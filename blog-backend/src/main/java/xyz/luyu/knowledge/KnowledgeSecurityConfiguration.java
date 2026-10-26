@@ -18,7 +18,7 @@ import java.io.IOException;
 public class KnowledgeSecurityConfiguration {
     @Bean @Order(-1)
     SecurityFilterChain knowledgeSecurity(HttpSecurity http,JwtAuthorizeFilter jwt,KnowledgeAccess access)throws Exception{
-        return http.securityMatcher("/knowledge/**").authorizeHttpRequests(a->a.requestMatchers("/knowledge/view/capabilities").permitAll()
+        return http.securityMatcher("/knowledge/**").authorizeHttpRequests(a->a.requestMatchers("/knowledge/view/capabilities","/knowledge/view/assistant/capabilities").permitAll()
             .requestMatchers("/knowledge/view/**").access((authentication,context)->new AuthorizationDecision(access.canRead()))
             .requestMatchers("/knowledge/manage/**").access((authentication,context)->new AuthorizationDecision(access.canManage())).anyRequest().denyAll())
             .csrf(AbstractHttpConfigurer::disable).sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

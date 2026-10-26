@@ -111,9 +111,10 @@ sequenceDiagram
 
 ## 部署、监控与回退
 
-- 部署先备份 PG `knowledge` schema、MySQL 文章及幂等映射、知识前缀对象清单和当前应用产物。迁移脚本依次为 `scripts/knowledge/000-roles.sql`、`001-knowledge.sql`、`002-private-images.sql`、`003-category-tag-hierarchy.sql` 及相应 MySQL 迁移；必须用隔离数据库先演练，不能让测试默认连接生产。
+- 部署先备份 PG `knowledge` schema、MySQL 文章及幂等映射、知识前缀对象清单和当前应用产物。迁移脚本依次为 `scripts/knowledge/000-roles.sql`、`001-knowledge.sql`、`002-private-images.sql`、`003-category-tag-hierarchy.sql`、`004-assistant-usage.sql` 及相应 MySQL 迁移；必须用隔离数据库先演练，不能让测试默认连接生产。`004` 在独立 `knowledge_assistant` schema 建立仅记录账号、日期和状态的调用记录；不保存问题或回答。
 - 手动加密元数据备份脚本为 `scripts/knowledge/backup-production.sh`。运行前显式提供 `KNOWLEDGE_PG_DATABASE`、`KNOWLEDGE_MYSQL_DATABASE`、权限为 0600 的 `KNOWLEDGE_MYSQL_DEFAULTS_FILE`、`KNOWLEDGE_BACKUP_RECIPIENT_FILE`；输出版本目录包含 PG custom dump、MySQL 映射 SQL、私有对象 CSV 清单和 SHA256 校验。不要把明文密钥放入命令行或提交到仓库。用 `python scripts/knowledge/verify-backup-restore.py` 在本机隔离容器重复恢复演练。该清单只记录数据库引用的对象，并不保存 OSS 文件字节；Bucket 级灾难恢复仍依赖独立对象副本或版本保护，不能只靠此脚本。
 - 配置 `knowledge.owner-user-id`、独立 PG 运行角色/连接、现有 OSS 凭据和 Bucket。启动时先保持 `knowledge.enabled=false`；确认首页、博客、日记正常，再启用知识库。前端模块授权仍需在后台配置。文件能力须先通过真实私有对象的双域名匿名拒绝探针。
+- 客服另由 `knowledge.assistant.enabled` 控制，默认关闭。启用前须单独填写 HTTPS 生成端点、允许的主机名、独立 API 密钥和模型、数据发送政策，以及每日每账号/全站额度、并发和超时（示例见 `scripts/knowledge/application-example.yml`）；不能借用日记 AI 凭据。会向该供应商发送访客问题与至多 4 条当前可读摘录，请先核对供应商、费用上限及其数据处理政策。若配置或迁移缺失，客服保持隐藏，不影响原知识库阅读。回退时先关闭 `knowledge.assistant.enabled`，再回滚应用；保留 `knowledge_assistant.usage` 供对账。
 - 观察 JVM 与解析子进程 RSS、CPU、临时磁盘、PG 连接池、`processing_job` 中 RUNNING/RETRY_WAIT/FAILED、Rabbit v1/v2/dead 队列积压、OSS orphan 清理和 MySQL 导出映射。4 核/4 GiB/40 GiB 的机器保持解析单并发，不通过加常驻服务解决性能问题。
 - 回退先关闭 `knowledge.enabled` 停止新上传与消费，再回滚应用产物；不要删除 `knowledge` schema、MySQL 映射、OSS 私有对象或待处理消息。恢复时先核对队列与 PG 任务，再重新启用。回退公开访问策略需在后台按权限撤回，关闭功能不等于物理删除已有资料。
 - 灾难恢复应先在隔离环境恢复加密备份并核对条目历史、文件清单、关系、文章映射、RLS 与角色，再执行任何生产恢复。实际演练结果和恢复时间必须另记，不能把这份操作说明当成已通过的恢复测试。

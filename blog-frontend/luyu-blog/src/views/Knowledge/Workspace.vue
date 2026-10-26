@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import PrivateMarkdown from './PrivateMarkdown.vue'
 import Connections from './Connections.vue'
 import 'md-editor-v3/lib/style.css'
@@ -9,6 +10,7 @@ import { knowledgeRequest as request, knowledgeDownloadFile, type KnowledgeCapab
 type SearchLocation = { excerpt: string; page: number | null; fromLine: number | null; toLine: number | null }
 type Segment = { ordinal: number; page: number | null; fromLine: number | null; toLine: number | null; text: string }
 const user = useUserStore()
+const route = useRoute()
 const capability = ref<KnowledgeCapability>(), rows = ref<KnowledgeEntry[]>([]), labels = ref<KnowledgeLabel[]>([])
 const selected = ref<KnowledgeEntry>(), currentFile = ref<KnowledgeFileInfo>(), segments = ref<Segment[]>([])
 const keyword = ref(''), kind = ref(''), category = ref(''), tag = ref(''), page = ref(1), total = ref(0)
@@ -35,7 +37,11 @@ async function check(reset = false) {
     if (disposed || current !== generation) return
     if (!result.allowed) clear()
     capability.value = result
-    if (reset && result.allowed && result.available) await load()
+    if (reset && result.allowed && result.available) {
+      await load()
+      const entryId = route.query.entry
+      if (typeof entryId === 'string' && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(entryId)) await open(entryId)
+    }
   } catch (failure: any) { if (current === generation) error.value = failure.message }
 }
 async function load() {
@@ -94,6 +100,9 @@ async function download() {
   catch (failure: any) { error.value = failure.message }
 }
 watch(() => user.token, () => { void check(true) }, { immediate: true, flush: 'sync' })
+watch(() => route.query.entry, id => {
+  if (capability.value?.allowed && capability.value.available && typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(id) && selected.value?.id !== id) void open(id)
+})
 onMounted(() => {
   window.addEventListener('knowledge-access-invalid', denied)
   window.addEventListener('focus', refresh)

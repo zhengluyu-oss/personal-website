@@ -43,6 +43,9 @@ VALUES (1,md5('unclassified-git')::uuid,1,'{"kind":"NOTE","title":"Git 笔记","
 """)
     hierarchy_migration=(ROOT/'scripts/knowledge/003-category-tag-hierarchy.sql').read_text(encoding='utf-8')
     sql(hierarchy_migration);sql(hierarchy_migration)
+    assistant_migration=(ROOT/'scripts/knowledge/004-assistant-usage.sql').read_text(encoding='utf-8')
+    sql(assistant_migration);sql(assistant_migration)
+    assert sql("SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='knowledge_assistant' AND c.relname='usage' AND c.relrowsecurity AND c.relforcerowsecurity").stdout.strip()=='1'
     assert sql("""SELECT count(*) FROM knowledge.label t JOIN knowledge.label c
       ON c.owner_id=t.owner_id AND c.id=t.parent_category_id
      WHERE t.kind='TAG' AND c.kind='CATEGORY'""").stdout.strip()=='2'
@@ -56,7 +59,7 @@ VALUES (1,md5('unclassified-git')::uuid,1,'{"kind":"NOTE","title":"Git 笔记","
     env=os.environ.copy();env['BLOG_KNOWLEDGE_QA']='true'
     missing=pathlib.Path(os.environ.get('TEMP','.'))/('qa-missing-'+uuid.uuid4().hex)
     jvm=['-DargLine=-Djdk.net.unixdomain.tmpdir='+missing.as_posix()] if os.name=='nt' else []
-    r=subprocess.run(['mvn.cmd' if os.name=='nt' else 'mvn','-q',*jvm,'-Dtest=KnowledgeStorePostgresTest','test'],cwd=ROOT/'blog-backend',env=env,capture_output=True,text=True,encoding='utf-8',errors='replace')
+    r=subprocess.run(['mvn.cmd' if os.name=='nt' else 'mvn','-q',*jvm,'-Dtest=KnowledgeStorePostgresTest,KnowledgeAssistantPostgresTest','test'],cwd=ROOT/'blog-backend',env=env,capture_output=True,text=True,encoding='utf-8',errors='replace')
     if r.returncode: raise RuntimeError(r.stdout[-6000:]+r.stderr[-2000:])
     sql('ALTER TABLE knowledge.entry ADD COLUMN unexpected text')
     assert sql(migration,False).returncode!=0
