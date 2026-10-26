@@ -155,12 +155,46 @@ onBeforeUnmount(() => { active = false })
       </div>
     </section>
 
-    <section class="closing section-shell" aria-labelledby="about-home-title">
-      <div><h2 id="about-home-title">{{ canViewModule('about') ? '继续了解陆屿' : '继续了解我' }}</h2><p>{{ canViewModule('about') ? '查看完整介绍、技术方向与可公开的联系信息。' : '个人介绍仅向获授权的账号开放。' }}</p></div>
-      <nav class="closing-links" aria-label="关于与联系入口">
-        <RouterLink class="section-link" :to="PUBLIC_PATHS.about">关于我 <span aria-hidden="true">→</span></RouterLink>
-        <a v-if="canViewModule('about') && githubUrl" class="section-link" :href="githubUrl" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
-      </nav>
+    <section class="module-feature section-shell" aria-labelledby="shares-home-title">
+      <div class="module-feature__heading">
+        <span class="module-feature__number" aria-hidden="true">01 / EXPLORE</span>
+        <h2 id="shares-home-title">网站分享</h2>
+      </div>
+      <div class="module-feature__body">
+        <p>收集值得一看的站点与实用工具，方便从这里继续探索。</p>
+        <RouterLink class="section-link module-feature__link" :to="PUBLIC_PATHS.websiteShares">
+          {{ canViewModule('shares') ? '浏览网站分享' : '查看访问说明' }} <span aria-hidden="true">→</span>
+        </RouterLink>
+      </div>
+    </section>
+
+    <section class="module-feature module-feature--knowledge section-shell" aria-labelledby="knowledge-home-title">
+      <div class="module-feature__heading">
+        <span class="module-feature__number" aria-hidden="true">02 / LEARN</span>
+        <h2 id="knowledge-home-title">知识库</h2>
+      </div>
+      <div class="module-feature__body">
+        <p>按主题整理技术学习笔记，便于查找与回顾。</p>
+        <RouterLink class="section-link module-feature__link" to="/knowledge">
+          {{ canViewModule('knowledge') ? '进入知识库' : '查看访问说明' }} <span aria-hidden="true">→</span>
+        </RouterLink>
+      </div>
+    </section>
+
+    <section class="module-feature module-feature--about section-shell" aria-labelledby="about-home-title">
+      <div class="module-feature__heading">
+        <span class="module-feature__number" aria-hidden="true">03 / ABOUT</span>
+        <h2 id="about-home-title">关于我</h2>
+      </div>
+      <div class="module-feature__body">
+        <p>了解我的经历与技术方向，以及这个网站背后的想法。</p>
+        <div class="module-feature__actions">
+          <RouterLink class="section-link module-feature__link" :to="PUBLIC_PATHS.about">
+            {{ canViewModule('about') ? '了解更多' : '查看访问说明' }} <span aria-hidden="true">→</span>
+          </RouterLink>
+          <a v-if="canViewModule('about') && githubUrl" class="section-link module-feature__secondary" :href="githubUrl" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
     </section>
   </div>
 </template>
@@ -221,10 +255,15 @@ onBeforeUnmount(() => { active = false })
 .work-evidence ul { padding-left: 1.1rem; margin: .6rem 0; color: var(--brand-ink-soft); font-size: .95rem; line-height: 1.8; list-style: disc; }
 .work-evidence .read-link { display: inline-block; margin-top: .6rem; }
 .work-tech { margin: .75rem 0; color: var(--brand-ink-soft); font-size: .85rem; line-height: 1.75; }
-.closing { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; border-top: 1px solid var(--brand-line); padding: 2rem 0 3rem; }
-.closing h2 { margin: 0; font-size: 1.25rem; font-weight: 650; }
-.closing p { margin: .5rem 0 0; color: var(--brand-ink-soft); font-size: .95rem; }
-.closing-links { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem 1.5rem; }
+.module-feature { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 2rem; align-items: start; border-top: 1px solid var(--brand-line); padding: 2.5rem 0; }
+.module-feature--about { padding-bottom: 3.5rem; }
+.module-feature__heading, .module-feature__body { min-width: 0; }
+.module-feature__number { display: block; margin-bottom: .75rem; color: var(--brand-accent-strong); font-family: 'Share TechMono', Consolas, monospace; font-size: .8rem; letter-spacing: .08em; }
+.module-feature h2 { margin: 0; font-size: clamp(1.6rem, 2.4vw, 2rem); font-weight: 680; line-height: 1.4; letter-spacing: -.02em; }
+.module-feature__body p { max-width: 34rem; margin: .15rem 0 .9rem; color: var(--brand-ink-soft); font-size: 1rem; line-height: 1.8; }
+.module-feature__link { display: inline-flex; align-items: center; min-height: 2.75rem; }
+.module-feature__actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.5rem; }
+.module-feature__secondary { color: var(--brand-ink-soft); }
 .module-message { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1rem 0 0; padding: .8rem 1rem; background: var(--brand-canvas-soft); border-radius: var(--brand-radius-sm); font-size: .9rem; line-height: 1.6; color: var(--brand-ink-soft); }
 .module-message button { padding: .45rem .75rem; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); color: var(--brand-accent-strong); background: var(--brand-surface); font-weight: 600; cursor: pointer; }
 .module-empty { padding: 2rem 1rem; color: var(--brand-ink-soft); font-size: 1rem; line-height: 1.8; }
@@ -281,6 +320,8 @@ button:hover { background: var(--brand-accent-soft); }
   .restricted-work__index { font-size: 1rem; }
   .restricted-work__list strong { font-size: 1.1rem; }
   .restricted-work__link { margin-left: 1.2rem; }
-  .closing { flex-wrap: wrap; padding: 1.5rem 0 2rem; }
+  .module-feature { grid-template-columns: 1fr; gap: .4rem; padding: 2rem 0; }
+  .module-feature--about { padding-bottom: 2.5rem; }
+  .module-feature__body p { margin-top: 0; }
 }
 </style>
