@@ -14,7 +14,8 @@ const recommended = reactive(createHomeResource<HomeArticle[]>())
 const work = reactive(createHomeResource<WorkExperienceItem[]>())
 const overview = reactive(createHomeResource<ExperienceOverview>())
 const shares = reactive(createHomeResource<WebsiteShareItem[]>())
-const knowledge = reactive(createHomeResource<KnowledgeEntry[]>())
+type KnowledgePreview = { entry: KnowledgeEntry; excerpt: string }
+const knowledge = reactive(createHomeResource<KnowledgePreview[]>())
 let active = true
 const isActive = () => active
 const loadArticles = () => loadHomeResource(latest, async () => articlePage((await getArticleList(1, 6)).data), isActive)
@@ -42,11 +43,11 @@ const loadShares = () => loadHomeResource(shares, async () => {
 const loadKnowledge = () => loadHomeResource(knowledge, async () => {
   const capability = await knowledgeRequest<KnowledgeCapability>('GET', '/view/capabilities')
   if (!capability.allowed || !capability.available) throw new Error(capability.message || '知识库暂不可用')
-  const page = await knowledgeRequest<KnowledgePage<{ entry: KnowledgeEntry }>>('POST', '/view/search', {
+  const page = await knowledgeRequest<KnowledgePage<KnowledgePreview>>('POST', '/view/search', {
     keyword: null, kind: null, categoryId: null, tagId: null, page: 1, pageSize: 4, deleted: false,
   })
   if (!Array.isArray(page.records)) throw new Error('Invalid knowledge response')
-  return page.records.map(item => item.entry)
+  return page.records
 }, isActive)
 const selection = computed(() => selectHomeArticles(latest.data?.articles || [], recommended.data || []))
 const current = computed(() => work.data?.find(item => item.isCurrent === 1))
@@ -200,11 +201,11 @@ onBeforeUnmount(() => { active = false })
       <div v-if="!canViewModule('knowledge')" class="module-empty">知识库仅向获授权的账号开放。<RouterLink to="/knowledge">查看访问说明 →</RouterLink></div>
       <div v-else-if="pending(knowledge)" class="collection-skeleton collection-skeleton--knowledge" role="status" aria-label="知识库加载中"><span v-for="index in 4" :key="index" /></div>
       <div v-else-if="knowledge.data?.length" class="knowledge-preview-grid">
-        <RouterLink v-for="entry in knowledge.data" :key="entry.id" class="knowledge-preview" :to="{ path: '/knowledge', query: { entry: entry.id } }">
-          <span class="knowledge-preview__kind">{{ knowledgeKind[entry.content.kind] }}</span>
-          <h3>{{ entry.content.title }} <span aria-hidden="true">↗</span></h3>
-          <p v-if="entry.content.body">{{ homeExcerpt(entry.content.body, 90) }}</p>
-          <time>{{ new Date(entry.updatedAt).toLocaleDateString('zh-CN') }}</time>
+        <RouterLink v-for="item in knowledge.data" :key="item.entry.id" class="knowledge-preview" :to="{ path: '/knowledge', query: { entry: item.entry.id } }">
+          <span class="knowledge-preview__kind">{{ knowledgeKind[item.entry.content.kind] }}</span>
+          <h3>{{ item.entry.content.title }} <span aria-hidden="true">↗</span></h3>
+          <p v-if="homeExcerpt(item.excerpt, 130)">{{ homeExcerpt(item.excerpt, 130) }}</p>
+          <time>{{ new Date(item.entry.updatedAt).toLocaleDateString('zh-CN') }}</time>
         </RouterLink>
       </div>
       <div v-else-if="knowledge.status === 'success'" class="module-empty"><h3>知识库正在整理中</h3><p>新增条目后会在这里展示。</p></div>
@@ -288,9 +289,10 @@ onBeforeUnmount(() => { active = false })
 .share-preview h3, .knowledge-preview h3 { display: flex; justify-content: space-between; gap: 1rem; margin: .5rem 0; font-size: 1.3rem; line-height: 1.45; }
 .share-preview h3 span, .knowledge-preview h3 span { color: var(--brand-accent-strong); font-size: 1rem; }
 .share-preview p, .knowledge-preview p { margin: .5rem 0 0; color: var(--brand-ink-soft); line-height: 1.75; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-.knowledge-preview { padding: 1.5rem; }
+.knowledge-preview { display: flex; flex-direction: column; min-height: 12rem; padding: 1.5rem; }
 .knowledge-preview__kind { color: var(--brand-accent-strong); font-size: .82rem; font-weight: 650; }
-.knowledge-preview time { display: block; margin-top: 1.2rem; }
+.knowledge-preview p { -webkit-line-clamp: 3; }
+.knowledge-preview time { display: block; margin-top: auto; padding-top: 1.2rem; }
 .share-preview__link:hover h3, .knowledge-preview:hover h3 { color: var(--brand-accent-strong); }
 .collection-skeleton span { height: 16rem; border-radius: var(--brand-radius-md); background: var(--brand-canvas-soft); }
 .collection-skeleton--knowledge span { height: 10rem; }
