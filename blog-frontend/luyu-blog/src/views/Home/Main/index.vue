@@ -7,12 +7,16 @@ import { PUBLIC_PATHS, routeWithId } from '@/router/paths'
 import { articleItems, articlePage, createHomeResource, homeCount, homeExcerpt, loadHomeResource, selectHomeArticles, type HomeArticle, type HomeResource } from '@/utils/home-content'
 import HomeMedia from '../HomeMedia.vue'
 import { canViewModule } from '@/composables/useSiteModuleAccess'
+import { websiteShareList, type WebsiteShareItem } from '@/apis/website-share'
+import { knowledgeRequest, type KnowledgeCapability, type KnowledgeEntry, type KnowledgePage } from '@/utils/knowledge-api'
 
 const website = useWebsiteStore()
 const latest = reactive(createHomeResource<ReturnType<typeof articlePage>>())
 const recommended = reactive(createHomeResource<HomeArticle[]>())
 const work = reactive(createHomeResource<WorkExperienceItem[]>())
 const overview = reactive(createHomeResource<ExperienceOverview>())
+const shares = reactive(createHomeResource<WebsiteShareItem[]>())
+const knowledge = reactive(createHomeResource<KnowledgeEntry[]>())
 let active = true
 const isActive = () => active
 const loadArticles = () => loadHomeResource(latest, async () => articlePage((await getArticleList(1, 6)).data), isActive)
@@ -32,6 +36,20 @@ const loadOverview = () => loadHomeResource(overview, async () => {
   }
   return data as ExperienceOverview
 }, isActive)
+const loadShares = () => loadHomeResource(shares, async () => {
+  const response: any = await websiteShareList()
+  if (response.code !== 200 || !Array.isArray(response.data)) throw new Error('Invalid website shares response')
+  return response.data as WebsiteShareItem[]
+}, isActive)
+const loadKnowledge = () => loadHomeResource(knowledge, async () => {
+  const capability = await knowledgeRequest<KnowledgeCapability>('GET', '/view/capabilities')
+  if (!capability.allowed || !capability.available) throw new Error(capability.message || '知识库暂不可用')
+  const page = await knowledgeRequest<KnowledgePage<{ entry: KnowledgeEntry }>>('POST', '/view/search', {
+    keyword: null, kind: null, categoryId: null, tagId: null, page: 1, pageSize: 4, deleted: false,
+  })
+  if (!Array.isArray(page.records)) throw new Error('Invalid knowledge response')
+  return page.records.map(item => item.entry)
+}, isActive)
 const selection = computed(() => selectHomeArticles(latest.data?.articles || [], recommended.data || []))
 const current = computed(() => work.data?.find(item => item.isCurrent === 1))
 const pending = (resource: HomeResource<unknown>) => resource.status === 'idle' || resource.status === 'loading'
@@ -43,14 +61,13 @@ const month = (value?: string) => value?.slice(0, 7).replace('-', '.') || ''
 const period = (item: WorkExperienceItem) => [month(item.startDate), item.isCurrent === 1 ? '至今' : month(item.endDate)].filter(Boolean).join(' / ')
 const articlePath = (id: string | number) => routeWithId(PUBLIC_PATHS.article, id)
 const experiencePath = (id: string | number) => routeWithId(PUBLIC_PATHS.experienceDetail, id)
-const githubUrl = computed(() => {
-  const url = website.webInfo?.githubLink?.trim() || ''
-  return /^https?:\/\//i.test(url) ? url : ''
-})
+const knowledgeKind = { NOTE: '笔记', DOCUMENT: '文件资料', CONCEPT: '概念' }
 onMounted(() => {
   void loadOverview()
   if (canViewModule('blog')) { void loadArticles(); void loadRecommendations() }
   if (canViewModule('experience')) void loadWork()
+  if (canViewModule('shares')) void loadShares()
+  if (canViewModule('knowledge')) void loadKnowledge()
 })
 onBeforeUnmount(() => { active = false })
 </script>
@@ -138,9 +155,12 @@ onBeforeUnmount(() => { active = false })
       <ol v-if="selection.articles.length" class="story-list">
         <li v-for="item in selection.articles" :key="item.id">
           <RouterLink class="story-link" :to="articlePath(item.id)">
-            <div class="article-meta"><time v-if="item.createTime">{{ item.createTime.slice(0, 10) }}</time><span v-if="item.categoryName">{{ item.categoryName }}</span></div>
-            <h4>{{ item.articleTitle }}<span aria-hidden="true">↗</span></h4>
-            <p v-if="item.articleContent">{{ homeExcerpt(item.articleContent, 72) }}</p>
+            <HomeMedia :src="item.articleCover" :alt="item.articleTitle + '封面'" />
+            <div class="story-copy">
+              <div class="article-meta"><time v-if="item.createTime">{{ item.createTime.slice(0, 10) }}</time><span v-if="item.categoryName">{{ item.categoryName }}</span></div>
+              <h4>{{ item.articleTitle }}<span aria-hidden="true">↗</span></h4>
+              <p v-if="item.articleContent">{{ homeExcerpt(item.articleContent, 72) }}</p>
+            </div>
           </RouterLink>
         </li>
       </ol>
@@ -234,12 +254,19 @@ onBeforeUnmount(() => { active = false })
 .featured-link .read-link { margin-top: 1.35rem; }
 .read-link { color: var(--brand-accent-strong); font-size: .9rem; font-weight: 600; }
 .read-link span { margin-left: .5rem; }
-.story-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 2.5rem; margin: 1.75rem 0 0; padding: 0; list-style: none; }
-.story-list li { border-top: 1px solid var(--brand-line); }
-.story-link { display: block; padding: 1.15rem 0; text-decoration: none; color: var(--brand-ink); overflow-wrap: anywhere; }
-.story-link h4 { display: flex; align-items: start; justify-content: space-between; gap: 1rem; margin: .4rem 0; font-size: 1.18rem; font-weight: 620; line-height: 1.45; }
+.story-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.25rem 1.5rem; margin: 1.75rem 0 0; padding: 0; list-style: none; }
+.story-list li { min-width: 0; }
+.story-link { display: block; height: 100%; overflow: hidden; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-md); background: var(--brand-surface); text-decoration: none; color: var(--brand-ink); overflow-wrap: anywhere; }
+.story-link :deep(.home-media) { aspect-ratio: 16 / 9; border-radius: 0; }
+.story-link :deep(.home-media img) { object-fit: cover; }
+.story-copy { padding: 1.3rem 1.5rem 1.5rem; }
+.story-link h4 { display: flex; align-items: start; justify-content: space-between; gap: 1rem; margin: .55rem 0; font-size: clamp(1.18rem, 1.6vw, 1.4rem); font-weight: 650; line-height: 1.45; }
 .story-link h4 span { flex-shrink: 0; color: var(--brand-accent-strong); font-size: 1rem; }
-.story-link p { margin: .35rem 0 0; color: var(--brand-ink-soft); font-size: .9rem; line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.story-link p { margin: .5rem 0 0; color: var(--brand-ink-soft); font-size: .92rem; line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.story-list li:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.story-list li:last-child:nth-child(odd) .story-link { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); }
+.story-list li:last-child:nth-child(odd) .story-link :deep(.home-media) { height: 100%; aspect-ratio: auto; }
+.story-list li:last-child:nth-child(odd) .story-copy { align-self: center; padding: 1.7rem 2rem; }
 .story-link:hover h4, .featured-link:hover h3, .work-link:hover h3 { color: var(--brand-accent-strong); }
 .writing { border-top: 1px solid var(--brand-line); }
 .work-list { display: grid; gap: 1rem; }
@@ -313,6 +340,11 @@ button:hover { background: var(--brand-accent-soft); }
   .featured-body { padding: 1.25rem 1.15rem 1.4rem; }
   .featured-link h3 { font-size: 1.45rem; }
   .story-list, .list-skeleton { grid-template-columns: 1fr; column-gap: 0; }
+  .story-list { gap: 1.25rem; }
+  .story-list li:last-child:nth-child(odd) { grid-column: auto; }
+  .story-list li:last-child:nth-child(odd) .story-link { display: block; }
+  .story-list li:last-child:nth-child(odd) .story-link :deep(.home-media) { height: auto; aspect-ratio: 16 / 9; }
+  .story-copy, .story-list li:last-child:nth-child(odd) .story-copy { padding: 1.1rem 1.15rem 1.25rem; }
   .work-link { grid-template-columns: 1fr; gap: .85rem; padding: 1.25rem; }
   .restricted-work__intro { padding: 1.4rem 1.2rem; }
   .restricted-work__list { padding: 0 1.2rem; }
