@@ -52,7 +52,7 @@
 
 - `pnpm run build`：通过，包括压缩文件校验和项目现有初始资源预算。构建仍有既有 Sass 弃用和大分包提示，没有在本次内容任务中扩大范围处理。
 - `pnpm test`：原有 45 项测试通过。
-- 在仓库根目录执行 `node --experimental-strip-types --test blog-frontend/kuailemao-blog/src/utils/experience-presentation.test.ts scripts/guangtuo-experience-content.test.mjs scripts/prepare-guangtuo-update.test.mjs`：8 项测试通过，覆盖职责标签、旧段落兼容、数据范围、图片日期保留和更新计划身份校验。
+- 在仓库根目录执行 `node --experimental-strip-types --test blog-frontend/luyu-blog/src/utils/experience-presentation.test.ts scripts/guangtuo-experience-content.test.mjs scripts/prepare-guangtuo-update.test.mjs`：8 项测试通过，覆盖职责标签、旧段落兼容、数据范围、图片日期保留和更新计划身份校验。
 - 本地 Edge 自动化：六个详情、原图区域、1440 / 768 / 390 宽度无横向溢出、章节跳转、手机目录、另一家公司、空封面与无目录旧记录、加载失败均通过；写请求及后台列表请求被本地预览拒绝。
 - 目视检查：公司页、项目首屏、正文、手机布局和项目深色样式。全站页头已有的深色背景与文字对比问题不在这次经历模板修改中处理；没有运行 Lighthouse，不提供虚构的性能或无障碍评分。
 - 上一轮内容与排版已于 2026-10-05 提交为 `b90de6581` 并上线；本节其余记录描述该轮验证，两项扩展范围按上节的归属边界补充完成。

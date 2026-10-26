@@ -2,10 +2,10 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="xyz.kuailemao.mapper.EmailInformMapper">
+<mapper namespace="xyz.luyu.mapper.EmailInformMapper">
 
 
-    <select id="getCommentEmailOne" resultType="xyz.kuailemao.domain.email.CommentEmail">
+    <select id="getCommentEmailOne" resultType="xyz.luyu.domain.email.CommentEmail">
         <if test="type == 1">
             SELECT
             a.article_title AS title,

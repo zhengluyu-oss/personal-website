@@ -12,7 +12,7 @@
 | 完整 dump | `sql/v1.5.0/Ruyu-Blog_v1.5.0.sql`（MySQL 8.0.38 导出标注） |
 | 升级 | `sql/v1.6.0/t_photo.sql` |
 | 旧库 | `sql/blog(部署).sql`、`sql/blog-banners.sql`（勿作最新基线） |
-| ORM | `xyz.kuailemao.domain.entity.*` `@TableName` |
+| ORM | `xyz.luyu.domain.entity.*` `@TableName` |
 | MP 逻辑删除 | `isDeleted` / 1 / 0（`application.yml` 模板） |
 
 **实例信息（模板）：** 库名 `blog`；字符集业务表以 `utf8mb4` 为主；引擎 InnoDB。v1.6.0 脚本标注源库名 `blog-dev`（导出环境，不代表必须用此库名）。
@@ -149,7 +149,7 @@ type 1 相册 2 照片；parent_id；url；is_check 默认 1；size double kb。
 
 标准 JDBC JobStore：`QRTZ_JOB_DETAILS`、`QRTZ_TRIGGERS`、`QRTZ_SIMPLE_TRIGGERS`、`QRTZ_CRON_TRIGGERS`、`QRTZ_BLOB_TRIGGERS`、`QRTZ_SIMPROP_TRIGGERS`、`QRTZ_FIRED_TRIGGERS`、`QRTZ_CALENDARS`、`QRTZ_LOCKS`、`QRTZ_PAUSED_TRIGGER_GRPS`、`QRTZ_SCHEDULER_STATE`。
 
-种子 Job：`refreshTheCache`，SIMPLE 间隔 300000 ms，类名 `xyz.kuailemao.quartz.RefreshTheCache`。Java `QuartzConfig` 的 `@Configuration` 被注释，**运行时是否仍由 JDBC 存储拉起该 job，未直连库故无法确认。**
+种子 Job：`refreshTheCache`，SIMPLE 间隔 300000 ms，类名 `xyz.luyu.quartz.RefreshTheCache`。Java `QuartzConfig` 的 `@Configuration` 被注释，**运行时是否仍由 JDBC 存储拉起该 job，未直连库故无法确认。**
 
 #### 3.19 缺失 DDL：`t_chat_gpt`
 
@@ -238,8 +238,8 @@ DirectExchange + 持久化队列（`EmailRabbitConfig` / `LogRabbitConfig`）。
 | 组件 | Dockerfile | 基镜像 | 暴露 | 内容 |
 |---|---|---|---|---|
 | 后端 | `blog-backend/Dockerfile` | openjdk:17 | 8088 | 预构建 `blog-backend-0.0.1-SNAPSHOT.jar` |
-| 前台 | `kuailemao-blog/Dockerfile` | nginx | 80 | 预构建 `dist/` |
-| 后台 | `kuailemao-admin/Dockerfile` | nginx | 81 | 预构建 `dist/` |
+| 前台 | `luyu-blog/Dockerfile` | nginx | 80 | 预构建 `dist/` |
+| 后台 | `luyu-admin/Dockerfile` | nginx | 81 | 预构建 `dist/` |
 
 `.sh/docker-restart.sh`：停删容器 `ruyu-blog-hd`，build，`-p 8088:8088`。
 
@@ -253,17 +253,17 @@ cd blog-backend && mvn -Pdev package    # 或 -Pprod
 # jar: target/blog-backend-0.0.1-SNAPSHOT.jar
 
 # 前台
-cd blog-frontend/kuailemao-blog && pnpm install && pnpm build
+cd blog-frontend/luyu-blog && pnpm install && pnpm build
 
 # 后台
-cd blog-frontend/kuailemao-admin && pnpm install && pnpm build
+cd blog-frontend/luyu-admin && pnpm install && pnpm build
 ```
 
 后端 Dockerfile **不会** 在镜像内 Maven 构建。
 
 ### 10. 网络与代理
 
-见 `api-system.md` §6。nginx 写死域名 `kuailemao.xyz`。前台 `default.conf` 还把 `blog.kuailemao.xyz` 反代到 `:81`。
+见 `api-system.md` §6。nginx 写死域名 `luyu.xyz`。前台 `default.conf` 还把 `blog.luyu.xyz` 反代到 `:81`。
 
 Knife4j：`http://127.0.0.1:8088/doc.html`。
 

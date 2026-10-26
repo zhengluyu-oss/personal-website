@@ -2,7 +2,7 @@
 
 博客聚合页（`/blog`）文章卡片封面容器为 **16:10**（`aspect-ratio: 16 / 10`），主图使用 `object-fit: contain`，比例不一致时会出现 letterbox 留白。作者已在 explore 阶段选定 **方案 C**：统一封面上传规格，而非改前台裁切逻辑。
 
-管理后台文章发布页 `kuailemao-admin/src/pages/blog/essay/publish/index.vue` 当前仅有「上传封面」按钮，无 label 与规格说明。工作经历编辑页已有「建议比例 16:10」的文案先例。后端封面上传限制：JPG/PNG/WebP，压缩后 ≤0.3MB（`UploadEnum.ARTICLE_COVER` + `beforeUpload`）。
+管理后台文章发布页 `luyu-admin/src/pages/blog/essay/publish/index.vue` 当前仅有「上传封面」按钮，无 label 与规格说明。工作经历编辑页已有「建议比例 16:10」的文案先例。后端封面上传限制：JPG/PNG/WebP，压缩后 ≤0.3MB（`UploadEnum.ARTICLE_COVER` + `beforeUpload`）。
 
 ## Goals / Non-Goals
 
@@ -59,7 +59,7 @@
 ## Migration Plan
 
 - 仅 admin 静态资源发布，无数据库迁移。
-- 部署：构建并发布 `kuailemao-admin`（或全量 deploy 脚本）。
+- 部署：构建并发布 `luyu-admin`（或全量 deploy 脚本）。
 - 回滚：还原 `publish/index.vue` 即可。
 
 ## Open Questions

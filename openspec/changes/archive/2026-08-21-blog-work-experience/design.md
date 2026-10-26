@@ -1,6 +1,6 @@
 ## Context
 
-求职向个人站当前顶栏「归档」指向分类/标签/时间轴，不符合作品集「Experience」习惯。用户选定方案 A：独立工作经历页 + 后台结构化配置 + 美观时间线。技术栈为现有 Spring Boot 博客后端、`kuailemao-admin`、`kuailemao-blog`，约束为不改包名/目录名。
+求职向个人站当前顶栏「归档」指向分类/标签/时间轴，不符合作品集「Experience」习惯。用户选定方案 A：独立工作经历页 + 后台结构化配置 + 美观时间线。技术栈为现有 Spring Boot 博客后端、`luyu-admin`、`luyu-blog`，约束为不改包名/目录名。
 
 ## Goals / Non-Goals
 

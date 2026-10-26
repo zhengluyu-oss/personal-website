@@ -21,6 +21,6 @@
 
 ## Impact
 
-- **前端（admin）**: `blog-frontend/kuailemao-admin/src/pages/blog/essay/publish/index.vue` 的 `onFinish` 成功回调。
+- **前端（admin）**: `blog-frontend/luyu-admin/src/pages/blog/essay/publish/index.vue` 的 `onFinish` 成功回调。
 - 可能调用已有 `multiTab.close` 与路由 `paths.articles`（`/articles`）。
 - **无后端 / API / 数据库变更**。

@@ -1,14 +1,14 @@
-package xyz.kuailemao.diary.ai;
+package xyz.luyu.diary.ai;
 
 import com.alibaba.fastjson2.JSON;
 import org.yaml.snakeyaml.Yaml;
-import xyz.kuailemao.diary.coaching.CoachingEvidence;
-import xyz.kuailemao.diary.coaching.CoachingModels;
+import xyz.luyu.diary.coaching.CoachingEvidence;
+import xyz.luyu.diary.coaching.CoachingModels;
 import java.nio.file.*;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.time.*;
 import java.util.*;
-import static xyz.kuailemao.diary.ai.DiaryAiModels.*;
+import static xyz.luyu.diary.ai.DiaryAiModels.*;
 
 /** Explicit six-generation, seven-vector synthetic calibration. Never connects to an application database. */
 public final class DiaryAiResponseCalibration {

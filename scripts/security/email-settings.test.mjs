@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
-const adminRequire = createRequire(new URL('../../blog-frontend/kuailemao-admin/package.json', import.meta.url))
-const appRequire = createRequire(new URL('../../blog-frontend/kuailemao-blog/package.json', import.meta.url))
+const adminRequire = createRequire(new URL('../../blog-frontend/luyu-admin/package.json', import.meta.url))
+const appRequire = createRequire(new URL('../../blog-frontend/luyu-blog/package.json', import.meta.url))
 const { JSDOM } = adminRequire('jsdom')
 const dom = new JSDOM('<html><body></body></html>', { url: 'https://example.invalid/account' })
 for (const key of ['window', 'document', 'Element', 'HTMLElement', 'SVGElement', 'Node', 'navigator', 'sessionStorage']) {
@@ -14,7 +14,7 @@ for (const key of ['window', 'document', 'Element', 'HTMLElement', 'SVGElement',
 const Vue = appRequire('vue')
 const { parse, compileScript } = appRequire('vue/compiler-sfc')
 const { build } = createRequire(appRequire.resolve('vite/package.json'))('esbuild')
-const filename = fileURLToPath(new URL('../../blog-frontend/kuailemao-blog/src/views/Setting/EmailSecuritySettings.vue', import.meta.url))
+const filename = fileURLToPath(new URL('../../blog-frontend/luyu-blog/src/views/Setting/EmailSecuritySettings.vue', import.meta.url))
 const source = readFileSync(filename, 'utf8')
 const { descriptor } = parse(source.replace('<script setup lang="ts">', '<script setup lang="ts">\nimport { reactive, ref, computed, onMounted, onBeforeUnmount, watch } from "vue";'), { filename })
 const compiled = compileScript(descriptor, { id: 'qa-email-settings', inlineTemplate: true }).content
@@ -36,7 +36,7 @@ const modules = {
     export const confirmEmailDelivery = (...args) => globalThis.__emailSettingsFixture.confirmEmailDelivery(...args);
     globalThis.__emailSettingsFixture.EmailDeliveryError = EmailDeliveryError;`,
 }
-const bundle = await build({ stdin: { contents: compiled, loader: 'ts', resolveDir: fileURLToPath(new URL('../../blog-frontend/kuailemao-blog', import.meta.url)) },
+const bundle = await build({ stdin: { contents: compiled, loader: 'ts', resolveDir: fileURLToPath(new URL('../../blog-frontend/luyu-blog', import.meta.url)) },
   bundle: true, write: false, platform: 'node', format: 'cjs', external: ['vue'], plugins: [{ name: 'qa-only-boundaries', setup(build) {
     build.onResolve({ filter: /^(element-plus|@\/)/ }, args => ({ path: args.path, namespace: 'qa' }))
     build.onLoad({ filter: /.*/, namespace: 'qa' }, args => ({ contents: modules[args.path], loader: 'js' }))

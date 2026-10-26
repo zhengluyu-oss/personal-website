@@ -21,7 +21,7 @@ unset unit_start
 # Refuse old packages with embedded private profiles, even if their checksum matches.
 command -v unzip >/dev/null
 if unzip -Z1 "$package" | grep -E '(^|/)application-[^/]+\.(yml|yaml|properties)$' >/dev/null; then echo PRIVATE_CONFIG_IN_PACKAGE; exit 1; fi
-unzip -Z1 "$package" | grep 'BOOT-INF/classes/xyz/kuailemao/config/ProductionConfigurationGuard.class' >/dev/null || { echo PRODUCTION_GUARD_REQUIRED; exit 1; }
+unzip -Z1 "$package" | grep 'BOOT-INF/classes/xyz/luyu/config/ProductionConfigurationGuard.class' >/dev/null || { echo PRODUCTION_GUARD_REQUIRED; exit 1; }
 
 umask 077
 mkdir -p "$release/backup"

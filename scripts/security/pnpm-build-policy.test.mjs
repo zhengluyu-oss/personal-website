@@ -5,7 +5,7 @@ import { readFileSync, existsSync } from 'node:fs'
 const read = path => readFileSync(new URL(path, import.meta.url), 'utf8')
 
 test('both frontend packages have pinned pnpm and one lockfile', () => {
-  for (const project of ['kuailemao-blog', 'kuailemao-admin']) {
+  for (const project of ['luyu-blog', 'luyu-admin']) {
     const root = `../../blog-frontend/${project}/`
     const manifest = JSON.parse(read(`${root}package.json`))
     assert.match(manifest.packageManager, /^pnpm@\d+\.\d+\.\d+$/)

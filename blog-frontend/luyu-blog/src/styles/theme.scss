@@ -1,0 +1,197 @@
+// 亮色模式：陆屿 · Ink & Ember（近中性纸色 + 克制暖强调，弃 SaaS 蓝）
+:root {
+  color-scheme: light;
+  --brand-canvas: #f5f4f1;
+  --brand-canvas-soft: #ebe9e4;
+  --brand-surface: rgba(255, 255, 255, .9);
+  --brand-surface-solid: #ffffff;
+  --brand-surface-raised: #ffffff;
+  --brand-ink: #1c2128;
+  --brand-ink-soft: #5c6570;
+  --brand-ink-faint: #8a929c;
+  --brand-line: rgba(28, 33, 40, .12);
+  --brand-accent: #c45c3e;
+  --brand-accent-strong: #9e4a32;
+  --brand-accent-soft: rgba(196, 92, 62, .12);
+  --brand-focus: rgba(196, 92, 62, .34);
+  --brand-radius-sm: .65rem;
+  --brand-radius-md: .9rem;
+  --brand-radius-lg: 1.2rem;
+  --brand-shadow-sm: 0 12px 32px rgba(28, 33, 40, .07);
+  --brand-shadow-lg: 0 28px 80px rgba(28, 33, 40, .12);
+  --brand-content: 88rem;
+  /* Primary UI stack: Alimama face is optional (often not bundled); system CJK sans is the reliable fallback. */
+  --brand-font: "阿里妈妈方圆体 VF Regular", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --brand-font-mono: "Share Tech Mono", Consolas, "SFMono-Regular", monospace;
+  --el-color-primary: #c45c3e;
+  --el-color-primary-light-3: #d4846c;
+  --el-color-primary-light-5: #e2a794;
+  --el-color-primary-light-7: #efc9bc;
+  --el-color-primary-light-8: #f5dbd2;
+  --el-color-primary-light-9: #faf0ec;
+  --el-color-primary-dark-2: #9e4a32;
+  --el-color-primary-rgb: 196, 92, 62;
+  --mao-background-color: #f5f4f1;
+  // 留言板说明背景
+  --mao-bg-message: #ebe9e4;
+  // 分类列表背景
+  --mao-bg-category: linear-gradient(135deg, #c45c3e, #9e4a32);
+  // 首页波浪
+  --mao-bg-wave01: rgba(245, 244, 241, 0.7);
+  --mao-bg-wave02: rgba(245, 244, 241, 0.5);
+  --mao-bg-wave03: rgba(245, 244, 241, 0.3);
+  --mao-bg-wave04: rgba(245, 244, 241, 1);
+  // footer
+  --mao-bg-footer: linear-gradient(135deg, #2a3038, #1c2128);
+  // 评论框背景
+  --mao-bg-comment: #f2f1ee;
+  // 回复用户名
+  --mao-bg-reply: rgba(196, 92, 62, 0.72);
+  // 文章页面右下角滚动进度背景色
+  --mao-scroll-percentage-bg: #ffffff;
+  // 文章页面底部滚动进度条背景色
+  --mao-scroll-percentage-bar: linear-gradient(135deg, #c45c3e, #9e4a32);
+  // 设置模块背景阴影
+  --mao-shadow: 0 2px 12px 0 rgba(28, 33, 40, 0.1);
+
+  // 音乐播放器变量
+  --primary: #c45c3e;
+  --router-color: #dddddd;
+  --font-color: #5c6570;
+  --dark-font-color: #a7a7a7;
+  --second-font-color: #c45c3e;
+  --hot-color: #c45c3e;
+  --md-active: #c45c3e;
+  --global-white: #fff;
+  --global-black: #000;
+  --global-shadow-white: #fafafa;
+  --header-bg-color: #5c6570;
+  --meta-color: #8a929c;
+  --comment-grey: #a4a4a4;
+  --border-color: rgba(28, 33, 40, .16);
+  --hr-border: rgba(28, 33, 40, .12);
+  --top: #c45c3e;
+  --error: #f56c6c;
+  --music-main-active: #62c28a;
+  --music-main-bg: #101827;
+  --shadow-mask-bg: rgba(0, 0, 0, 0.5);
+  --shadow-button-bg: rgba(255, 255, 255, 0.5);
+  --global-font-size: 14px;
+  --card-box-shadow: 0 3px 6px 3px rgba(7, 17, 27, 0.06);
+  --card-hover-box-shadow: 0 3px 6px 3px rgba(7, 17, 27, 0.15);
+  // 亮色滚动条
+  --scroll-bar-color: linear-gradient(180deg, #c45c3e, #9e4a32);
+  // 充电榜列表亮色背景
+  --mao-charging-bg-color: #ebe9e4;
+  // Header-Menu阴影
+  --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+// 暗色模式：同一 ember 强调族
+html.dark {
+  color-scheme: dark;
+  --brand-canvas: #10151d;
+  --brand-canvas-soft: #171e28;
+  --brand-surface: rgba(23, 30, 40, .9);
+  --brand-surface-solid: #171e28;
+  --brand-surface-raised: #1d2632;
+  --brand-ink: #eef1f5;
+  --brand-ink-soft: #aeb8c5;
+  --brand-ink-faint: #7f8b9b;
+  --brand-line: rgba(238, 241, 245, .11);
+  --brand-accent: #ee8168;
+  --brand-accent-strong: #ff9a83;
+  --brand-accent-soft: rgba(238, 129, 104, .12);
+  --brand-focus: rgba(238, 129, 104, .38);
+  --brand-shadow-sm: 0 14px 38px rgba(0, 0, 0, .22);
+  --brand-shadow-lg: 0 30px 90px rgba(0, 0, 0, .32);
+  --el-color-primary: #ee8168;
+  --el-color-primary-light-3: #f29d8a;
+  --el-color-primary-light-5: #f6b8ab;
+  --el-color-primary-light-7: #fad4cc;
+  --el-color-primary-light-8: #fce2dc;
+  --el-color-primary-light-9: #fdf1ee;
+  --el-color-primary-dark-2: #d56f58;
+  --el-color-primary-rgb: 238, 129, 104;
+  --mao-background-color: #171e28;
+  --mao-bg-message: #212121;
+  --mao-bg-category: linear-gradient(135deg, #ee8168, #c45c3e);
+  --mao-bg-wave01: rgba(70, 70, 70, 0.7);
+  --mao-bg-wave02: rgba(70, 70, 70, 0.5);
+  --mao-bg-wave03: rgba(70, 70, 70, 0.3);
+  --mao-bg-wave04: rgba(70, 70, 70, 1);
+  --mao-bg-footer: linear-gradient(135deg, #171e28, #10151d);
+  --mao-bg-right: #292D3DFF;
+  --mao-bg-left: #2a3038;
+  --mao-bg-left-card: #343b45;
+  --mao-bg-comment: #a8a8b7;
+  --mao-bg-reply: rgba(238, 129, 104, 0.7);
+  --mao-scroll-percentage-bg: #18222c;
+  --mao-scroll-percentage-bar: linear-gradient(135deg, #ee8168, #c45c3e);
+
+  // 音乐播放器变量
+  --primary: #ee8168;
+  --md-active: #ee8168;
+  --global-white: #424242;
+  --global-shadow-white: #1D1D1D;
+  --mao-shadow: 0 2px 12px 0 rgba(255, 255, 255, 0.1);
+  // 暗色滚动条
+  --scroll-bar-color: linear-gradient(180deg, #ee8168, #c45c3e);
+  // 充电榜列表暗色背景
+  --mao-charging-bg-color: #212121;
+  // Header-Menu阴影
+  --shadow-color: rgba(255, 255, 255, 0.1);
+}
+
+// 全局字体：一套 UI 字 + 系统回退（见 --brand-font）
+body {
+  font-family: var(--brand-font);
+}
+
+html { scroll-behavior: smooth; background: var(--brand-canvas); }
+body {
+  min-width: 320px;
+  overflow-x: clip;
+  background: var(--brand-canvas);
+  background-image:
+    linear-gradient(rgba(196, 92, 62, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(196, 92, 62, .035) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: var(--brand-ink);
+  line-height: 1.65;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--brand-accent); color: #fff8f4; }
+:where(a, button, [role="button"], input, textarea, select):focus-visible {
+  outline: 3px solid var(--brand-focus) !important;
+  outline-offset: 3px;
+}
+
+#app { min-height: 100dvh; background: var(--brand-canvas); }
+.el-card, .card {
+  border-color: var(--brand-line) !important;
+  border-radius: var(--brand-radius-md) !important;
+  background: var(--brand-surface-solid) !important;
+  box-shadow: var(--brand-shadow-sm) !important;
+}
+.el-button { border-radius: var(--brand-radius-sm) !important; font-weight: 650; }
+.el-button--primary { --el-button-bg-color: var(--brand-accent); --el-button-border-color: var(--brand-accent); }
+.el-tag { --el-tag-bg-color: var(--brand-accent-soft); --el-tag-border-color: transparent; --el-tag-text-color: var(--brand-accent-strong); border-radius: .45rem; }
+.el-pagination { --el-pagination-hover-color: var(--brand-accent); }
+
+@media (max-width: 767px) {
+  body { font-size: 15px; }
+  .el-message { min-width: 0 !important; max-width: calc(100vw - 2rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}

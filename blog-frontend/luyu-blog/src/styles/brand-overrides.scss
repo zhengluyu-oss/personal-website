@@ -1,0 +1,83 @@
+/* 跨页面品牌收束层：只处理公共视觉，不改变页面业务结构。 */
+:where(.writing-page, .form, .content) { color: var(--brand-ink); }
+:where(.is_banner_container) .content_container {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  padding: clamp(0.5rem, 2vw, 1rem) !important;
+}
+.head_title { min-height: clamp(22rem, 56vw, 38rem) !important; overflow: hidden !important; border-radius: var(--brand-radius-md) !important; background-position: center !important; }
+.head_title::before { background: linear-gradient(0deg, rgba(10,15,22,.9), rgba(10,15,22,.14) 72%) !important; }
+.head_title_text .title { max-width: 18em; font-size: clamp(2rem, 5vw, 4.8rem) !important; line-height: 1.08 !important; letter-spacing: -.045em; text-wrap: balance; }
+.md-editor-preview { max-width: 100%; }
+.md-editor-preview p { color: var(--brand-ink-soft); }
+.md-editor-preview a { color: var(--brand-accent-strong); text-underline-offset: .18em; }
+.md-editor-preview img { max-width: 100%; height: auto; border-radius: var(--brand-radius-sm); }
+.md-editor-preview pre { border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); }
+.bg_card, .box-card { border: 1px solid var(--brand-line) !important; border-radius: var(--brand-radius-md) !important; background: var(--brand-surface-solid) !important; box-shadow: var(--brand-shadow-sm) !important; }
+.app-container, .photo-gallery { background: var(--brand-canvas) !important; color: var(--brand-ink) !important; }
+.gallery-item { border-radius: var(--brand-radius-md) !important; box-shadow: var(--brand-shadow-sm) !important; }
+.page .row li::before { content: '+' !important; color: var(--brand-accent) !important; }
+.el-drawer, .el-dialog { --el-drawer-bg-color: var(--brand-surface-solid); border-color: var(--brand-line) !important; background: var(--brand-surface-solid) !important; }
+
+/* 固定明亮风格的公共顶部导航。 */
+nav:has(#menu-left) {
+  border-bottom: 1px solid var(--brand-line) !important;
+  background: rgba(255, 255, 255, .9) !important;
+  box-shadow: 0 10px 30px rgba(29, 56, 91, .055) !important;
+  backdrop-filter: blur(18px) saturate(145%);
+}
+
+nav:has(#menu-left) #blog-info a,
+nav:has(#menu-left) .menus_item > span,
+nav:has(#menu-left) .blog-menu > .blog-destination,
+nav:has(#menu-left) .blog-menu > .category-toggle {
+  color: var(--brand-ink) !important;
+  text-shadow: none !important;
+}
+
+nav:has(#menu-left) .blog-menu > .blog-destination .el-icon,
+nav:has(#menu-left) .blog-menu > .category-toggle .el-icon {
+  color: inherit !important;
+}
+
+nav:has(#menu-left) #blog-info a {
+  font-weight: 800 !important;
+  letter-spacing: -.025em;
+}
+
+nav:has(#menu-left) .menus_item:hover > span,
+nav:has(#menu-left) .blog-menu:hover > .blog-destination,
+nav:has(#menu-left) .blog-menu:hover > .category-toggle {
+  color: var(--brand-accent) !important;
+}
+
+nav:has(#menu-left) .menus_item_child {
+  border: 1px solid var(--brand-line) !important;
+  background: rgba(255, 255, 255, .97) !important;
+  box-shadow: var(--brand-shadow-lg) !important;
+}
+
+nav:has(#menu-left) .menus_item_child li {
+  color: var(--brand-ink-soft) !important;
+}
+
+nav:has(#menu-left) .menus_item_child li:hover {
+  color: var(--brand-accent) !important;
+  background: var(--brand-accent-soft) !important;
+}
+
+nav:has(#menu-left) .el-avatar {
+  border: 1px solid var(--brand-line);
+  background: var(--brand-accent-soft);
+  color: var(--brand-accent-strong);
+}
+@media (max-width: 767px) {
+  :where(.writing-page) { width: calc(100% - .5rem) !important; padding: 1rem !important; }
+  .head_title { min-height: 23rem !important; border-radius: 0 !important; }
+  .head_title_text { padding: 1.25rem !important; }
+  .head_title_text .title { font-size: clamp(1.8rem, 10vw, 3rem) !important; }
+  .md-editor-preview { font-size: .98rem; line-height: 1.9; overflow-wrap: anywhere; }
+  .md-editor-preview table { display:block; max-width:100%; overflow-x:auto; }
+}

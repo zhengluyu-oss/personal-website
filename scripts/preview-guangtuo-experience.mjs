@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
 import { loadContent, mergeExperience, mergeProject } from './guangtuo-experience-content.mjs'
 
-const root = fileURLToPath(new URL('../blog-frontend/kuailemao-blog/', import.meta.url))
+const root = fileURLToPath(new URL('../blog-frontend/luyu-blog/', import.meta.url))
 const require = createRequire(path.join(root, 'package.json'))
 const { createServer } = await import(pathToFileURL(path.join(path.dirname(require.resolve('vite/package.json')), 'dist/node/index.js')).href)
 const manifest = await loadContent()

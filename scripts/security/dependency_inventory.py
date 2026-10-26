@@ -108,8 +108,8 @@ def main():
     parser.add_argument("--osv", action="store_true")
     parser.add_argument("--maven-tree", type=Path, help="Matching Maven dependency:tree output to resolve jars without embedded metadata")
     args = parser.parse_args()
-    locks = [ROOT / "blog-frontend/kuailemao-blog/pnpm-lock.yaml",
-             ROOT / "blog-frontend/kuailemao-admin/pnpm-lock.yaml"]
+    locks = [ROOT / "blog-frontend/luyu-blog/pnpm-lock.yaml",
+             ROOT / "blog-frontend/luyu-admin/pnpm-lock.yaml"]
     rows = jar_inventory(args.jar, args.maven_tree)
     for lock in locks:
         rows.extend(lock_inventory(lock))

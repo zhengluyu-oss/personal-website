@@ -54,7 +54,7 @@ DO $$ DECLARE tbl text; BEGIN
   EXECUTE format('ALTER TABLE knowledge.%I FORCE ROW LEVEL SECURITY',tbl);
   EXECUTE format('CREATE POLICY knowledge_owner ON knowledge.%I TO knowledge_runtime USING(owner_id=nullif(current_setting(''knowledge.owner_id'',true),'''')::bigint) WITH CHECK(owner_id=nullif(current_setting(''knowledge.owner_id'',true),'''')::bigint)',tbl);
   EXECUTE format('REVOKE ALL ON knowledge.%I FROM PUBLIC,knowledge_runtime',tbl);
-  IF tbl IN('entry_revision','mutation') THEN EXECUTE format('GRANT SELECT,INSERT ON knowledge.%I TO knowledge_runtime',tbl);
+  IF tbl IN('entry_revision','mutation') THEN EXECUTE format('GRANT SELECT,INSERT,DELETE ON knowledge.%I TO knowledge_runtime',tbl);
   ELSE EXECUTE format('GRANT SELECT,INSERT,UPDATE,DELETE ON knowledge.%I TO knowledge_runtime',tbl); END IF;
  END LOOP;
 END $$;

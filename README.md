@@ -62,8 +62,8 @@
 ## 仓库结构
 
 ```
-blog-frontend/kuailemao-blog    公开站点
-blog-frontend/kuailemao-admin   管理后台
+blog-frontend/luyu-blog    公开站点
+blog-frontend/luyu-admin   管理后台
 blog-backend                    API 与权限
 sql                             表结构与迁移
 scripts                         发布、校验与运维脚本
@@ -80,12 +80,12 @@ cd blog-backend
 # 按本地环境配置 application-dev，再启动 Spring Boot
 
 # 公开前台
-cd blog-frontend/kuailemao-blog
+cd blog-frontend/luyu-blog
 pnpm install
 pnpm dev
 
 # 管理后台
-cd blog-frontend/kuailemao-admin
+cd blog-frontend/luyu-admin
 pnpm install
 pnpm dev
 ```

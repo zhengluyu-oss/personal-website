@@ -21,6 +21,6 @@
 
 ## Impact
 
-- 前端：`blog-frontend/kuailemao-blog` 的 Header/Menu（及必要时 MoveMenu）样式与 flex 结构
+- 前端：`blog-frontend/luyu-blog` 的 Header/Menu（及必要时 MoveMenu）样式与 flex 结构
 - 无后端 API / 数据库变更
 - 部署后需重新构建并发布博客前台静态资源

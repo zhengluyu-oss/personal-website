@@ -110,7 +110,7 @@ CREATE TABLE `QRTZ_JOB_DETAILS`  (
 -- ----------------------------
 -- Records of QRTZ_JOB_DETAILS
 -- ----------------------------
-INSERT INTO `QRTZ_JOB_DETAILS` VALUES ('quartzScheduler', 'refreshTheCache', 'DEFAULT', '任务描述：用于每五分钟刷新一次常用数据缓存', 'xyz.kuailemao.quartz.RefreshTheCache', '1', '0', '0', '0', 0xACED0005737200156F72672E71756172747A2E4A6F62446174614D61709FB083E8BFA9B0CB020000787200266F72672E71756172747A2E7574696C732E537472696E674B65794469727479466C61674D61708208E8C3FBC55D280200015A0013616C6C6F77735472616E7369656E74446174617872001D6F72672E71756172747A2E7574696C732E4469727479466C61674D617013E62EAD28760ACE0200025A000564697274794C00036D617074000F4C6A6176612F7574696C2F4D61703B787000737200116A6176612E7574696C2E486173684D61700507DAC1C31660D103000246000A6C6F6164466163746F724900097468726573686F6C6478703F40000000000010770800000010000000007800);
+INSERT INTO `QRTZ_JOB_DETAILS` VALUES ('quartzScheduler', 'refreshTheCache', 'DEFAULT', '任务描述：用于每五分钟刷新一次常用数据缓存', 'xyz.luyu.quartz.RefreshTheCache', '1', '0', '0', '0', 0xACED0005737200156F72672E71756172747A2E4A6F62446174614D61709FB083E8BFA9B0CB020000787200266F72672E71756172747A2E7574696C732E537472696E674B65794469727479466C61674D61708208E8C3FBC55D280200015A0013616C6C6F77735472616E7369656E74446174617872001D6F72672E71756172747A2E7574696C732E4469727479466C61674D617013E62EAD28760ACE0200025A000564697274794C00036D617074000F4C6A6176612F7574696C2F4D61703B787000737200116A6176612E7574696C2E486173684D61700507DAC1C31660D103000246000A6C6F6164466163746F724900097468726573686F6C6478703F40000000000010770800000010000000007800);
 
 -- ----------------------------
 -- Table structure for QRTZ_LOCKS
@@ -725,8 +725,8 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 'Admin', 'Admin', 0, '$2a$10$VyFtQ3T943p3NY5R0IxzIONjdqABmuCSGiHe5uV8d1ujLGYuS2KZe', 'https://image.kuailemao.xyz/blog/user/avatar/ce7998d8-43b5-4457-bc5c-4fa849160b3c.jpg', '我是一个伟大的站主~~', 'ruyusan@qq.com', '127.0.0.1', 0, '内网IP', '127.0.0.1', 'XX XX', 0, '2024-10-21 08:52:51', 0, '2023-10-13 15:16:01', '2024-10-21 08:52:51', 0);
-INSERT INTO `sys_user` VALUES (88065990, '测试用户', 'Test', 0, '$2a$10$VyFtQ3T943p3NY5R0IxzIONjdqABmuCSGiHe5uV8d1ujLGYuS2KZe', 'https://image.kuailemao.xyz/blog/user/avatar/ce7998d8-43b5-4457-bc5c-4fa849160b3c.jpg', '这是测试用户', NULL, '127.0.0.1', 0, '未知', '127.0.0.1', '未知', 0, '2024-10-21 16:29:53', 0, '2024-03-01 11:10:31', '2024-10-21 16:29:53', 0);
+INSERT INTO `sys_user` VALUES (1, 'Admin', 'Admin', 0, '$2a$10$VyFtQ3T943p3NY5R0IxzIONjdqABmuCSGiHe5uV8d1ujLGYuS2KZe', 'https://image.luyu.xyz/blog/user/avatar/ce7998d8-43b5-4457-bc5c-4fa849160b3c.jpg', '我是一个伟大的站主~~', 'ruyusan@qq.com', '127.0.0.1', 0, '内网IP', '127.0.0.1', 'XX XX', 0, '2024-10-21 08:52:51', 0, '2023-10-13 15:16:01', '2024-10-21 08:52:51', 0);
+INSERT INTO `sys_user` VALUES (88065990, '测试用户', 'Test', 0, '$2a$10$VyFtQ3T943p3NY5R0IxzIONjdqABmuCSGiHe5uV8d1ujLGYuS2KZe', 'https://image.luyu.xyz/blog/user/avatar/ce7998d8-43b5-4457-bc5c-4fa849160b3c.jpg', '这是测试用户', NULL, '127.0.0.1', 0, '未知', '127.0.0.1', '未知', 0, '2024-10-21 16:29:53', 0, '2024-03-01 11:10:31', '2024-10-21 16:29:53', 0);
 
 -- ----------------------------
 -- Table structure for sys_user_role
@@ -771,7 +771,7 @@ CREATE TABLE `sys_website_info`  (
 -- ----------------------------
 -- Records of sys_website_info
 -- ----------------------------
-INSERT INTO `sys_website_info` VALUES (1, 'https://image.kuailemao.xyz/blog/websiteInfo/avatar/95924d04-f0c5-4560-a369-645f3c9080bf.webp', 'Ruyu', '生活想要活埋了我，不料我是一粒种子', 'https://image.kuailemao.xyz/blog/websiteInfo/background/8337f2ae-c573-4719-a734-901b3d6859bc.webp', 'https://gitee.com/kuailemao', 'https://github.com/kuailemao', 'Ruyu-快乐猫', '禁止发无关评论，违者永久封禁！！！', '本项目github & gitee 开源地址：\nhttps://github.com/kuailemao/Ruyu-Blog\nhttps://gitee.com/kuailemao/ruyu-blog\n项目部署文档：https://kuailemao.xyz/article/48\n文档独立站点：http://docs.kuailemao.xyz/\nqq交流群：635887836\n欢迎指出网站的不足，给我提供意见。', '备案号', '2024-03-03 03:30:30', '2023-12-27 14:28:10', '2024-10-15 18:23:08', 0);
+INSERT INTO `sys_website_info` VALUES (1, 'https://image.luyu.xyz/blog/websiteInfo/avatar/95924d04-f0c5-4560-a369-645f3c9080bf.webp', 'Ruyu', '生活想要活埋了我，不料我是一粒种子', 'https://image.luyu.xyz/blog/websiteInfo/background/8337f2ae-c573-4719-a734-901b3d6859bc.webp', 'https://gitee.com/luyu', 'https://github.com/luyu', 'Ruyu-快乐猫', '禁止发无关评论，违者永久封禁！！！', '本项目github & gitee 开源地址：\nhttps://github.com/luyu/Ruyu-Blog\nhttps://gitee.com/luyu/ruyu-blog\n项目部署文档：https://luyu.xyz/article/48\n文档独立站点：http://docs.luyu.xyz/\nqq交流群：635887836\n欢迎指出网站的不足，给我提供意见。', '备案号', '2024-03-03 03:30:30', '2023-12-27 14:28:10', '2024-10-15 18:23:08', 0);
 
 -- ----------------------------
 -- Table structure for t_article

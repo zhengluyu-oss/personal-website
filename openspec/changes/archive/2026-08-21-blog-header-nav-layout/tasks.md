@@ -17,5 +17,5 @@
 
 ## 4. Deploy
 
-- [x] 4.1 Build `kuailemao-blog` and deploy static assets to the server blog directory
+- [x] 4.1 Build `luyu-blog` and deploy static assets to the server blog directory
 - [x] 4.2 Hard-refresh production homepage and confirm title + nav visually

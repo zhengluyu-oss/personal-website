@@ -20,7 +20,7 @@
 
 ### 1. 只交换首页主内容区的两个区块
 
-在 `blog-frontend/kuailemao-blog/src/views/Home/Main/index.vue` 中把 `selected-work` 移到 `writing` 之前，并把区块之间的顶部分隔线改到文章区。不抽取新组件，不改数据请求顺序。
+在 `blog-frontend/luyu-blog/src/views/Home/Main/index.vue` 中把 `selected-work` 移到 `writing` 之前，并把区块之间的顶部分隔线改到文章区。不抽取新组件，不改数据请求顺序。
 
 选择该方案是因为顺序是展示问题，不是数据契约问题。备选是用配置项控制区块顺序，但当前只有一种确定顺序，增加配置没有收益。
 

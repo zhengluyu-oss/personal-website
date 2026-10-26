@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-const req = createRequire(new URL('../../blog-frontend/kuailemao-blog/package.json', import.meta.url))
-const admin = createRequire(new URL('../../blog-frontend/kuailemao-admin/package.json', import.meta.url))
+const req = createRequire(new URL('../../blog-frontend/luyu-blog/package.json', import.meta.url))
+const admin = createRequire(new URL('../../blog-frontend/luyu-admin/package.json', import.meta.url))
 const { JSDOM } = admin('jsdom'), dom = new JSDOM('<html><body></body></html>', { url: 'https://fixture.invalid/diary' })
 for (const key of ['window', 'document', 'Element', 'HTMLElement', 'SVGElement', 'Node', 'navigator']) Object.defineProperty(globalThis, key, { configurable: true, value: dom.window[key] })
 const Vue = req('vue'), { parse, compileScript } = req('vue/compiler-sfc'), { build } = createRequire(req.resolve('vite/package.json'))('esbuild')
@@ -12,7 +12,7 @@ const entry = '11111111-1111-4111-8111-111111111111', calls = []
 let reply, browse
 const preview = { entries: 1, characters: 250, snapshotDigest: 'a'.repeat(64), records: [{ id: entry, title: '测试日记' }], limitation: '只读取，不调用模型' }
 globalThis.__previewFixture = { api: { capabilities: async () => ({ available: true, enabled: true }), index: async () => ({ coverage: { total: 0, indexed: 0, failed: 0 }, syncing: false }), reports: async () => ({ records: [], total: 0 }), preview: async scope => { calls.push(scope); if (reply instanceof Error) throw reply; return reply || preview }, submit: async () => { throw new Error('Preview must never generate') } } }
-const root = fileURLToPath(new URL('../../blog-frontend/kuailemao-blog/', import.meta.url)), filename = root + '/src/views/Diary/DiaryAiPanel.vue'
+const root = fileURLToPath(new URL('../../blog-frontend/luyu-blog/', import.meta.url)), filename = root + '/src/views/Diary/DiaryAiPanel.vue'
 const { descriptor } = parse(readFileSync(filename, 'utf8'), { filename })
 const source = compileScript(descriptor, { id: 'review-preview', inlineTemplate: true }).content
 const built = await build({ stdin: { contents: source, loader: 'ts', resolveDir: root }, bundle: true, write: false, platform: 'node', format: 'cjs', external: ['vue'], plugins: [{ name: 'fixture', setup(b) { b.onResolve({ filter: /^(element-plus|@\/|\.\/)/ }, a => ({ path: a.path, namespace: 'fixture' })); b.onLoad({ filter: /.*/, namespace: 'fixture' }, a => ({ loader: 'js', contents: a.path.includes('diary-ai-api') ? 'export const diaryAiApi=globalThis.__previewFixture.api;' : a.path.includes('diary-api') ? 'export const diaryApi={};' : a.path === 'element-plus' ? 'export const ElMessageBox={confirm:async()=>{}};' : a.path.includes('icons-vue') ? 'export const ChatDotRound={},DocumentChecked={},Setting={};' : 'export default {};' })) } }] })

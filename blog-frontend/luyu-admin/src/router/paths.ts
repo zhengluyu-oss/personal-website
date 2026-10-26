@@ -1,0 +1,26 @@
+export const ADMIN_PATHS = {
+  siteInfo: '/site/info',
+  articles: '/articles',
+  articleNew: '/articles/new',
+  articleEdit: '/articles/:id',
+  knowledge: '/knowledge',
+  categories: '/categories',
+  tags: '/tags',
+  comments: '/comments',
+  messages: '/messages',
+  treeHole: '/tree-hole',
+  links: '/links',
+  photos: '/photos',
+  experiences: '/experiences',
+  blacklist: '/blacklist',
+  collections: '/collections',
+  menus: '/system/menus',
+  users: '/system/users',
+  roles: '/system/roles',
+  permissions: '/system/permissions',
+  loginLogs: '/system/logins',
+  operationLogs: '/system/operations',
+  server: '/system/server',
+} as const
+
+export const adminPathWithId = (path: string, id: string | number) => path.replace(':id', String(id))

@@ -19,6 +19,6 @@
 
 ## Impact
 
-- 主要影响 `blog-frontend/kuailemao-admin` 的布局、导航、用户与权限页面，以及相关路由菜单展示。
+- 主要影响 `blog-frontend/luyu-admin` 的布局、导航、用户与权限页面，以及相关路由菜单展示。
 - 复用现有 Vue 3、Ant Design Vue、动态路由和后台权限 API；本变更不要求数据库结构或后端 API 变更。
 - 权限相关行为需兼容现有菜单配置、角色菜单授权与角色选择逻辑。

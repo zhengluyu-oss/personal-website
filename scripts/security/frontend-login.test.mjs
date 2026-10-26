@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
-const req = createRequire(new URL('../../blog-frontend/kuailemao-blog/package.json', import.meta.url))
-const adminReq = createRequire(new URL('../../blog-frontend/kuailemao-admin/package.json', import.meta.url))
+const req = createRequire(new URL('../../blog-frontend/luyu-blog/package.json', import.meta.url))
+const adminReq = createRequire(new URL('../../blog-frontend/luyu-admin/package.json', import.meta.url))
 const { JSDOM } = adminReq('jsdom')
 const dom = new JSDOM('<html><body></body></html>', { url: 'https://blog.example' })
 for (const key of ['window', 'document', 'Element', 'HTMLElement', 'SVGElement', 'Node', 'navigator', 'localStorage', 'sessionStorage'])
@@ -13,7 +13,7 @@ for (const key of ['window', 'document', 'Element', 'HTMLElement', 'SVGElement',
 const Vue = req('vue')
 const { parse, compileScript } = req('vue/compiler-sfc')
 const { build } = createRequire(req.resolve('vite/package.json'))('esbuild')
-const root = fileURLToPath(new URL('../../blog-frontend/kuailemao-blog/', import.meta.url))
+const root = fileURLToPath(new URL('../../blog-frontend/luyu-blog/', import.meta.url))
 const authFixture = { store: Vue.reactive({ token: null }), warnings: [] }
 globalThis.__authFixture = authFixture
 const authBundle = await build({ entryPoints: [`${root}/src/utils/auth.ts`], bundle: true, write: false,

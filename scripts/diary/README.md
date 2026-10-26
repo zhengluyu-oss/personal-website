@@ -32,7 +32,7 @@ DIARY_PASSWORD=<独立随机密码>
 
 启用后只在本人用户菜单显示“我的日记”。`/diary`不出现在公开导航、文章搜索、推荐和站点地图。反向代理/API网关/WAF/APM须关闭日记的请求/响应正文采集，禁止日志格式包含 `$request_body`、Authorization、正文、搜索关键字或导出数据；日记路径使用 `proxy_no_cache 1; proxy_cache_bypass 1;`（按现有代理配置合并），不得被CDN或Service Worker缓存。搜索走POST，URL只含条目UUID等选择信息。应用响应设置private/no-store和noindex；这些头不能替代访问控制。
 
-不要给私密包开启DEBUG/TRACE或覆盖应用提供的 `xyz.kuailemao.diary`、JDBC参数记录、PostgreSQL日志禁用设置。PG服务端避免 `log_statement=all` 和绑定参数采集。日志中仅记录必要的状态/耗时等元数据，不转发日记对象到RabbitMQ审计。
+不要给私密包开启DEBUG/TRACE或覆盖应用提供的 `xyz.luyu.diary`、JDBC参数记录、PostgreSQL日志禁用设置。PG服务端避免 `log_statement=all` 和绑定参数采集。日志中仅记录必要的状态/耗时等元数据，不转发日记对象到RabbitMQ审计。
 
 ## 保存与使用
 

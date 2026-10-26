@@ -90,7 +90,7 @@
 
 ### 8. 验证范围与资源边界
 
-实现位置主要为 `blog-frontend/kuailemao-blog` 的 Home、About、Experience、Header/Menu、App、site 配置及现有展示工具。改动前执行 GitNexus impact，报告调用方、流程与风险；UNKNOWN 必须补充文本核验，HIGH/CRITICAL 必须先提示风险。保留用户已有未提交修改。
+实现位置主要为 `blog-frontend/luyu-blog` 的 Home、About、Experience、Header/Menu、App、site 配置及现有展示工具。改动前执行 GitNexus impact，报告调用方、流程与风险；UNKNOWN 必须补充文本核验，HIGH/CRITICAL 必须先提示风险。保留用户已有未提交修改。
 
 运行现有 `npm test`、`npm run check:routes`、`npm run build`，沿用构建压缩体积检查：初始 JS gzip ≤700KB、CSS gzip ≤180KB、单个 JS gzip ≤450KB，不将编辑器、音乐或图表依赖带入首页入口。按现有性能规格在冷缓存、约 3Mbps 移动网络下验收 FCP ≤2.5s、LCP ≤4s、CLS ≤0.1，并记录实际环境，不能仅以构建成功声称通过视觉或运行性能验收。
 

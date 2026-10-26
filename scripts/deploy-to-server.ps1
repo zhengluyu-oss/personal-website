@@ -159,8 +159,8 @@ function Invoke-SftpResumable([string]$LocalFile, [string]$RemoteTarget) {
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LocalRoot = Resolve-Path (Join-Path $ScriptDir "..")
 $BackendDir = Join-Path $LocalRoot "blog-backend"
-$BlogDir = Join-Path $LocalRoot "blog-frontend\kuailemao-blog"
-$AdminDir = Join-Path $LocalRoot "blog-frontend\kuailemao-admin"
+$BlogDir = Join-Path $LocalRoot "blog-frontend\luyu-blog"
+$AdminDir = Join-Path $LocalRoot "blog-frontend\luyu-admin"
 $NginxSite = Join-Path $LocalRoot "deploy\nginx\zhengluyu-blog.conf"
 
 $Selected = Normalize-Only $Only

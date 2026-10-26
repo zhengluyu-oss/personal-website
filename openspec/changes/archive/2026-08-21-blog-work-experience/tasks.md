@@ -11,7 +11,7 @@
 
 ## 3. Admin console
 
-- [x] 3.1 Add API module `kuailemao-admin/src/api/blog/experience`
+- [x] 3.1 Add API module `luyu-admin/src/api/blog/experience`
 - [x] 3.2 Add admin page list/form for experience entries under website management
 - [x] 3.3 Verify dynamic menu appears after SQL (re-login if needed)
 

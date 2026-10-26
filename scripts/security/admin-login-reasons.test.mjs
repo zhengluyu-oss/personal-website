@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
-const req = createRequire(new URL('../../blog-frontend/kuailemao-admin/package.json', import.meta.url))
+const req = createRequire(new URL('../../blog-frontend/luyu-admin/package.json', import.meta.url))
 const { JSDOM } = req('jsdom')
 const dom = new JSDOM('<html><body></body></html>', { url: 'https://fixture.invalid/admin/login' })
 for (const key of ['window','document','Element','HTMLElement','SVGElement','Node','navigator'])
@@ -11,7 +11,7 @@ for (const key of ['window','document','Element','HTMLElement','SVGElement','Nod
 const Vue = req('vue')
 const { parse, compileScript } = req('vue/compiler-sfc')
 const { build } = req('esbuild')
-const root = fileURLToPath(new URL('../../blog-frontend/kuailemao-admin/', import.meta.url))
+const root = fileURLToPath(new URL('../../blog-frontend/luyu-admin/', import.meta.url))
 const calls=[], notices=[], token=Vue.ref(null)
 let result, resendError
 const fixture = globalThis.__adminLoginReasons = { Vue,

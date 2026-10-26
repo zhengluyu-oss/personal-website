@@ -8,11 +8,10 @@ knowledge:
     username: knowledge_runtime
     password: ""
   storage:
-    endpoint: ""
-    bucket: ""
-    access-key: ""
-    secret-key: ""
-    prefix: knowledge/
+    # Uses the already configured oss.endpoint/bucket-name/access-key/secret-key.
+    # Enable only after the anonymous-read probe passes for OSS and media domain.
+    enabled: false
+    prefix: knowledge/private/
     quota-bytes: 1073741824
   processing:
     enabled: false
@@ -23,3 +22,19 @@ knowledge:
     text-bytes: 5242880
     output-bytes: 2097152
     temporary-bytes: 268435456
+  assistant:
+    # Keep false until migration 004, isolated tests, provider approval and a backup pass.
+    enabled: false
+    endpoint: ""
+    allowed-hosts: []
+    api-key: ""
+    model: ""
+    data-policy: ""
+    daily-per-account: 10
+    daily-site: 100
+    max-concurrent: 2
+    max-question-chars: 500
+    max-evidence: 4
+    max-evidence-chars: 4800
+    max-output-tokens: 800
+    timeout-seconds: 20
