@@ -9,6 +9,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import xyz.luyu.config.OssProperties;
 
 import java.time.Instant;
+import java.net.URI;
 import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
@@ -18,6 +19,20 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class KnowledgePrivateObjectsTest {
+    @Test void imageUrlSignsShortLivedPrivateMediaDomainWithoutNetworkRead(){
+        var site=new OssProperties();site.setBucketName("existing-bucket");
+        site.setMediaDomain("https://media.example.com");site.setAccessKey("test-key");site.setSecretKey("test-secret");
+        var objects=new KnowledgePrivateObjects(mock(OSS.class),site,new KnowledgeProperties());
+        try{
+            URI signed=URI.create(objects.imageUrl("knowledge/private/objects/image-id"));
+            assertEquals("https",signed.getScheme());
+            assertEquals("media.example.com",signed.getHost());
+            assertEquals("/knowledge/private/objects/image-id",signed.getPath());
+            assertTrue(signed.getRawQuery().contains("Signature="));
+            assertFalse(signed.toString().contains("test-secret"));
+            assertEquals(400,assertThrows(KnowledgeFailure.class,()->objects.imageUrl("public/image-id")).status());
+        }finally{objects.closeImageSigner();}
+    }
     @Test void cleanupDeletesOnlyAgedUnregisteredKnowledgeObjects(){
         var access=mock(KnowledgeAccess.class);
         var store=mock(KnowledgeStore.class);

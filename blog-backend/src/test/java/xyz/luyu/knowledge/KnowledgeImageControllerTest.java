@@ -65,4 +65,20 @@ class KnowledgeImageControllerTest {
         assertEquals(403,assertThrows(KnowledgeFailure.class,()->controller.image(UUID.randomUUID())).status());
         verify(objects,never()).open(anyString());
     }
+    @Test void authorizedReaderReceivesPrivateObjectUrl() {
+        var controller=controller();UUID imageId=UUID.randomUUID();
+        String key="knowledge/private/objects/"+UUID.randomUUID();
+        when(store.image(1L,imageId,false)).thenReturn(new KnowledgeStore.ImageInfo(entryId,key,"image/png",123));
+        when(objects.imageUrl(key)).thenReturn("https://media.example.com/"+key+"?Expires=123&Signature=test");
+        assertEquals("https://media.example.com/"+key+"?Expires=123&Signature=test",
+            controller.imageUrl(imageId).getBody().getData());
+        verify(objects).imageUrl(key);
+        verify(objects,never()).open(anyString());
+    }
+    @Test void revokedReaderCannotReceiveSignedUrl() {
+        var controller=controller();
+        when(access.requireRead()).thenThrow(new KnowledgeFailure(403,"no access"));
+        assertEquals(403,assertThrows(KnowledgeFailure.class,()->controller.imageUrl(UUID.randomUUID())).status());
+        verify(objects,never()).imageUrl(anyString());
+    }
 }

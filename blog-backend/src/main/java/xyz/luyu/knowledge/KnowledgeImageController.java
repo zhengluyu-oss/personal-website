@@ -16,7 +16,7 @@ import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.UUID;
 
-/** Knowledge-only image transport. No public OSS URL or token-bearing image URL is returned. */
+/** Knowledge-only image transport; signed OSS image URLs require current reader authorization. */
 @RestController @RequestMapping("/knowledge")
 public final class KnowledgeImageController {
     private static final int MAX_BYTES=5*1024*1024;
@@ -72,6 +72,12 @@ public final class KnowledgeImageController {
             .header("X-Robots-Tag","noindex, nofollow, noarchive")
             .header("X-Content-Type-Options","nosniff")
             .contentType(MediaType.parseMediaType(image.mime())).contentLength(image.sizeBytes()).body(body);
+    }
+    @GetMapping("/view/images/{imageId}/url")
+    public ResponseEntity<ResponseResult<String>> imageUrl(@PathVariable UUID imageId){
+        long owner=access.requireRead();KnowledgeStore store=access.store();
+        KnowledgeStore.ImageInfo image=store.image(owner,imageId,access.canManage());
+        return KnowledgeController.ok(storage().imageUrl(image.objectKey()));
     }
     static String mime(byte[] bytes){
         if(bytes.length>=8&&(bytes[0]&255)==137&&bytes[1]==80&&bytes[2]==78&&bytes[3]==71&&bytes[4]==13&&bytes[5]==10&&bytes[6]==26&&bytes[7]==10)return "image/png";

@@ -74,11 +74,12 @@ export async function knowledgeUploadImage(entryId: string, mutationId: string, 
   } catch (error) { return failure(error) }
 }
 
-export async function knowledgeImageBlob(imageId: string): Promise<Blob> {
+export async function knowledgeImageUrl(imageId: string): Promise<string> {
   sameOrigin()
   try {
-    const response = await client.get(`/knowledge/view/images/${imageId}/content`, { headers: { Authorization: 'Bearer ' + token() }, responseType: 'blob', timeout: 30000 })
-    return response.data as Blob
+    const response = await client.get(`/knowledge/view/images/${imageId}/url`, { headers: { Authorization: 'Bearer ' + token() } })
+    if (response.data?.code !== 200 || typeof response.data.data !== 'string') throw new Error('图片地址获取失败')
+    return response.data.data
   } catch (error) { return failure(error) }
 }
 export async function knowledgeDownloadFile(entryId: string, version: string, filename: string): Promise<void> {

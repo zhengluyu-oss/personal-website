@@ -30,6 +30,8 @@ flowchart LR
 
 PG 的 `knowledge_runtime` 角色只访问 `knowledge` schema；表启用强制 RLS，服务端在每个事务设置 owner 上下文。博客账号、权限、正式文章继续使用 MySQL；日记使用独立的 PG schema/角色。知识库复用现有 OSS Bucket 与服务器密钥，但上传请求原子指定私有 ACL，仅通过鉴权后端读取原件。共用密钥仍具有较大的 Bucket 权限，属于已接受的运维风险。
 
+正文图片仍写入该 Bucket 的私有对象。读者打开条目时，后端逐张检查当前知识库权限及图片所属条目，然后发放 60 秒有效的 OSS 签名地址；浏览器经 `oss.media-domain` 直连读取图片，图片字节不再由应用服务器转发。Markdown 只保存内部图片 ID，不保存签名地址。撤销阅读权限后不能再申请新地址，已发出的地址在到期前仍可使用；生产环境需保持媒体域名的 HTTPS 绑定及私有对象匿名拒绝配置。
+
 ```mermaid
 erDiagram
   entry ||--o{ entry_revision : versions

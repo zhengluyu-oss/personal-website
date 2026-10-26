@@ -1,15 +1,21 @@
 package xyz.luyu.knowledge;
 
 import com.aliyun.oss.OSS;
+import com.aliyun.oss.OSSClientBuilder;
+import com.aliyun.oss.ClientBuilderConfiguration;
+import com.aliyun.oss.HttpMethod;
 import com.aliyun.oss.model.CannedAccessControlList;
 import com.aliyun.oss.model.ObjectMetadata;
 import com.aliyun.oss.model.ObjectPermission;
 import com.aliyun.oss.model.PutObjectRequest;
 import com.aliyun.oss.model.OSSObject;
 import com.aliyun.oss.model.ListObjectsRequest;
+import com.aliyun.oss.model.GeneratePresignedUrlRequest;
+import com.aliyun.oss.model.ResponseHeaderOverrides;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import xyz.luyu.config.OssProperties;
+import jakarta.annotation.PreDestroy;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -19,6 +25,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -33,6 +40,7 @@ public final class KnowledgePrivateObjects {
     private HttpClient anonymous;
     private volatile long checkedAt;
     private volatile boolean safe;
+    private volatile OSS imageSigner;
     private String inventoryMarker;
 
     public KnowledgePrivateObjects(OSS oss,OssProperties site,KnowledgeProperties knowledge){
@@ -92,6 +100,33 @@ public final class KnowledgePrivateObjects {
         }catch(RuntimeException failure){try{delete(key);}catch(Exception ignored){}throw failure;}
     }
     public OSSObject open(String key){key(key);return oss.getObject(bucket(),key);}
+    public String imageUrl(String key){
+        key(key);
+        String media=site.getMediaDomain();
+        if(media==null||media.isBlank())throw KnowledgeFailure.unavailable();
+        URI domain;
+        try{domain=URI.create(media);}
+        catch(IllegalArgumentException invalid){throw KnowledgeFailure.unavailable();}
+        if(!"https".equals(domain.getScheme())||domain.getHost()==null||domain.getUserInfo()!=null
+            ||domain.getPort()!=-1||domain.getRawPath()!=null&&!domain.getRawPath().isEmpty()
+            ||domain.getRawQuery()!=null||domain.getRawFragment()!=null)throw KnowledgeFailure.unavailable();
+        OSS signer=imageSigner;
+        if(signer==null)synchronized(this){
+            signer=imageSigner;
+            if(signer==null){
+                ClientBuilderConfiguration config=new ClientBuilderConfiguration();
+                config.setSupportCname(true);
+                imageSigner=signer=new OSSClientBuilder().build(media,site.getAccessKey(),site.getSecretKey(),config);
+            }
+        }
+        GeneratePresignedUrlRequest request=new GeneratePresignedUrlRequest(bucket(),key,HttpMethod.GET);
+        request.setExpiration(new Date(System.currentTimeMillis()+60_000));
+        ResponseHeaderOverrides headers=new ResponseHeaderOverrides();
+        headers.setContentDisposition("inline");
+        request.setResponseHeaders(headers);
+        return signer.generatePresignedUrl(request).toExternalForm();
+    }
+    @PreDestroy public void closeImageSigner(){if(imageSigner!=null)imageSigner.shutdown();}
     public void delete(String key){key(key);oss.deleteObject(bucket(),key);}
     /** Scan only the knowledge object prefix; a failed listing aborts cleanup without touching other media. */
     synchronized List<String> oldObjectKeys(Instant before){

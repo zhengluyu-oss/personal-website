@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { MdCatalog, MdPreview } from 'md-editor-v3'
 import { sanitizeRenderedHtml } from '@/utils/sanitize-html'
-import { knowledgeImageBlob } from '@/utils/knowledge-api'
+import { knowledgeImageUrl } from '@/utils/knowledge-api'
 
 const props = defineProps<{ body: string }>()
 const editorId = 'knowledge-preview'
@@ -16,14 +16,16 @@ let generation = 0
 
 function release() {
   generation++
-  for (const url of allowed) URL.revokeObjectURL(url)
   allowed.clear()
   replacements.value = {}
 }
 function sanitize(html: string): string {
   const template = document.createElement('template')
   template.innerHTML = html
-  template.content.querySelectorAll('img').forEach(image => { if (!allowed.has(image.getAttribute('src') || '')) image.remove() })
+  template.content.querySelectorAll('img').forEach(image => {
+    if (!allowed.has(image.getAttribute('src') || '')) image.remove()
+    else image.setAttribute('referrerpolicy', 'no-referrer')
+  })
   template.content.querySelectorAll('picture,source,video,audio,svg,math,iframe,object,embed,style,link,script').forEach(element => element.remove())
   return sanitizeRenderedHtml(template.innerHTML)
 }
@@ -33,21 +35,18 @@ function updateCatalog(html: string) {
   hasHeadings.value = Boolean(template.content.querySelector('h1,h2,h3,h4,h5,h6'))
 }
 const imageIds = (body: string) => [...new Set(Array.from(body.matchAll(/knowledge-image:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/gi), match => match[1].toLowerCase()))]
-watch(() => imageIds(props.body).join(','), async (ids) => {
+watch(() => imageIds(props.body).join(','), (ids) => {
   release()
   const current = generation
-  const loaded: Record<string, string> = {}
-  for (const id of ids ? ids.split(',') : []) {
+  for (const id of ids ? ids.split(',') : []) void (async () => {
     try {
-      const blob = await knowledgeImageBlob(id)
+      const url = await knowledgeImageUrl(id)
       if (current !== generation) return
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(blob.type)) continue
-      const url = URL.createObjectURL(blob)
+      if (new URL(url).protocol !== 'https:') return
       allowed.add(url)
-      loaded[id] = url
+      replacements.value = { ...replacements.value, [id]: url }
     } catch { /* A missing or revoked image stays hidden. */ }
-  }
-  if (current === generation) replacements.value = loaded
+  })()
 }, { immediate: true })
 window.addEventListener('knowledge-access-invalid', release)
 onBeforeUnmount(() => { release(); window.removeEventListener('knowledge-access-invalid', release) })

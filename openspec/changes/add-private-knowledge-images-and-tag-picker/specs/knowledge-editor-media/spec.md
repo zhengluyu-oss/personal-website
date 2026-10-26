@@ -23,15 +23,15 @@ The management editor SHALL accept pasted, dropped, and chosen JPEG, PNG, and We
 - **THEN** no broken reference is inserted and the editor retains its existing text and shows the failure
 
 ### Requirement: Knowledge images stay private
-The system SHALL store knowledge images as private objects with ownership metadata and SHALL authorize every image read against the current entry and current reader permission.
+The system SHALL store knowledge images as private objects with ownership metadata and SHALL authorize every issuance of a short-lived image URL against the current entry and current reader permission.
 
 #### Scenario: Authorized reader
 - **WHEN** an authorized reader opens an entry containing an internal image reference
-- **THEN** the image renders in the management and public knowledge views without exposing a public object URL or bearer token in the Markdown
+- **THEN** the image renders directly from OSS in the management and public knowledge views using a 60-second signed URL, without storing that URL or a bearer token in the Markdown
 
 #### Scenario: Unauthorized or revoked reader
 - **WHEN** an anonymous, unauthorized, or subsequently revoked reader requests the image
-- **THEN** the server rejects the request and the client clears previously created temporary image URLs on access loss or navigation
+- **THEN** the server rejects new URL requests and the client clears displayed signed URLs on access loss or navigation; URLs already issued remain usable until expiry
 
 ### Requirement: Safe image lifecycle
 The system SHALL account for private image bytes, retain images referenced by current or retained historical content, and eventually reclaim unreferenced uploads without deleting live objects.
