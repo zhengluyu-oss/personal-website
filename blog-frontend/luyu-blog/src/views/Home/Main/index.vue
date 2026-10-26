@@ -2,7 +2,6 @@
 import { computed, onBeforeUnmount, onMounted, reactive } from 'vue'
 import { getArticleList, getRecommendArticleList } from '@/apis/home'
 import { experienceList, experienceOverview, type ExperienceOverview, type WorkExperienceItem } from '@/apis/experience'
-import useWebsiteStore from '@/store/modules/website'
 import { PUBLIC_PATHS, routeWithId } from '@/router/paths'
 import { articleItems, articlePage, createHomeResource, homeCount, homeExcerpt, loadHomeResource, selectHomeArticles, type HomeArticle, type HomeResource } from '@/utils/home-content'
 import HomeMedia from '../HomeMedia.vue'
@@ -10,7 +9,6 @@ import { canViewModule } from '@/composables/useSiteModuleAccess'
 import { websiteShareList, type WebsiteShareItem } from '@/apis/website-share'
 import { knowledgeRequest, type KnowledgeCapability, type KnowledgeEntry, type KnowledgePage } from '@/utils/knowledge-api'
 
-const website = useWebsiteStore()
 const latest = reactive(createHomeResource<ReturnType<typeof articlePage>>())
 const recommended = reactive(createHomeResource<HomeArticle[]>())
 const work = reactive(createHomeResource<WorkExperienceItem[]>())
@@ -175,46 +173,42 @@ onBeforeUnmount(() => { active = false })
       </div>
     </section>
 
-    <section class="module-feature section-shell" aria-labelledby="shares-home-title">
-      <div class="module-feature__heading">
-        <span class="module-feature__number" aria-hidden="true">01 / EXPLORE</span>
-        <h2 id="shares-home-title">网站分享</h2>
-      </div>
-      <div class="module-feature__body">
-        <p>收集值得一看的站点与实用工具，方便从这里继续探索。</p>
-        <RouterLink class="section-link module-feature__link" :to="PUBLIC_PATHS.websiteShares">
-          {{ canViewModule('shares') ? '浏览网站分享' : '查看访问说明' }} <span aria-hidden="true">→</span>
-        </RouterLink>
-      </div>
-    </section>
-
-    <section class="module-feature module-feature--knowledge section-shell" aria-labelledby="knowledge-home-title">
-      <div class="module-feature__heading">
-        <span class="module-feature__number" aria-hidden="true">02 / LEARN</span>
-        <h2 id="knowledge-home-title">知识库</h2>
-      </div>
-      <div class="module-feature__body">
-        <p>按主题整理技术学习笔记，便于查找与回顾。</p>
-        <RouterLink class="section-link module-feature__link" to="/knowledge">
-          {{ canViewModule('knowledge') ? '进入知识库' : '查看访问说明' }} <span aria-hidden="true">→</span>
-        </RouterLink>
-      </div>
-    </section>
-
-    <section class="module-feature module-feature--about section-shell" aria-labelledby="about-home-title">
-      <div class="module-feature__heading">
-        <span class="module-feature__number" aria-hidden="true">03 / ABOUT</span>
-        <h2 id="about-home-title">关于我</h2>
-      </div>
-      <div class="module-feature__body">
-        <p>了解我的经历与技术方向，以及这个网站背后的想法。</p>
-        <div class="module-feature__actions">
-          <RouterLink class="section-link module-feature__link" :to="PUBLIC_PATHS.about">
-            {{ canViewModule('about') ? '了解更多' : '查看访问说明' }} <span aria-hidden="true">→</span>
+    <section class="home-collection section-shell" aria-labelledby="shares-home-title">
+      <header class="section-header">
+        <div><h2 id="shares-home-title">网站分享</h2><p>值得收藏的网站与实用工具。</p></div>
+        <RouterLink class="section-link" :to="PUBLIC_PATHS.websiteShares">查看全部网站 <span aria-hidden="true">→</span></RouterLink>
+      </header>
+      <div v-if="!canViewModule('shares')" class="module-empty">网站分享仅向获授权的账号开放。<RouterLink :to="PUBLIC_PATHS.websiteShares">查看访问说明 →</RouterLink></div>
+      <div v-else-if="pending(shares)" class="collection-skeleton" role="status" aria-label="网站分享加载中"><span /><span /></div>
+      <div v-else-if="shares.data?.length" class="share-preview-grid">
+        <article v-for="item in shares.data.slice(0, 2)" :key="item.id" class="share-preview">
+          <RouterLink :to="routeWithId(PUBLIC_PATHS.websiteShareDetail, item.id)" class="share-preview__link">
+            <HomeMedia :src="item.coverImage" :alt="item.title + '封面'" empty-text="暂无网站封面" />
+            <div class="share-preview__copy"><time v-if="item.createTime">{{ item.createTime.slice(0, 10) }}</time><h3>{{ item.title }} <span aria-hidden="true">↗</span></h3><p>{{ item.summary }}</p></div>
           </RouterLink>
-          <a v-if="canViewModule('about') && githubUrl" class="section-link module-feature__secondary" :href="githubUrl" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
-        </div>
+        </article>
       </div>
+      <div v-else-if="shares.status === 'success'" class="module-empty"><h3>网站分享正在整理中</h3><p>发布后会在这里展示。</p></div>
+      <p v-if="shares.status === 'error'" class="module-message" role="status">网站分享暂未加载。<button type="button" @click="loadShares">重新加载</button></p>
+    </section>
+
+    <section class="home-collection home-collection--knowledge section-shell" aria-labelledby="knowledge-home-title">
+      <header class="section-header">
+        <div><h2 id="knowledge-home-title">知识库</h2><p>按主题整理的笔记、资料和概念。</p></div>
+        <RouterLink class="section-link" to="/knowledge">查看知识库 <span aria-hidden="true">→</span></RouterLink>
+      </header>
+      <div v-if="!canViewModule('knowledge')" class="module-empty">知识库仅向获授权的账号开放。<RouterLink to="/knowledge">查看访问说明 →</RouterLink></div>
+      <div v-else-if="pending(knowledge)" class="collection-skeleton collection-skeleton--knowledge" role="status" aria-label="知识库加载中"><span v-for="index in 4" :key="index" /></div>
+      <div v-else-if="knowledge.data?.length" class="knowledge-preview-grid">
+        <RouterLink v-for="entry in knowledge.data" :key="entry.id" class="knowledge-preview" :to="{ path: '/knowledge', query: { entry: entry.id } }">
+          <span class="knowledge-preview__kind">{{ knowledgeKind[entry.content.kind] }}</span>
+          <h3>{{ entry.content.title }} <span aria-hidden="true">↗</span></h3>
+          <p v-if="entry.content.body">{{ homeExcerpt(entry.content.body, 90) }}</p>
+          <time>{{ new Date(entry.updatedAt).toLocaleDateString('zh-CN') }}</time>
+        </RouterLink>
+      </div>
+      <div v-else-if="knowledge.status === 'success'" class="module-empty"><h3>知识库正在整理中</h3><p>新增条目后会在这里展示。</p></div>
+      <p v-if="knowledge.status === 'error'" class="module-message" role="status">知识库暂未加载。<button type="button" @click="loadKnowledge">重新加载</button></p>
     </section>
   </div>
 </template>
@@ -282,15 +276,25 @@ onBeforeUnmount(() => { active = false })
 .work-evidence ul { padding-left: 1.1rem; margin: .6rem 0; color: var(--brand-ink-soft); font-size: .95rem; line-height: 1.8; list-style: disc; }
 .work-evidence .read-link { display: inline-block; margin-top: .6rem; }
 .work-tech { margin: .75rem 0; color: var(--brand-ink-soft); font-size: .85rem; line-height: 1.75; }
-.module-feature { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 2rem; align-items: start; border-top: 1px solid var(--brand-line); padding: 2.5rem 0; }
-.module-feature--about { padding-bottom: 3.5rem; }
-.module-feature__heading, .module-feature__body { min-width: 0; }
-.module-feature__number { display: block; margin-bottom: .75rem; color: var(--brand-accent-strong); font-family: 'Share TechMono', Consolas, monospace; font-size: .8rem; letter-spacing: .08em; }
-.module-feature h2 { margin: 0; font-size: clamp(1.6rem, 2.4vw, 2rem); font-weight: 680; line-height: 1.4; letter-spacing: -.02em; }
-.module-feature__body p { max-width: 34rem; margin: .15rem 0 .9rem; color: var(--brand-ink-soft); font-size: 1rem; line-height: 1.8; }
-.module-feature__link { display: inline-flex; align-items: center; min-height: 2.75rem; }
-.module-feature__actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.5rem; }
-.module-feature__secondary { color: var(--brand-ink-soft); }
+.home-collection { padding: 2.5rem 0; border-top: 1px solid var(--brand-line); }
+.home-collection--knowledge { padding-bottom: 3.5rem; }
+.share-preview-grid, .knowledge-preview-grid, .collection-skeleton { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+.share-preview, .knowledge-preview { min-width: 0; overflow: hidden; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-md); background: var(--brand-surface); }
+.share-preview__link, .knowledge-preview { display: block; height: 100%; color: var(--brand-ink); text-decoration: none; }
+.share-preview__link :deep(.home-media) { border-radius: 0; aspect-ratio: 16 / 9; }
+.share-preview__link :deep(.home-media img) { object-fit: cover; }
+.share-preview__copy { padding: 1.3rem 1.5rem 1.5rem; }
+.share-preview time, .knowledge-preview time { color: var(--brand-ink-soft); font-size: .82rem; }
+.share-preview h3, .knowledge-preview h3 { display: flex; justify-content: space-between; gap: 1rem; margin: .5rem 0; font-size: 1.3rem; line-height: 1.45; }
+.share-preview h3 span, .knowledge-preview h3 span { color: var(--brand-accent-strong); font-size: 1rem; }
+.share-preview p, .knowledge-preview p { margin: .5rem 0 0; color: var(--brand-ink-soft); line-height: 1.75; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.knowledge-preview { padding: 1.5rem; }
+.knowledge-preview__kind { color: var(--brand-accent-strong); font-size: .82rem; font-weight: 650; }
+.knowledge-preview time { display: block; margin-top: 1.2rem; }
+.share-preview__link:hover h3, .knowledge-preview:hover h3 { color: var(--brand-accent-strong); }
+.collection-skeleton span { height: 16rem; border-radius: var(--brand-radius-md); background: var(--brand-canvas-soft); }
+.collection-skeleton--knowledge span { height: 10rem; }
+.module-empty a { color: var(--brand-accent-strong); font-weight: 600; }
 .module-message { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 1rem 0 0; padding: .8rem 1rem; background: var(--brand-canvas-soft); border-radius: var(--brand-radius-sm); font-size: .9rem; line-height: 1.6; color: var(--brand-ink-soft); }
 .module-message button { padding: .45rem .75rem; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-sm); color: var(--brand-accent-strong); background: var(--brand-surface); font-weight: 600; cursor: pointer; }
 .module-empty { padding: 2rem 1rem; color: var(--brand-ink-soft); font-size: 1rem; line-height: 1.8; }
@@ -352,8 +356,9 @@ button:hover { background: var(--brand-accent-soft); }
   .restricted-work__index { font-size: 1rem; }
   .restricted-work__list strong { font-size: 1.1rem; }
   .restricted-work__link { margin-left: 1.2rem; }
-  .module-feature { grid-template-columns: 1fr; gap: .4rem; padding: 2rem 0; }
-  .module-feature--about { padding-bottom: 2.5rem; }
-  .module-feature__body p { margin-top: 0; }
+  .home-collection { padding: 2rem 0; }
+  .home-collection--knowledge { padding-bottom: 2.5rem; }
+  .share-preview-grid, .knowledge-preview-grid, .collection-skeleton { grid-template-columns: 1fr; gap: 1rem; }
+  .share-preview__copy, .knowledge-preview { padding: 1.15rem; }
 }
 </style>
