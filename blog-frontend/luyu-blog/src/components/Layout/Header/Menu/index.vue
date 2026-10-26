@@ -151,7 +151,7 @@ watch(() => canViewModule('blog'), allowed => { if (allowed) void loadCategories
               content="点击去登录"
               placement="right"
           >
-            <RouterLink to="/auth/login" aria-label="登录"><el-avatar style="margin-right: 1rem">登录</el-avatar></RouterLink>
+            <RouterLink class="desktop-login-link" to="/auth/login">登录</RouterLink>
           </el-tooltip>
         </div>
         <div v-else style="display: flex">
@@ -471,6 +471,9 @@ nav .menus_item.is-section :deep(.el-icon) { color: #ffad99; }
   color: #ffd2c4 !important;
   border: 1px solid rgba(255, 255, 255, .18);
 }
+.desktop-login-link { display:inline-flex; align-items:center; justify-content:center; min-width:62px; min-height:38px; margin-right:1rem; padding:0 14px; box-sizing:border-box; border:1px solid rgba(28,33,40,.18); border-radius:var(--brand-radius-sm); background:#fff; color:#1c2128; font-size:14px; font-weight:700; white-space:nowrap; text-decoration:none; transition:background-color .2s ease,border-color .2s ease,color .2s ease,transform .2s ease; }
+.desktop-login-link:hover { border-color:#9e4a32; background:#faf0ec; color:#8b3d29; }
+.desktop-login-link:active { transform:translateY(1px); }
 nav a:focus-visible, nav button:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: -3px; }
 .blog-destination { display: inline-flex; align-items: center; gap: .35rem; min-height: 44px; }
 .category-toggle { display: inline-grid; place-items: center; min-width: 44px; min-height: 44px; border: 0; background: transparent; color: inherit; cursor: pointer; }

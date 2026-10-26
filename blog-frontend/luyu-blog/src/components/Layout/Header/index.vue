@@ -156,7 +156,7 @@ function restoreMenuFocus(event?: Event) {
               content="点击去登录"
               placement="right"
           >
-            <RouterLink class="mobile-account" to="/auth/login" aria-label="登录"><el-avatar>登录</el-avatar></RouterLink>
+            <RouterLink class="mobile-account mobile-login-link" to="/auth/login">登录</RouterLink>
           </el-tooltip>
         </div>
         <div v-else style="display: flex">
@@ -269,6 +269,9 @@ function restoreMenuFocus(event?: Event) {
 .move_nav :deep(.el-avatar) { margin-right:0!important; }
 .mobile-brand { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; padding:0 .55rem; border-radius:var(--brand-radius-sm); color:var(--brand-ink); font-size:1rem; font-weight:750; text-decoration:none; }
 .mobile-account { display:inline-flex; align-items:center; justify-content:center; min-width:44px; min-height:44px; }
+.mobile-login-link { min-width:56px; padding:0 12px; box-sizing:border-box; border:1px solid rgba(28,33,40,.18); border-radius:var(--brand-radius-sm); background:#fff; color:#1c2128; font-size:14px; font-weight:700; white-space:nowrap; text-decoration:none; transition:background-color .2s ease,border-color .2s ease,color .2s ease,transform .2s ease; }
+.mobile-login-link:hover { border-color:#9e4a32; background:#faf0ec; color:#8b3d29; }
+.mobile-login-link:active { transform:translateY(1px); }
 .mobile-account-avatar { min-width:44px; min-height:44px; }
 
 .search {
