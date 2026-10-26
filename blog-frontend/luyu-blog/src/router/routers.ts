@@ -164,6 +164,12 @@ export const constantRouter = [
                     title: '相册',
                 }
             },
+            {
+                path: '/knowledge',
+                component: () => import('@/views/Knowledge/Workspace.vue'),
+                name: 'knowledge',
+                meta: { title: '知识库', private: true },
+            },
         ]
     },
     // 文章
@@ -213,12 +219,6 @@ export const constantRouter = [
         component: () => import('@/views/Diary/Workspace.vue'),
         name: 'diary',
         meta: { title: '我的日记', private: true },
-    },
-    {
-        path: '/knowledge',
-        component: () => import('@/views/Knowledge/Workspace.vue'),
-        name: 'knowledge',
-        meta: { title: '知识库', private: true },
     },
     // 设置
     {
