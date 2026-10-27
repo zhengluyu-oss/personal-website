@@ -142,6 +142,13 @@ public class WebsiteInfoServiceImpl extends ServiceImpl<WebsiteInfoMapper, Websi
                 websiteInfoVO.setHeroVideoUrl(ossProperties.getMediaDomain().replaceAll("/+$", "")
                         + "/" + current.getHeroVideoKey());
             }
+            if (current.getHeroMobileVideoKey() != null
+                    && !current.getHeroMobileVideoKey().isBlank()
+                    && ossProperties.getMediaDomain() != null
+                    && ossProperties.getMediaDomain().startsWith("https://")) {
+                websiteInfoVO.setHeroMobileVideoUrl(ossProperties.getMediaDomain().replaceAll("/+$", "")
+                        + "/" + current.getHeroMobileVideoKey());
+            }
             if (websiteInfoVO.getBlogFeaturedArticleId() != null) {
                 Article featured = articleMapper.selectById(websiteInfoVO.getBlogFeaturedArticleId());
                 if (featured != null && Objects.equals(featured.getStatus(), SQLConst.PUBLIC_ARTICLE)) {

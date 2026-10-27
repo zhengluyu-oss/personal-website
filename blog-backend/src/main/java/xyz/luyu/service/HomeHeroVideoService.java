@@ -30,6 +30,7 @@ import java.util.UUID;
 public class HomeHeroVideoService {
     public static final long MAX_BYTES = 100_000_000L;
     private static final String PREFIX = "blog/home/hero-video/";
+    private static final String MOBILE_PREFIX = "blog/home/hero-video/mobile/";
     private static final Duration TICKET_LIFETIME = Duration.ofMinutes(30);
 
     @Resource private OSS ossClient;
@@ -52,13 +53,30 @@ public class HomeHeroVideoService {
     public VideoState current() {
         WebsiteInfo info = websiteInfoMapper.selectById(WebsiteInfoConst.WEBSITE_INFO_ID);
         String key = info == null ? null : info.getHeroVideoKey();
+        return state(key);
+    }
+
+    public VideoState currentMobile() {
+        WebsiteInfo info = websiteInfoMapper.selectById(WebsiteInfoConst.WEBSITE_INFO_ID);
+        return state(info == null ? null : info.getHeroMobileVideoKey());
+    }
+
+    private VideoState state(String key) {
         return key == null || key.isBlank() ? new VideoState(null, null)
                 : new VideoState(mediaDomain() + "/" + key, key);
     }
 
     public UploadTicket issueTicket() {
+        return issueTicket(false);
+    }
+
+    public UploadTicket issueMobileTicket() {
+        return issueTicket(true);
+    }
+
+    private UploadTicket issueTicket(boolean mobile) {
         mediaDomain(); // 域名未准备好时拒绝发布无法播放的视频
-        String key = PREFIX + UUID.randomUUID() + ".mp4";
+        String key = (mobile ? MOBILE_PREFIX : PREFIX) + UUID.randomUUID() + ".mp4";
         PolicyConditions conditions = new PolicyConditions();
         conditions.addConditionItem(PolicyConditions.COND_KEY, key);
         conditions.addConditionItem(PolicyConditions.COND_CONTENT_TYPE, "video/mp4");
@@ -75,7 +93,16 @@ public class HomeHeroVideoService {
 
     @Transactional
     public ResponseResult<VideoState> confirm(String key) {
-        if (!validKey(key) || !Objects.equals(redis.opsForValue().get(ticketKey(key)), "pending")) {
+        return confirm(key, false);
+    }
+
+    @Transactional
+    public ResponseResult<VideoState> confirmMobile(String key) {
+        return confirm(key, true);
+    }
+
+    private ResponseResult<VideoState> confirm(String key, boolean mobile) {
+        if (!validKey(key, mobile) || !Objects.equals(redis.opsForValue().get(ticketKey(key)), "pending")) {
             return ResponseResult.failure("上传凭证无效或已过期，请重新选择视频");
         }
         try {
@@ -90,38 +117,65 @@ public class HomeHeroVideoService {
         }
         WebsiteInfo before = websiteInfoMapper.selectById(WebsiteInfoConst.WEBSITE_INFO_ID);
         if (before == null) return ResponseResult.failure("网站信息不存在");
+        String oldKey = mobile ? before.getHeroMobileVideoKey() : before.getHeroVideoKey();
         LambdaUpdateWrapper<WebsiteInfo> update = new LambdaUpdateWrapper<WebsiteInfo>()
-                .eq(WebsiteInfo::getId, WebsiteInfoConst.WEBSITE_INFO_ID)
-                .set(WebsiteInfo::getHeroVideoKey, key);
-        if (before.getHeroVideoKey() == null) update.isNull(WebsiteInfo::getHeroVideoKey);
-        else update.eq(WebsiteInfo::getHeroVideoKey, before.getHeroVideoKey());
+                .eq(WebsiteInfo::getId, WebsiteInfoConst.WEBSITE_INFO_ID);
+        if (mobile) {
+            update.set(WebsiteInfo::getHeroMobileVideoKey, key);
+            if (oldKey == null) update.isNull(WebsiteInfo::getHeroMobileVideoKey);
+            else update.eq(WebsiteInfo::getHeroMobileVideoKey, oldKey);
+        } else {
+            update.set(WebsiteInfo::getHeroVideoKey, key);
+            if (oldKey == null) update.isNull(WebsiteInfo::getHeroVideoKey);
+            else update.eq(WebsiteInfo::getHeroVideoKey, oldKey);
+        }
         int updated = websiteInfoMapper.update(null, update);
         if (updated != 1) return ResponseResult.failure("保存首页视频失败");
         afterCommit(() -> {
             try { redis.delete(ticketKey(key)); }
             catch (RuntimeException exception) { log.warn("首页视频上传凭证清理失败: {}", key, exception); }
-            cleanupOld(before.getHeroVideoKey(), key);
+            cleanupOld(oldKey, key);
         });
         return ResponseResult.success(new VideoState(mediaDomain() + "/" + key, key));
     }
 
     @Transactional
     public ResponseResult<Void> remove() {
+        return remove(false);
+    }
+
+    @Transactional
+    public ResponseResult<Void> removeMobile() {
+        return remove(true);
+    }
+
+    private ResponseResult<Void> remove(boolean mobile) {
         WebsiteInfo before = websiteInfoMapper.selectById(WebsiteInfoConst.WEBSITE_INFO_ID);
         if (before == null) return ResponseResult.failure("网站信息不存在");
+        String oldKey = mobile ? before.getHeroMobileVideoKey() : before.getHeroVideoKey();
         LambdaUpdateWrapper<WebsiteInfo> update = new LambdaUpdateWrapper<WebsiteInfo>()
-                .eq(WebsiteInfo::getId, WebsiteInfoConst.WEBSITE_INFO_ID)
-                .set(WebsiteInfo::getHeroVideoKey, null);
-        if (before.getHeroVideoKey() == null) update.isNull(WebsiteInfo::getHeroVideoKey);
-        else update.eq(WebsiteInfo::getHeroVideoKey, before.getHeroVideoKey());
+                .eq(WebsiteInfo::getId, WebsiteInfoConst.WEBSITE_INFO_ID);
+        if (mobile) {
+            update.set(WebsiteInfo::getHeroMobileVideoKey, null);
+            if (oldKey == null) update.isNull(WebsiteInfo::getHeroMobileVideoKey);
+            else update.eq(WebsiteInfo::getHeroMobileVideoKey, oldKey);
+        } else {
+            update.set(WebsiteInfo::getHeroVideoKey, null);
+            if (oldKey == null) update.isNull(WebsiteInfo::getHeroVideoKey);
+            else update.eq(WebsiteInfo::getHeroVideoKey, oldKey);
+        }
         int updated = websiteInfoMapper.update(null, update);
         if (updated != 1) return ResponseResult.failure("移除首页视频失败");
-        afterCommit(() -> cleanupOld(before.getHeroVideoKey(), null));
+        afterCommit(() -> cleanupOld(oldKey, null));
         return ResponseResult.success();
     }
 
     private boolean validKey(String key) {
-        return key != null && key.matches("blog/home/hero-video/[0-9a-f-]{36}\\.mp4");
+        return validKey(key, false) || validKey(key, true);
+    }
+
+    private boolean validKey(String key, boolean mobile) {
+        return key != null && key.matches((mobile ? MOBILE_PREFIX : PREFIX) + "[0-9a-f-]{36}\\.mp4");
     }
 
     private String ticketKey(String key) { return "home:hero:video:ticket:" + key; }

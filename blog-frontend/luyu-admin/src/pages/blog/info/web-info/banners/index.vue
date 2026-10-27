@@ -10,7 +10,7 @@ import {ref} from 'vue'
 import axios from 'axios'
 import {message} from 'ant-design-vue'
 import type {FileType} from 'ant-design-vue/es/upload/interface'
-import {backGetBanners, confirmHeroVideo, deleteBanner, getHeroVideo, issueHeroVideoTicket, removeHeroVideo, updateOrder, uploadBanner} from "~/api/blog/banners";
+import {backGetBanners, confirmHeroVideo, confirmMobileHeroVideo, deleteBanner, getHeroVideo, getMobileHeroVideo, issueHeroVideoTicket, issueMobileHeroVideoTicket, removeHeroVideo, removeMobileHeroVideo, updateOrder, uploadBanner} from "~/api/blog/banners";
 import type {HeroVideoState, HeroVideoTicket} from "~/api/blog/banners";
 import {compressImage} from "~/utils/CompressedImage.ts";
 import {toImageUploadFile} from '~/utils/upload-file'
@@ -61,17 +61,26 @@ function handlePreview(file: FileItem) {
 const uploading = ref(false)
 const progress = ref(0)
 const heroVideo = ref<HeroVideoState>({url: null, objectKey: null})
+const mobileHeroVideo = ref<HeroVideoState>({url: null, objectKey: null})
 const videoBusy = ref(false)
 const videoProgress = ref(0)
 const videoError = ref('')
 const videoInput = ref<HTMLInputElement>()
+const mobileVideoInput = ref<HTMLInputElement>()
+type VideoTarget = 'desktop' | 'mobile'
+const activeVideoTarget = ref<VideoTarget>('desktop')
 
 async function refreshVideo() {
-  try { heroVideo.value = (await getHeroVideo()).data as HeroVideoState }
+  try {
+    const [desktop, mobile] = await Promise.all([getHeroVideo(), getMobileHeroVideo()])
+    heroVideo.value = desktop.data as HeroVideoState
+    mobileHeroVideo.value = mobile.data as HeroVideoState
+  }
   catch { videoError.value = '无法读取当前首页视频，请稍后重试' }
 }
 
-async function uploadVideo(file: File) {
+async function uploadVideo(file: File, target: VideoTarget) {
+  activeVideoTarget.value = target
   videoError.value = ''
   if (file.type !== 'video/mp4' || !file.name.toLowerCase().endsWith('.mp4')) {
     videoError.value = '仅支持 MP4 文件'
@@ -84,7 +93,7 @@ async function uploadVideo(file: File) {
   videoBusy.value = true
   videoProgress.value = 0
   try {
-    const ticket = (await issueHeroVideoTicket()).data as HeroVideoTicket
+    const ticket = (await (target === 'mobile' ? issueMobileHeroVideoTicket() : issueHeroVideoTicket())).data as HeroVideoTicket
     const data = new FormData()
     data.append('key', ticket.objectKey)
     data.append('policy', ticket.policy)
@@ -99,11 +108,12 @@ async function uploadVideo(file: File) {
       },
       timeout: 30 * 60_000,
     })
-    const saved = await confirmHeroVideo(ticket.objectKey)
+    const saved = await (target === 'mobile' ? confirmMobileHeroVideo(ticket.objectKey) : confirmHeroVideo(ticket.objectKey))
     if (saved.code !== 200) throw new Error(saved.msg || '视频确认失败')
-    heroVideo.value = saved.data as HeroVideoState
+    if (target === 'mobile') mobileHeroVideo.value = saved.data as HeroVideoState
+    else heroVideo.value = saved.data as HeroVideoState
     videoProgress.value = 100
-    message.success('首页视频已更新')
+    message.success(target === 'mobile' ? '手机端视频已更新' : '电脑端视频已更新')
   } catch (error) {
     videoError.value = axios.isAxiosError(error)
       ? !error.response
@@ -116,23 +126,26 @@ async function uploadVideo(file: File) {
   } finally {
     videoBusy.value = false
     if (videoInput.value) videoInput.value.value = ''
+    if (mobileVideoInput.value) mobileVideoInput.value.value = ''
   }
 }
 
-function chooseVideo(event: Event) {
+function chooseVideo(event: Event, target: VideoTarget) {
   const file = (event.target as HTMLInputElement).files?.[0]
-  if (file && !videoBusy.value) void uploadVideo(file)
+  if (file && !videoBusy.value) void uploadVideo(file, target)
 }
 
-async function clearVideo() {
+async function clearVideo(target: VideoTarget) {
   if (videoBusy.value) return
+  activeVideoTarget.value = target
   videoBusy.value = true
   videoError.value = ''
   try {
-    const result = await removeHeroVideo()
+    const result = await (target === 'mobile' ? removeMobileHeroVideo() : removeHeroVideo())
     if (result.code !== 200) throw new Error(result.msg || '移除失败')
-    heroVideo.value = {url: null, objectKey: null}
-    message.success('首页视频已移除，访客将看到图片封面')
+    if (target === 'mobile') mobileHeroVideo.value = {url: null, objectKey: null}
+    else heroVideo.value = {url: null, objectKey: null}
+    message.success(target === 'mobile' ? '手机端视频已移除，将使用电脑端视频' : '电脑端视频已移除，将使用图片封面')
   } catch (error) {
     videoError.value = error instanceof Error ? error.message : '移除失败，请重试'
   } finally { videoBusy.value = false }
@@ -197,16 +210,27 @@ function sortOrderFunc(_: DraggableEvent) {
 </script>
 
 <template>
-  <a-card title="首页背景视频" class="hero-video-card">
+  <a-card title="电脑端背景视频" class="hero-video-card">
     <p>在这里选择 MP4 视频，最大 100 MB。推荐 H.264、无音轨、5–12 秒循环素材。首页会先显示下方第一张轮播图作为封面；上传期间请保持页面打开。</p>
     <video v-if="heroVideo.url" :src="heroVideo.url" controls preload="metadata" class="hero-video-preview" aria-label="当前首页背景视频" />
     <p v-else>目前未配置视频，首页将显示静态封面。</p>
     <div class="hero-video-actions">
-      <input ref="videoInput" type="file" accept="video/mp4,.mp4" :disabled="videoBusy" aria-label="选择首页背景视频" @change="chooseVideo">
-      <a-button v-if="heroVideo.url" danger :disabled="videoBusy" @click="clearVideo">移除视频</a-button>
+      <input ref="videoInput" type="file" accept="video/mp4,.mp4" :disabled="videoBusy" aria-label="选择电脑端背景视频" @change="chooseVideo($event, 'desktop')">
+      <a-button v-if="heroVideo.url" danger :disabled="videoBusy" @click="clearVideo('desktop')">移除视频</a-button>
     </div>
-    <a-progress v-if="videoBusy" :percent="videoProgress" size="small" />
-    <p v-if="videoError" role="alert" class="hero-video-error">{{ videoError }}</p>
+    <a-progress v-if="videoBusy && activeVideoTarget === 'desktop'" :percent="videoProgress" size="small" />
+    <p v-if="videoError && activeVideoTarget === 'desktop'" role="alert" class="hero-video-error">{{ videoError }}</p>
+  </a-card>
+  <a-card title="手机端竖版背景视频" class="hero-video-card">
+    <p>建议上传竖版 MP4，最大 100 MB。未配置时手机端沿用电脑端视频；上传期间请保持页面打开。</p>
+    <video v-if="mobileHeroVideo.url" :src="mobileHeroVideo.url" controls preload="metadata" class="hero-video-preview hero-video-preview--mobile" aria-label="当前手机端背景视频" />
+    <p v-else>目前未配置手机端视频。</p>
+    <div class="hero-video-actions">
+      <input ref="mobileVideoInput" type="file" accept="video/mp4,.mp4" :disabled="videoBusy" aria-label="选择手机端背景视频" @change="chooseVideo($event, 'mobile')">
+      <a-button v-if="mobileHeroVideo.url" danger :disabled="videoBusy" @click="clearVideo('mobile')">移除视频</a-button>
+    </div>
+    <a-progress v-if="videoBusy && activeVideoTarget === 'mobile'" :percent="videoProgress" size="small" />
+    <p v-if="videoError && activeVideoTarget === 'mobile'" role="alert" class="hero-video-error">{{ videoError }}</p>
   </a-card>
   <a-divider>首页轮播图（下方“＋”仅用于上传图片）</a-divider>
   <div class="carousel">
@@ -274,6 +298,7 @@ function sortOrderFunc(_: DraggableEvent) {
 <style scoped lang="scss">
 .hero-video-card { margin-bottom: 1.5rem; }
 .hero-video-preview { display: block; width: min(100%, 640px); max-height: 360px; margin: 1rem 0; background: #111; }
+.hero-video-preview--mobile { width: min(100%, 240px); max-height: 420px; }
 .hero-video-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
 .hero-video-error { color: #c62828; }
 

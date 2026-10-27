@@ -63,6 +63,8 @@ public class WebsiteInfo implements BaseData {
     private String heroAsideText;
     // 首页背景视频 OSS 对象键，空值表示使用静态 Banner
     private String heroVideoKey;
+    // 手机端竖版背景视频 OSS 对象键
+    private String heroMobileVideoKey;
     //头部通知
     private String headerNotification;
     //侧面公告

@@ -72,6 +72,38 @@ class HomeHeroVideoServiceTest {
         verifyNoInteractions(mapper, oss);
     }
 
+    @Test void mobileTicketUsesSeparateObjectPrefix() {
+        when(oss.generatePostPolicy(any(), any(PolicyConditions.class))).thenReturn("{\"conditions\":[]}");
+        when(oss.calculatePostSignature(anyString())).thenReturn("signature");
+        var ticket = service.issueMobileTicket();
+        assertTrue(ticket.objectKey().matches("blog/home/hero-video/mobile/[0-9a-f-]{36}\\.mp4"));
+        assertNotEquals(200, service.confirm(ticket.objectKey()).getCode());
+    }
+
+    @Test void mobileReplacementLeavesDesktopVideoUntouched() {
+        String key = "blog/home/hero-video/mobile/11111111-1111-1111-1111-111111111111.mp4";
+        String oldMobile = "blog/home/hero-video/mobile/22222222-2222-2222-2222-222222222222.mp4";
+        String desktop = "blog/home/hero-video/33333333-3333-3333-3333-333333333333.mp4";
+        when(values.get(anyString())).thenReturn("pending");
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentLength(1024);
+        metadata.setContentType("video/mp4");
+        when(oss.getObjectMetadata("test-bucket", key)).thenReturn(metadata);
+        WebsiteInfo info = new WebsiteInfo();
+        info.setHeroVideoKey(desktop);
+        info.setHeroMobileVideoKey(oldMobile);
+        when(mapper.selectById(any())).thenReturn(info);
+        when(mapper.update(isNull(), any())).thenReturn(1);
+        assertEquals(200, service.confirmMobile(key).getCode());
+        assertEquals("https://media.example.com/" + oldMobile, service.currentMobile().url());
+        ArgumentCaptor<com.baomidou.mybatisplus.core.conditions.Wrapper<WebsiteInfo>> update = ArgumentCaptor.forClass(com.baomidou.mybatisplus.core.conditions.Wrapper.class);
+        verify(mapper).update(isNull(), update.capture());
+        assertTrue(update.getValue().getSqlSet().contains("hero_mobile_video_key"));
+        assertFalse(update.getValue().getSqlSet().contains("hero_video_key"));
+        verify(oss).deleteObject("test-bucket", oldMobile);
+        verify(oss, never()).deleteObject("test-bucket", desktop);
+    }
+
     @Test void wrongMetadataPreservesPreviousVideo() {
         String key = "blog/home/hero-video/11111111-1111-1111-1111-111111111111.mp4";
         when(values.get(anyString())).thenReturn("pending");

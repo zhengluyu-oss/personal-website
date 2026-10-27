@@ -20,6 +20,12 @@ public class HomeHeroVideoController {
         return ResponseResult.success(service.current());
     }
 
+    @PreAuthorize("hasAnyAuthority('blog:banner:list')")
+    @GetMapping("/mobile")
+    public ResponseResult<HomeHeroVideoService.VideoState> currentMobile() {
+        return ResponseResult.success(service.currentMobile());
+    }
+
     @PreAuthorize("hasAnyAuthority('blog:banner:add')")
     @AccessLimit(seconds = 60, maxCount = 10)
     @PostMapping("/ticket")
@@ -29,13 +35,32 @@ public class HomeHeroVideoController {
 
     @PreAuthorize("hasAnyAuthority('blog:banner:add')")
     @AccessLimit(seconds = 60, maxCount = 10)
+    @PostMapping("/mobile/ticket")
+    public ResponseResult<HomeHeroVideoService.UploadTicket> mobileTicket() {
+        return ResponseResult.success(service.issueMobileTicket());
+    }
+
+    @PreAuthorize("hasAnyAuthority('blog:banner:add')")
+    @AccessLimit(seconds = 60, maxCount = 10)
     @PostMapping("/confirm")
     public ResponseResult<HomeHeroVideoService.VideoState> confirm(@RequestBody ConfirmRequest request) {
         return service.confirm(request.objectKey());
+    }
+
+    @PreAuthorize("hasAnyAuthority('blog:banner:add')")
+    @AccessLimit(seconds = 60, maxCount = 10)
+    @PostMapping("/mobile/confirm")
+    public ResponseResult<HomeHeroVideoService.VideoState> confirmMobile(@RequestBody ConfirmRequest request) {
+        return service.confirmMobile(request.objectKey());
     }
 
     @PreAuthorize("hasAnyAuthority('blog:banner:delete')")
     @AccessLimit(seconds = 60, maxCount = 10)
     @DeleteMapping
     public ResponseResult<Void> remove() { return service.remove(); }
+
+    @PreAuthorize("hasAnyAuthority('blog:banner:delete')")
+    @AccessLimit(seconds = 60, maxCount = 10)
+    @DeleteMapping("/mobile")
+    public ResponseResult<Void> removeMobile() { return service.removeMobile(); }
 }

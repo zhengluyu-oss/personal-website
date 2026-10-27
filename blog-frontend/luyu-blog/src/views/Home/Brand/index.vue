@@ -7,7 +7,10 @@ import Images from '../Images/index.vue'
 const website = useWebsiteStore()
 const hero = computed(() => resolveHomeHero(website.webInfo))
 const actions = computed(() => [hero.value.primary, hero.value.secondary].filter(item => item !== null))
-const videoUrl = computed(() => website.webInfo?.heroVideoUrl?.trim() || '')
+const mobileViewport = ref(false)
+const videoUrl = computed(() => (mobileViewport.value
+  ? website.webInfo?.heroMobileVideoUrl?.trim() || website.webInfo?.heroVideoUrl?.trim()
+  : website.webInfo?.heroVideoUrl?.trim()) || '')
 const shell = ref<HTMLElement>()
 const video = ref<HTMLVideoElement>()
 const visible = ref(true)
@@ -23,6 +26,8 @@ const allowAuto = computed(() => !reducedMotion.value && !saveData.value)
 const videoSource = computed(() => mediaActivated.value ? videoUrl.value : '')
 let observer: IntersectionObserver | undefined
 let motionPreference: MediaQueryList | undefined
+let viewportPreference: MediaQueryList | undefined
+const onViewportChange = () => { mobileViewport.value = viewportPreference?.matches || false }
 
 async function attemptPlay() {
   if (!videoSource.value || !visible.value || pausedByUser.value || videoFailed.value) return
@@ -57,6 +62,9 @@ watch([videoSource, visible], () => {
   else if (allowAuto.value && !pausedByUser.value) void attemptPlay()
 })
 onMounted(() => {
+  viewportPreference = window.matchMedia('(max-width: 767px)')
+  onViewportChange()
+  viewportPreference.addEventListener('change', onViewportChange)
   motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)')
   onMotionChange()
   motionPreference.addEventListener('change', onMotionChange)
@@ -70,6 +78,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   observer?.disconnect()
   motionPreference?.removeEventListener('change', onMotionChange)
+  if (viewportPreference) viewportPreference.removeEventListener('change', onViewportChange)
   video.value?.pause()
 })
 </script>
@@ -78,7 +87,7 @@ onBeforeUnmount(() => {
   <div ref="shell" class="hero-shell">
     <div class="hero-media" aria-hidden="true">
       <Images @ready="coverReady = true" />
-      <video v-if="videoUrl" ref="video" class="hero-video" :class="{ 'hero-video--playing': videoPlaying }"
+      <video v-if="videoUrl" :key="videoUrl" ref="video" class="hero-video" :class="{ 'hero-video--playing': videoPlaying }"
         :src="videoSource || undefined" muted loop playsinline preload="none" aria-hidden="true"
         @playing="videoPlaying = true" @pause="videoPlaying = false" @error="onVideoError" />
     </div>

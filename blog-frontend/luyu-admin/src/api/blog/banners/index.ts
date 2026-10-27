@@ -43,3 +43,9 @@ export async function confirmHeroVideo(objectKey: string) {
   return usePost('/banners/back/hero-video/confirm', {objectKey})
 }
 export async function removeHeroVideo() { return useDelete('/banners/back/hero-video') }
+export async function getMobileHeroVideo() { return useGet('/banners/back/hero-video/mobile') }
+export async function issueMobileHeroVideoTicket() { return usePost('/banners/back/hero-video/mobile/ticket', {}) }
+export async function confirmMobileHeroVideo(objectKey: string) {
+  return usePost('/banners/back/hero-video/mobile/confirm', {objectKey})
+}
+export async function removeMobileHeroVideo() { return useDelete('/banners/back/hero-video/mobile') }

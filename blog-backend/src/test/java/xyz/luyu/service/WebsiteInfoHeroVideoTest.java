@@ -23,6 +23,7 @@ class WebsiteInfoHeroVideoTest {
         var result = service.selectWebsiteInfo();
         assertEquals("旧首页文案", result.getHeroTitle());
         assertNull(result.getHeroVideoUrl());
+        assertNull(result.getHeroMobileVideoUrl());
         verify(service, times(1)).getById(any());
     }
 
@@ -31,6 +32,7 @@ class WebsiteInfoHeroVideoTest {
         WebsiteInfo info = new WebsiteInfo();
         info.setHeroTitle("首页文案");
         info.setHeroVideoKey("blog/home/hero-video/11111111-1111-1111-1111-111111111111.mp4");
+        info.setHeroMobileVideoKey("blog/home/hero-video/mobile/22222222-2222-2222-2222-222222222222.mp4");
         doReturn(info).when(service).getById(any());
         ReflectionTestUtils.setField(service, "articleMapper", mock(ArticleMapper.class));
         OssProperties props = new OssProperties();
@@ -39,5 +41,6 @@ class WebsiteInfoHeroVideoTest {
         var result = service.selectWebsiteInfo();
         assertEquals("首页文案", result.getHeroTitle());
         assertEquals("https://media.example.com/" + info.getHeroVideoKey(), result.getHeroVideoUrl());
+        assertEquals("https://media.example.com/" + info.getHeroMobileVideoKey(), result.getHeroMobileVideoUrl());
     }
 }
