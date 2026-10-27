@@ -59,7 +59,13 @@ public final class KnowledgeAssistantService {
             String answer=generated.getString("answer");JSONArray citations=generated.getJSONArray("citations");
             if(answer==null||answer.length()>3000||citations==null||citations.size()>sources.size())throw KnowledgeFailure.unavailable();
             var selected=new LinkedHashSet<String>();
-            for(Object citation:citations){if(!(citation instanceof String id)||!sources.containsKey(id)||!selected.add(id))throw KnowledgeFailure.unavailable();}
+            for(Object citation:citations){
+                String id;
+                if(citation instanceof String value)id=value;
+                else if(citation instanceof Integer ordinal)id="S"+ordinal;
+                else throw KnowledgeFailure.unavailable();
+                if(!sources.containsKey(id)||!selected.add(id))throw KnowledgeFailure.unavailable();
+            }
             requireReady();for(var item:evidence)if(!store.current(owner,item))throw KnowledgeFailure.unavailable();
             completed=true;
             if(answer.isBlank()||selected.isEmpty())return new Answer("NO_EVIDENCE","知识库中暂无可靠资料可以回答这个问题。",List.of());
