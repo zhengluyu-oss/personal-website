@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { getArticleList, getRecommendArticleList } from '@/apis/home'
 import { experienceList, experienceOverview, type ExperienceOverview, type WorkExperienceItem } from '@/apis/experience'
 import { PUBLIC_PATHS, routeWithId } from '@/router/paths'
@@ -8,6 +8,8 @@ import HomeMedia from '../HomeMedia.vue'
 import { canViewModule } from '@/composables/useSiteModuleAccess'
 import { websiteShareList, type WebsiteShareItem } from '@/apis/website-share'
 import { knowledgeRequest, type KnowledgeCapability, type KnowledgeEntry, type KnowledgePage } from '@/utils/knowledge-api'
+import { diaryReadRequest, type DiaryPage } from '@/utils/diary-api'
+import useUserStore from '@/store/modules/user'
 
 const latest = reactive(createHomeResource<ReturnType<typeof articlePage>>())
 const recommended = reactive(createHomeResource<HomeArticle[]>())
@@ -16,6 +18,14 @@ const overview = reactive(createHomeResource<ExperienceOverview>())
 const shares = reactive(createHomeResource<WebsiteShareItem[]>())
 type KnowledgePreview = { entry: KnowledgeEntry; excerpt: string }
 const knowledge = reactive(createHomeResource<KnowledgePreview[]>())
+type DiaryPreview = { id: string; title: string; createdAt: string }
+const diary = reactive(createHomeResource<DiaryPreview[]>())
+const user = useUserStore()
+const diaryAllowed = computed(() => canViewModule('diary'))
+const diaryDenied = ref(false)
+const diaryVisible = computed(() => diaryAllowed.value && !diaryDenied.value)
+let diarySequence = 0
+let diaryTimer: ReturnType<typeof setInterval> | undefined
 let active = true
 const isActive = () => active
 const loadArticles = () => loadHomeResource(latest, async () => articlePage((await getArticleList(1, 6)).data), isActive)
@@ -49,6 +59,47 @@ const loadKnowledge = () => loadHomeResource(knowledge, async () => {
   if (!Array.isArray(page.records)) throw new Error('Invalid knowledge response')
   return page.records
 }, isActive)
+function clearDiary() {
+  diarySequence++
+  diary.data = null
+  diary.status = 'idle'
+  diaryDenied.value = false
+}
+async function loadDiary(refresh = false) {
+  if (!active || !diaryAllowed.value) return
+  const sequence = ++diarySequence
+  const token = user.token
+  if (!refresh) { diary.data = null; diary.status = 'loading' }
+  const current = () => active && sequence === diarySequence && diaryAllowed.value && user.token === token
+  try {
+    const capability = await diaryReadRequest<{ allowed: boolean; available: boolean }>('GET', '/capabilities')
+    if (!current()) return
+    if (!capability.allowed) {
+      diary.data = null; diary.status = 'idle'; diaryDenied.value = true
+      return
+    }
+    diaryDenied.value = false
+    if (!capability.available) { diary.data = null; diary.status = 'error'; return }
+    const page = await diaryReadRequest<DiaryPage<DiaryPreview>>('POST', '/entries/search', {
+      axis: 'created', from: null, to: null, keyword: '', page: 1, pageSize: 3, deleted: false,
+    })
+    if (!current()) return
+    if (!Array.isArray(page.records)) throw new Error('Invalid diary response')
+    diary.data = page.records.slice(0, 3).map(item => ({ id: item.id, title: item.title || '无标题日记', createdAt: item.createdAt }))
+    diary.status = 'success'
+  } catch (error: any) {
+    if (!current()) return
+    diary.data = null
+    if (Number(error?.status) === 401 || Number(error?.status) === 403) diaryDenied.value = true
+    diary.status = 'error'
+  }
+}
+watch([diaryAllowed, () => user.token], () => {
+  clearDiary()
+  if (diaryAllowed.value) void loadDiary()
+}, { immediate: true, flush: 'sync' })
+const onDiarySessionInvalid = () => { clearDiary(); diaryDenied.value = true }
+const refreshDiary = () => { if (diaryAllowed.value) void loadDiary(true) }
 const selection = computed(() => selectHomeArticles(latest.data?.articles || [], recommended.data || []))
 const current = computed(() => work.data?.find(item => item.isCurrent === 1))
 const pending = (resource: HomeResource<unknown>) => resource.status === 'idle' || resource.status === 'loading'
@@ -62,13 +113,22 @@ const articlePath = (id: string | number) => routeWithId(PUBLIC_PATHS.article, i
 const experiencePath = (id: string | number) => routeWithId(PUBLIC_PATHS.experienceDetail, id)
 const knowledgeKind = { NOTE: '笔记', DOCUMENT: '文件资料', CONCEPT: '概念' }
 onMounted(() => {
+  window.addEventListener('diary-session-invalid', onDiarySessionInvalid)
+  window.addEventListener('focus', refreshDiary)
+  diaryTimer = setInterval(refreshDiary, 30_000)
   void loadOverview()
   if (canViewModule('blog')) { void loadArticles(); void loadRecommendations() }
   if (canViewModule('experience')) void loadWork()
   if (canViewModule('shares')) void loadShares()
   if (canViewModule('knowledge')) void loadKnowledge()
 })
-onBeforeUnmount(() => { active = false })
+onBeforeUnmount(() => {
+  active = false
+  clearDiary()
+  clearInterval(diaryTimer)
+  window.removeEventListener('diary-session-invalid', onDiarySessionInvalid)
+  window.removeEventListener('focus', refreshDiary)
+})
 </script>
 
 <template>
@@ -172,6 +232,27 @@ onBeforeUnmount(() => { active = false })
         <div class="list-skeleton" aria-hidden="true"><span v-for="index in 4" :key="index" /></div>
         <p>博客文章仅向获授权的账号开放。<RouterLink :to="PUBLIC_PATHS.blog">查看访问说明 →</RouterLink></p>
       </div>
+    </section>
+
+    <section v-if="diaryVisible" class="home-collection section-shell" aria-labelledby="diary-home-title">
+      <header class="section-header">
+        <div><h2 id="diary-home-title">我的日记</h2><p>最近写下的生活记录与思考。</p></div>
+        <RouterLink class="section-link" to="/diary">查看全部日记 <span aria-hidden="true">→</span></RouterLink>
+      </header>
+      <div v-if="pending(diary)" class="diary-preview-grid" role="status" aria-label="日记加载中">
+        <span v-for="index in 3" :key="index" class="diary-preview-skeleton" aria-hidden="true" />
+      </div>
+      <ol v-else-if="diary.data?.length" class="diary-preview-grid diary-preview-list">
+        <li v-for="item in diary.data" :key="item.id">
+          <RouterLink class="diary-preview" to="/diary">
+            <time v-if="item.createdAt" :datetime="item.createdAt">{{ item.createdAt.slice(0, 10) }}</time>
+            <h3>{{ item.title }} <span aria-hidden="true">↗</span></h3>
+            <span class="read-link">阅读日记 <span aria-hidden="true">→</span></span>
+          </RouterLink>
+        </li>
+      </ol>
+      <div v-else-if="diary.status === 'success'" class="module-empty">还没有可查看的日记。</div>
+      <p v-else-if="diary.status === 'error'" class="module-message" role="status">日记暂未加载。<button type="button" @click="loadDiary()">重新加载</button></p>
     </section>
 
     <section class="home-collection section-shell" aria-labelledby="shares-home-title">
@@ -280,6 +361,16 @@ onBeforeUnmount(() => { active = false })
 .home-collection { padding: 2.5rem 0; border-top: 1px solid var(--brand-line); }
 .home-collection--knowledge { padding-bottom: 3.5rem; }
 .share-preview-grid, .knowledge-preview-grid, .collection-skeleton { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; }
+.diary-preview-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.diary-preview-list { margin: 0; padding: 0; list-style: none; }
+.diary-preview-list li { min-width: 0; }
+.diary-preview { display: flex; flex-direction: column; min-height: 11rem; height: 100%; padding: 1.35rem 1.5rem; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-md); background: var(--brand-surface); color: var(--brand-ink); text-decoration: none; overflow-wrap: anywhere; }
+.diary-preview time { color: var(--brand-ink-soft); font-size: .85rem; }
+.diary-preview h3 { display: flex; justify-content: space-between; gap: 1rem; margin: .7rem 0 1rem; font-size: 1.2rem; line-height: 1.5; }
+.diary-preview h3 span { flex-shrink: 0; color: var(--brand-accent-strong); font-size: 1rem; }
+.diary-preview .read-link { margin-top: auto; }
+.diary-preview:hover h3 { color: var(--brand-accent-strong); }
+.diary-preview-skeleton { height: 11rem; border-radius: var(--brand-radius-md); background: var(--brand-canvas-soft); }
 .share-preview, .knowledge-preview { min-width: 0; overflow: hidden; border: 1px solid var(--brand-line); border-radius: var(--brand-radius-md); background: var(--brand-surface); }
 .share-preview__link, .knowledge-preview { display: block; height: 100%; color: var(--brand-ink); text-decoration: none; }
 .share-preview__link :deep(.home-media) { border-radius: 0; aspect-ratio: 16 / 9; }
@@ -361,6 +452,8 @@ button:hover { background: var(--brand-accent-soft); }
   .home-collection { padding: 2rem 0; }
   .home-collection--knowledge { padding-bottom: 2.5rem; }
   .share-preview-grid, .knowledge-preview-grid, .collection-skeleton { grid-template-columns: 1fr; gap: 1rem; }
+  .diary-preview-grid { grid-template-columns: 1fr; }
+  .diary-preview { min-height: 0; padding: 1.15rem; }
   .share-preview__copy, .knowledge-preview { padding: 1.15rem; }
 }
 </style>
