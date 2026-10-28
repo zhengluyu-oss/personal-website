@@ -34,11 +34,11 @@ onMounted(async () => {
           <section class="about-detail" aria-labelledby="stack-heading">
             <h2 id="stack-heading">技术栈</h2>
             <dl class="tech-stack">
-              <div><dt>后端开发</dt><dd>Java · Spring Boot · Spring Security · MyBatis-Plus</dd></div>
-              <div><dt>前端开发</dt><dd>Vue 3 · TypeScript · Vite · Pinia · Element Plus · Ant Design Vue</dd></div>
-              <div><dt>数据与中间件</dt><dd>MySQL · PostgreSQL · Redis · RabbitMQ</dd></div>
-              <div><dt>AI 应用</dt><dd>大模型 API 接入 · RAG 检索增强生成 · Embedding 向量检索 · 提示词设计</dd></div>
-              <div><dt>部署与工具</dt><dd>Git · Linux · Nginx · systemd · 阿里云 OSS</dd></div>
+              <div><dt>后端与服务</dt><dd>Java · Spring Boot · Spring Security · Spring Cloud · MyBatis / MyBatis-Plus · Python / FastAPI · PHP / Hyperf</dd></div>
+              <div><dt>前端与多端</dt><dd>Vue 3 · TypeScript · Vite · Pinia · Element Plus · Ant Design Vue · React · Next.js · uni-app</dd></div>
+              <div><dt>数据与基础设施</dt><dd>MySQL · PostgreSQL · Redis · RabbitMQ · Nacos · OSS / S3 对象存储</dd></div>
+              <div><dt>AI 与自动化</dt><dd>大模型 API 接入 · RAG 与向量检索 · 提示词设计 · Playwright 浏览器自动化 · 内容处理</dd></div>
+              <div><dt>工程与部署</dt><dd>Git · Maven · pnpm · Docker · Linux · Nginx · systemd · OpenTelemetry</dd></div>
             </dl>
           </section>
           <section class="profile-links" aria-labelledby="links-heading">

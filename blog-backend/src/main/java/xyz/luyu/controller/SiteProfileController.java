@@ -20,7 +20,7 @@ public class SiteProfileController {
         access.require("about");
         WebsiteInfoVO info = website.selectWebsiteInfo();
         return ResponseResult.success(new Profile(info.getWebmasterName(), info.getWebmasterAvatar(), info.getGithubLink(),
-                "后端 / 全栈方向 · 求职中", "用作品说话：技术笔记 · 项目复盘 · 持续学习",
-                "你好，我是陆屿。这里记录我在后端与全栈方向的学习与实践，包括项目拆解、问题排查与面试准备相关笔记。欢迎通过 GitHub 了解更多代码与项目。"));
+                "后端与全栈开发 · AI 应用实践", "从业务系统到 AI 应用，持续把想法做成可用的产品",
+                "你好，我是陆屿。我主要使用 Java、Spring Boot 构建后端服务，也使用 Vue、React、Python 和 PHP 开发 Web 与多端应用。项目实践涵盖内容管理、业务流程、数据处理、自动化和 AI 应用；我关注系统的可维护性、实际体验与上线后的稳定运行。这里记录技术笔记、项目复盘和持续学习的过程，欢迎通过 GitHub 了解更多代码。"));
     }
 }
