@@ -23,6 +23,7 @@ type SearchLocation = { excerpt: string; page: number | null; fromLine: number |
 const searchLocations = ref<Record<string, SearchLocation>>({})
 const labelManager = ref(false), labelName = ref(''), labelKind = ref<'CATEGORY' | 'TAG'>('TAG'), labelParentCategoryId = ref('')
 const labelParentDrafts = ref<Record<string, string>>({})
+const editingLabel = ref<KnowledgeLabel>(), renameName = ref(''), renameError = ref(''), renameSaving = ref(false), labelNotice = ref('')
 const dirty = computed(() => !!editor.value && JSON.stringify(editor.value) !== baseline.value)
 const categoryOptions = computed(() => labels.value.filter(l => l.kind === 'CATEGORY'))
 const tagOptions = computed(() => labels.value.filter(l => l.kind === 'TAG'))
@@ -35,7 +36,7 @@ let pending: { snapshot: string; mutationId: string } | undefined
 let filePending: { entryId: string; revision: number; fingerprint: string; mutationId: string } | undefined
 let timer: ReturnType<typeof setInterval> | undefined
 const discard = () => !uploadingImage.value && (!dirty.value || window.confirm('编辑尚未获得服务器保存确认，确定离开并放弃吗？'))
-function clearPrivate() { generation++; listSequence++; detailSequence++; fileSegmentsSequence++; rows.value = []; labels.value = []; searchLocations.value = {}; selected.value = undefined; editor.value = undefined; currentFile.value = undefined; fileSegments.value = []; fileSegmentsVisible.value = false; history.value = []; total.value = 0; pending = undefined; filePending = undefined; baseline.value = ''; saving.value = false; busy.value = false }
+function clearPrivate() { generation++; listSequence++; detailSequence++; fileSegmentsSequence++; rows.value = []; labels.value = []; searchLocations.value = {}; selected.value = undefined; editor.value = undefined; currentFile.value = undefined; fileSegments.value = []; fileSegmentsVisible.value = false; history.value = []; total.value = 0; pending = undefined; filePending = undefined; baseline.value = ''; saving.value = false; busy.value = false; editingLabel.value = undefined; renameName.value = ''; renameError.value = ''; renameSaving.value = false; labelNotice.value = '' }
 function denied() { clearPrivate(); capability.value = undefined; error.value = '查看资格已变化，请重新确认权限。' }
 async function check(reset = false) {
   if (reset) { clearPrivate(); capability.value = undefined }
@@ -186,9 +187,9 @@ async function versions() {
     if (current === generation && id === selected.value?.id) history.value = result.records
   } catch (e: any) { if (current === generation) error.value = e.message }
 }
-async function manageLabel(existing?: KnowledgeLabel, remove = false, updateParentOnly = false) {
+async function manageLabel(existing?: KnowledgeLabel, remove = false) {
   const current = generation
-  const name = existing && !remove && !updateParentOnly ? window.prompt('修改名称', existing.name) : existing?.name || labelName.value
+  const name = existing?.name || labelName.value
   if (!remove && !name?.trim()) return
   if (remove && !window.confirm('删除此分类或标签？仍有条目使用时会拒绝删除。')) return
   const kind = existing?.kind || labelKind.value
@@ -199,6 +200,46 @@ async function manageLabel(existing?: KnowledgeLabel, remove = false, updatePare
     else await request('POST', '/manage/labels', { id: existing?.id || crypto.randomUUID(), kind, name: name?.trim(), parentCategoryId, expectedRevision: existing?.revision || 0 })
     if (current === generation) { labelName.value = ''; await load() }
   } catch (e: any) { if (current === generation) { error.value = e.message; if (existing) labelParentDrafts.value[existing.id] = existing.parentCategoryId || '' } }
+}
+function startRename(label: KnowledgeLabel) {
+  if (editingLabel.value || renameSaving.value) return
+  editingLabel.value = { ...label }
+  renameName.value = label.name
+  renameError.value = ''
+  labelNotice.value = ''
+}
+function cancelRename() {
+  if (renameSaving.value) return
+  editingLabel.value = undefined
+  renameName.value = ''
+  renameError.value = ''
+}
+function renameValidation(label: KnowledgeLabel, value: string) {
+  const name = value.trim()
+  if (!name) return '请输入名称'
+  if (Array.from(name).length > 80) return '名称不能超过 80 字'
+  if (name === label.name) return '名称没有变化'
+  if (labels.value.some(item => item.id !== label.id && item.kind === label.kind && item.name === name)) return `已有同名${label.kind === 'CATEGORY' ? '分类' : '标签'}`
+  return ''
+}
+async function saveRename() {
+  const label = editingLabel.value
+  if (!label || renameSaving.value || !capability.value?.canManage) return
+  renameError.value = renameValidation(label, renameName.value)
+  if (renameError.value) return
+  const name = renameName.value.trim(), current = generation
+  renameSaving.value = true
+  try {
+    await request<KnowledgeLabel>('POST', '/manage/labels', { id: label.id, kind: label.kind, name, parentCategoryId: label.parentCategoryId, expectedRevision: label.revision })
+    if (disposed || current !== generation) return
+    editingLabel.value = undefined
+    renameName.value = ''
+    renameError.value = ''
+    labelNotice.value = `已将${label.kind === 'CATEGORY' ? '分类' : '标签'}“${label.name}”改名为“${name}”`
+    await load()
+  } catch (e: any) {
+    if (current === generation) renameError.value = e.status === 409 ? '记录已变化，请取消编辑并重新打开，核对最新名称后再试' : e.message
+  } finally { if (current === generation) renameSaving.value = false }
 }
 async function purgeExpired() {
   if (!capability.value?.canManage || !window.confirm('清理移入回收站超过30天且不含私有文件的条目？此操作不可撤销。')) return
@@ -222,7 +263,35 @@ onBeforeUnmount(() => { disposed = true; clearPrivate(); clearInterval(timer); w
     <p v-if="error" role="alert" class="error">{{ error }}</p>
     <section v-if="!capability?.canManage || !capability.available" class="empty"><h2>仅站主可以管理知识库</h2><p>{{ capability?.message || '正在确认后台管理权限…' }}</p><button @click="check(true)">重新检查</button></section>
     <template v-else>
-      <details v-if="capability.canManage && labelManager" open><summary>分类与标签管理</summary><form class="filters" @submit.prevent="manageLabel()"><select v-model="labelKind" aria-label="分类或标签"><option value="CATEGORY">分类</option><option value="TAG">标签</option></select><select v-if="labelKind === 'TAG'" v-model="labelParentCategoryId" aria-label="标签所属分类" required><option value="" disabled>选择所属分类</option><option v-for="l in categoryOptions" :key="l.id" :value="l.id">{{ l.name }}</option></select><input v-model="labelName" placeholder="名称，最多80字" maxlength="80" aria-label="新分类标签名称"><button>添加</button></form><div v-for="l in labels" :key="l.id" class="version"><span>{{ l.kind === 'TAG' ? (categoryOptions.find(c => c.id === l.parentCategoryId)?.name || '未归类') + ' / ' : '分类 · ' }}{{ l.name }}</span><div><select v-if="l.kind === 'TAG'" v-model="labelParentDrafts[l.id]" :aria-label="`${l.name} 所属分类`"><option v-for="c in categoryOptions" :key="c.id" :value="c.id">{{ c.name }}</option></select><button v-if="l.kind === 'TAG' && labelParentDrafts[l.id] !== l.parentCategoryId" @click="manageLabel(l, false, true)">保存归属</button><button @click="manageLabel(l)">改名</button><button @click="manageLabel(l, true)">删除</button></div></div></details>
+      <details v-if="capability.canManage && labelManager" open class="label-manager">
+        <summary>分类与标签管理</summary>
+        <p class="label-help">修改分类或标签名称会更新所有关联条目的显示名称，不会改变条目归属。</p>
+        <form class="filters" @submit.prevent="manageLabel()">
+          <select v-model="labelKind" aria-label="分类或标签"><option value="CATEGORY">分类</option><option value="TAG">标签</option></select>
+          <select v-if="labelKind === 'TAG'" v-model="labelParentCategoryId" aria-label="标签所属分类" required><option value="" disabled>选择所属分类</option><option v-for="l in categoryOptions" :key="l.id" :value="l.id">{{ l.name }}</option></select>
+          <input v-model="labelName" placeholder="名称，最多80字" maxlength="80" aria-label="新分类标签名称">
+          <button :disabled="!!editingLabel">添加</button>
+        </form>
+        <p v-if="labelNotice" role="status">{{ labelNotice }}</p>
+        <div v-for="l in labels" :key="l.id" class="version label-row">
+          <div class="label-row-main">
+            <span>{{ l.kind === 'TAG' ? (categoryOptions.find(c => c.id === l.parentCategoryId)?.name || '未归类') + ' / ' : '分类 · ' }}{{ l.name }}</span>
+            <div class="actions">
+              <select v-if="l.kind === 'TAG'" v-model="labelParentDrafts[l.id]" :aria-label="`${l.name} 所属分类`" :disabled="!!editingLabel"><option v-for="c in categoryOptions" :key="c.id" :value="c.id">{{ c.name }}</option></select>
+              <button v-if="l.kind === 'TAG' && labelParentDrafts[l.id] !== l.parentCategoryId" type="button" :disabled="!!editingLabel" @click="manageLabel(l)">保存归属</button>
+              <button type="button" :disabled="!!editingLabel" @click="startRename(l)">编辑名称</button>
+              <button type="button" :disabled="!!editingLabel" @click="manageLabel(l, true)">删除</button>
+            </div>
+          </div>
+          <form v-if="editingLabel?.id === l.id" class="label-edit" @submit.prevent="saveRename">
+            <strong>编辑{{ l.kind === 'CATEGORY' ? '分类' : '标签' }}名称</strong>
+            <label>新名称<input v-model="renameName" :aria-label="`编辑${l.kind === 'CATEGORY' ? '分类' : '标签'}名称`" :disabled="renameSaving" autocomplete="off"></label>
+            <p>保存后，所有关联条目会显示新名称；条目归属和标签所属分类保持不变。</p>
+            <p v-if="renameError" role="alert" class="label-edit-error">{{ renameError }}</p>
+            <div class="actions"><button type="submit" :disabled="renameSaving">{{ renameSaving ? '保存中…' : '保存名称' }}</button><button type="button" :disabled="renameSaving" @click="cancelRename">取消</button></div>
+          </form>
+        </div>
+      </details>
       <form class="filters" @submit.prevent="page = 1; load()">
         <input v-model="keyword" aria-label="关键词" placeholder="搜索标题、正文、标签…" maxlength="100">
         <select v-model="kind" aria-label="条目类型"><option value="">全部类型</option><option v-for="(name, key) in kindNames" :key="key" :value="key">{{ name }}</option></select>
@@ -277,4 +346,10 @@ onBeforeUnmount(() => { disposed = true; clearPrivate(); clearInterval(timer); w
 .detail :deep(.md-editor-preview pre){max-width:100%;overflow-x:auto}
 .detail :deep(.md-editor-preview table){display:block;max-width:100%;overflow-x:auto}
 @media(max-width:760px){.columns{grid-template-columns:minmax(0,1fr)}}
+.label-manager{margin-top:20px;border:1px solid #dfe5ed;border-radius:12px;padding:18px;background:#fff}
+.label-manager summary{cursor:pointer;font-weight:700}.label-help{margin:12px 0 0;color:#64748b}
+.label-row{display:block}.label-row-main{display:flex;justify-content:space-between;align-items:center;gap:16px}.label-row-main>span{font-weight:600}
+.label-edit{margin-top:12px;padding:16px;border:1px solid #cbd8ec;border-radius:8px;background:#f6f9ff}
+.label-edit label{display:grid;gap:8px;max-width:420px;margin:12px 0}.label-edit p{margin:8px 0;color:#52657d}.label-edit-error{color:#b23d32!important}
+@media(max-width:760px){.label-row-main{align-items:flex-start;flex-direction:column}.label-manager{padding:14px}}
 </style>

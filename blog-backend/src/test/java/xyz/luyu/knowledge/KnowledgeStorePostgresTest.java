@@ -116,6 +116,26 @@ class KnowledgeStorePostgresTest {
             new LabelWrite(tag,"TAG","命令",second,1))).status());
         assertEquals(first,store.read(owner,entry,false).content().categoryId());
     }
+    @Test void renamingLabelsPreservesAssociationsAndRejectsDuplicatesAndStaleVersions(){
+        long owner=502;UUID category=UUID.randomUUID(),other=UUID.randomUUID(),tag=UUID.randomUUID(),entry=UUID.randomUUID();
+        store.saveLabel(owner,new LabelWrite(category,"CATEGORY","基础知识复习",null,0));
+        store.saveLabel(owner,new LabelWrite(other,"CATEGORY","其他",null,0));
+        store.saveLabel(owner,new LabelWrite(tag,"TAG","旧标签",category,0));
+        store.save(owner,new Write(UUID.randomUUID(),entry,0,new Content(Kind.NOTE,"关联条目","正文","",category,List.of(tag))));
+
+        var renamedCategory=store.saveLabel(owner,new LabelWrite(category,"CATEGORY","基础知识",null,1));
+        var renamedTag=store.saveLabel(owner,new LabelWrite(tag,"TAG","新标签",category,1));
+        assertEquals(category,renamedCategory.id());assertEquals(tag,renamedTag.id());
+        assertEquals(category,store.read(owner,entry,false).content().categoryId());
+        assertEquals(List.of(tag),store.read(owner,entry,false).content().tagIds());
+        assertEquals("基础知识",store.labels(owner).stream().filter(label->label.id().equals(category)).findFirst().orElseThrow().name());
+        var savedTag=store.labels(owner).stream().filter(label->label.id().equals(tag)).findFirst().orElseThrow();
+        assertEquals("新标签",savedTag.name());assertEquals(category,savedTag.parentCategoryId());
+
+        assertEquals(400,assertThrows(KnowledgeFailure.class,()->store.saveLabel(owner,new LabelWrite(other,"CATEGORY","基础知识",null,1))).status());
+        assertEquals(409,assertThrows(KnowledgeFailure.class,()->store.saveLabel(owner,new LabelWrite(category,"CATEGORY","过期修改",null,1))).status());
+        assertEquals("基础知识",store.labels(owner).stream().filter(label->label.id().equals(category)).findFirst().orElseThrow().name());
+    }
     @Test void fileJobsAreVersionFencedAndSearchOnlyReadyCurrentSegments(){
         long owner=510;UUID id=UUID.randomUUID();
         store.save(owner,new Write(UUID.randomUUID(),id,0,new Content(Kind.DOCUMENT,"中文资料","说明","",null,List.of())));

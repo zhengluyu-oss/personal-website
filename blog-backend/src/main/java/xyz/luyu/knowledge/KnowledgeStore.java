@@ -111,6 +111,8 @@ public final class KnowledgeStore {
                 if(incompatible>0)throw KnowledgeFailure.invalid("已有条目使用该标签，请先从相关条目移除标签再调整归属");
             }
             var p=params(owner,w.id()).addValue("kind",w.kind()).addValue("name",w.name().strip()).addValue("parent",w.parentCategoryId()).addValue("revision",w.expectedRevision());
+            long duplicate=jdbc.queryForObject("SELECT count(*) FROM knowledge.label WHERE owner_id=:owner AND kind=:kind AND name=:name AND id<>:id",p,Long.class);
+            if(duplicate>0)throw KnowledgeFailure.invalid("已有同名"+(w.kind().equals("CATEGORY")?"分类":"标签")+"，请换一个名称");
             if(w.expectedRevision()==0){if(jdbc.update("INSERT INTO knowledge.label(owner_id,id,kind,name,parent_category_id,revision) VALUES(:owner,:id,:kind,:name,:parent,1) ON CONFLICT DO NOTHING",p)!=1)throw KnowledgeFailure.conflict();}
             else if(jdbc.update("UPDATE knowledge.label SET name=:name,parent_category_id=:parent,revision=revision+1 WHERE owner_id=:owner AND id=:id AND kind=:kind AND revision=:revision",p)!=1)throw KnowledgeFailure.conflict();
             return new Label(w.id(),w.kind(),w.name().strip(),w.parentCategoryId(),w.expectedRevision()+1);
