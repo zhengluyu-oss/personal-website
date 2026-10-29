@@ -4,7 +4,9 @@ import { Jwt_Prefix } from '@/const/Jwt'
 
 export interface AssistantCapability { available: boolean; message: string }
 export interface AssistantSource { id: string; entryId: string; revision: number; fileVersion: string | null; title: string; excerpt: string; page: number | null; fromLine: number | null; toLine: number | null; url: string }
-export interface AssistantAnswer { state: 'ANSWERED' | 'NO_EVIDENCE'; answer: string; sources: AssistantSource[] }
+export interface AssistantClaim { text: string; quote: string; sourceId: string }
+export interface AssistantTurn { question: string; answer: string }
+export interface AssistantAnswer { state: 'ANSWERED' | 'NO_EVIDENCE'; answer: string; sources: AssistantSource[]; claims: AssistantClaim[] }
 
 const client = axios.create({ baseURL: import.meta.env.VITE_APP_BASE_API || '/api', timeout: 25000, withCredentials: false })
 async function call<T>(method: 'GET' | 'POST', path: string, data?: unknown): Promise<T> {
@@ -22,4 +24,4 @@ async function call<T>(method: 'GET' | 'POST', path: string, data?: unknown): Pr
   }
 }
 export const assistantCapability = () => call<AssistantCapability>('GET', 'capabilities')
-export const askKnowledgeAssistant = (question: string) => call<AssistantAnswer>('POST', 'ask', { question })
+export const askKnowledgeAssistant = (question: string, history: AssistantTurn[] = []) => call<AssistantAnswer>('POST', 'ask', { question, history })

@@ -56,32 +56,32 @@ class KnowledgeAssistantTest {
         authorize();var evidence=new KnowledgeAssistantStore.Evidence(UUID.randomUUID(),1,null,false,"Redis","持久化使用 AOF",null,null,null);
         when(store.find(eq(7L),anyList(),anyInt(),anyInt())).thenReturn(List.of(evidence));when(store.current(7,evidence)).thenReturn(true);
         when(store.reserve(eq(7L),eq(9L),any(),any())).thenReturn(true);
-        when(cloud.generate(anyString())).thenReturn(JSON.parseObject("{\"answer\":\"不可信结论\",\"citations\":[\"S9\"]}"));
+        when(cloud.generate(anyString())).thenReturn(JSON.parseObject("{\"claims\":[{\"text\":\"不可信结论\",\"source\":\"S9\",\"quote\":\"持久化使用 AOF\"}]}"));
         assertThrows(KnowledgeFailure.class,()->service.ask(new KnowledgeAssistantService.Question("Redis 持久化")));
-        verify(store).finish(eq(7L),any(),eq(false));
+        verify(store).finish(eq(7L),any(),eq(true));
         reset(store,cloud);when(store.ready(7)).thenReturn(true);when(store.find(eq(7L),anyList(),anyInt(),anyInt())).thenReturn(List.of(evidence));
         when(store.current(7,evidence)).thenReturn(true);when(store.reserve(eq(7L),eq(9L),any(),any())).thenReturn(true);
-        when(cloud.generate(anyString())).thenAnswer(call->{when(access.canRead()).thenReturn(false);return JSON.parseObject("{\"answer\":\"持久化使用 AOF\",\"citations\":[\"S1\"]}");});
+        when(cloud.generate(anyString())).thenAnswer(call->{when(access.canRead()).thenReturn(false);return JSON.parseObject("{\"claims\":[{\"text\":\"持久化使用 AOF\",\"source\":\"S1\",\"quote\":\"持久化使用 AOF\"}]}");});
         assertThrows(KnowledgeFailure.class,()->service.ask(new KnowledgeAssistantService.Question("Redis 持久化")));
-        verify(store).finish(eq(7L),any(),eq(false));
+        verify(store).finish(eq(7L),any(),eq(true));
     }
     @Test void validSourceUsesServerLinkAndCurrentRevision(){
         authorize();var id=UUID.randomUUID();var evidence=new KnowledgeAssistantStore.Evidence(id,2,null,false,"Redis","持久化使用 AOF",null,null,null);
         when(store.find(eq(7L),anyList(),anyInt(),anyInt())).thenReturn(List.of(evidence));when(store.current(7,evidence)).thenReturn(true);
         when(store.reserve(eq(7L),eq(9L),any(),any())).thenReturn(true);
-        when(cloud.generate(anyString())).thenReturn(JSON.parseObject("{\"answer\":\"持久化使用 AOF\",\"citations\":[\"S1\"]}"));
+        when(cloud.generate(anyString())).thenReturn(JSON.parseObject("{\"claims\":[{\"text\":\"持久化使用 AOF\",\"source\":\"S1\",\"quote\":\"持久化使用 AOF\"}]}"));
         var result=service.ask(new KnowledgeAssistantService.Question("Redis 持久化"));
         assertEquals("ANSWERED",result.state());assertEquals("/knowledge?entry="+id,result.sources().get(0).url());
-        assertEquals(2,result.sources().get(0).revision());verify(store).finish(eq(7L),any(),eq(true));
+        assertEquals(2,result.sources().get(0).revision());assertEquals("持久化使用 AOF",result.claims().get(0).quote());verify(store).finish(eq(7L),any(),eq(true));
     }
     @Test void numericCitationFromProviderMustMatchExistingSource(){
         authorize();var evidence=new KnowledgeAssistantStore.Evidence(UUID.randomUUID(),1,null,false,"HTTP 200","请求成功",null,null,null);
         when(store.find(eq(7L),anyList(),anyInt(),anyInt())).thenReturn(List.of(evidence));when(store.current(7,evidence)).thenReturn(true);
         when(store.reserve(eq(7L),eq(9L),any(),any())).thenReturn(true);
-        when(cloud.generate(anyString())).thenReturn(JSON.parseObject("{\"answer\":\"请求成功\",\"citations\":[1]}"));
+        when(cloud.generate(anyString())).thenReturn(JSON.parseObject("{\"claims\":[{\"text\":\"请求成功\",\"source\":\"S1\",\"quote\":\"请求成功\"}]}"));
         var result=service.ask(new KnowledgeAssistantService.Question("HTTP 200 是什么"));
         assertEquals("ANSWERED",result.state());assertEquals(evidence.entryId(),result.sources().get(0).entryId());
-        reset(cloud);when(cloud.generate(anyString())).thenReturn(JSON.parseObject("{\"answer\":\"不可信结论\",\"citations\":[9]}"));
+        reset(cloud);when(cloud.generate(anyString())).thenReturn(JSON.parseObject("{\"claims\":[{\"text\":\"不可信结论\",\"source\":\"S9\",\"quote\":\"请求成功\"}]}"));
         assertThrows(KnowledgeFailure.class,()->service.ask(new KnowledgeAssistantService.Question("HTTP 200 是什么")));
     }
     @Test void providerFailureIsNeverRetried(){
@@ -91,6 +91,33 @@ class KnowledgeAssistantTest {
         when(cloud.generate(anyString())).thenThrow(new KnowledgeAssistantCloud.Failure());
         assertThrows(KnowledgeFailure.class,()->service.ask(new KnowledgeAssistantService.Question("合成条目")));
         verify(cloud,times(1)).generate(anyString());verify(store).finish(eq(7L),any(),eq(false));
+    }
+    @Test void unsupportedClaimReturnsNoEvidenceAfterOnePaidCall(){
+        authorize();var evidence=new KnowledgeAssistantStore.Evidence(UUID.randomUUID(),1,null,false,"Redis","AOF 记录写命令，恢复时重放命令。",null,null,null);
+        when(store.find(eq(7L),anyList(),anyInt(),anyInt())).thenReturn(List.of(evidence));when(store.current(7,evidence)).thenReturn(true);
+        when(store.reserve(eq(7L),eq(9L),any(),any())).thenReturn(true);
+        when(cloud.generate(anyString())).thenReturn(JSON.parseObject("{\"claims\":[{\"text\":\"MySQL 默认端口是 3306\",\"source\":\"S1\",\"quote\":\"AOF 记录写命令\"}]}"));
+        assertEquals("NO_EVIDENCE",service.ask(new KnowledgeAssistantService.Question("Redis 持久化")).state());
+        verify(cloud,times(1)).generate(anyString());verify(store).finish(eq(7L),any(),eq(true));
+    }
+    @Test void followupUsesHistoryOnlyForContextAndRejectsOversizedHistory(){
+        authorize();var evidence=new KnowledgeAssistantStore.Evidence(UUID.randomUUID(),1,null,false,"Redis","AOF 记录写命令，恢复时重放命令。",null,null,null);
+        when(store.find(eq(7L),anyList(),anyInt(),anyInt())).thenReturn(List.of(evidence));when(store.current(7,evidence)).thenReturn(true);
+        when(store.reserve(eq(7L),eq(9L),any(),any())).thenReturn(true);
+        when(cloud.generate(anyString())).thenReturn(JSON.parseObject("{\"claims\":[{\"text\":\"AOF 记录写命令\",\"source\":\"S1\",\"quote\":\"AOF 记录写命令\"}]}"));
+        var history=List.of(new KnowledgeAssistantService.Turn("Redis 有哪些持久化方式？","RDB 和 AOF"));
+        assertEquals("ANSWERED",service.ask(new KnowledgeAssistantService.Question("第二种方式如何恢复？",history)).state());
+        verify(store).find(eq(7L),argThat(words->words.contains("redis")||words.contains("持久化")),anyInt(),anyInt());
+        verify(cloud,times(1)).generate(argThat(prompt->prompt.contains("不是事实来源")));
+        var tooMany=List.of(history.get(0),history.get(0),history.get(0),history.get(0));
+        assertThrows(KnowledgeFailure.class,()->service.ask(new KnowledgeAssistantService.Question("继续",tooMany)));
+        verify(cloud,times(1)).generate(anyString());
+    }
+    @Test void fabricatedHistoryDoesNotBecomeEvidence(){
+        authorize();when(store.find(eq(7L),anyList(),anyInt(),anyInt())).thenReturn(List.of());
+        var history=List.of(new KnowledgeAssistantService.Turn("AOF 是否永不丢数据？","AOF 永不丢数据"));
+        assertEquals("NO_EVIDENCE",service.ask(new KnowledgeAssistantService.Question("为什么永不丢？",history)).state());
+        verifyNoInteractions(cloud);verify(store,never()).reserve(anyLong(),anyLong(),any(),any());
     }
     @Test void destinationRejectsPrivateIpEvenWhenAllowlisted(){
         assertThrows(KnowledgeAssistantCloud.Failure.class,()->KnowledgeAssistantCloud.validateDestination(URI.create("https://127.0.0.1/"),Set.of("127.0.0.1")));
