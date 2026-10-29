@@ -9,6 +9,8 @@ import java.util.*;
 /** 不生成 toString，防止秘密被配置日志打印。 */
 @Getter @Setter @ConfigurationProperties("diary.ai")
 public class DiaryAiProperties {
+    public static final int MAX_OUTPUT_TOKENS=100_000;
+    public static final int MAX_RESPONSE_BYTES=16*1024*1024;
     private boolean enabled;
     private String provider="", embeddingEndpoint="",generationEndpoint="",embeddingKey="",generationKey="";
     private String embeddingModel="",generationModel="",dataPolicy="";
@@ -19,7 +21,7 @@ public class DiaryAiProperties {
     private Set<String> allowedHosts=new HashSet<>();
     private int dimensions, dailyGenerations=20,dailyEmbeddingBlocks=200,maxQueue=5,maxReports=1000;
     private int maxReviewCharacters=24000,maxQuestionContext=12000,maxPromptCharacters=32000;
-    private int maxOutputTokens=2000,httpTimeoutSeconds=30,maxResponseBytes=4*1024*1024;
+    private int maxOutputTokens=MAX_OUTPUT_TOKENS,httpTimeoutSeconds=30,generationTimeoutSeconds=1800,maxResponseBytes=MAX_RESPONSE_BYTES;
     private double minimumSimilarity=Double.NaN;
     public boolean configured() {
         return enabled && !provider.isBlank() && !embeddingModel.isBlank() && !generationModel.isBlank()
@@ -29,8 +31,9 @@ public class DiaryAiProperties {
                 && dailyGenerations>0 && dailyEmbeddingBlocks>0 && maxQueue>0 && maxQueue<=5
                 && maxReports>0 && maxReports<=1000 && maxReviewCharacters>0 && maxReviewCharacters<=24000
                 && maxQuestionContext>0 && maxQuestionContext<=12000 && maxPromptCharacters>0 && maxPromptCharacters<=32000
-                && maxOutputTokens>0 && maxOutputTokens<=2000 && httpTimeoutSeconds>0 && httpTimeoutSeconds<=30
-                && maxResponseBytes>0 && maxResponseBytes<=4*1024*1024;
+                && maxOutputTokens>0 && maxOutputTokens<=MAX_OUTPUT_TOKENS && httpTimeoutSeconds>0 && httpTimeoutSeconds<=30
+                && generationTimeoutSeconds>0 && generationTimeoutSeconds<=3600
+                && maxResponseBytes>0 && maxResponseBytes<=MAX_RESPONSE_BYTES;
     }
     private boolean validEndpoint(String endpoint) {
         try {

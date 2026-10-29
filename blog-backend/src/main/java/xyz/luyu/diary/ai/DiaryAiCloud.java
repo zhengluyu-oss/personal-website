@@ -68,29 +68,47 @@ public final class DiaryAiCloud {
         }
     }
     private JSONObject send(Attempt attempt,String endpoint,String key,Map<String,Object> payload) {
+        return send(attempt,endpoint,key,payload,null);
+    }
+    private JSONObject send(Attempt attempt,String endpoint,String key,Map<String,Object> payload,Runnable heartbeat) {
         URI uri;
         Future<?> validation=null;
         try { uri=URI.create(endpoint);validation=DESTINATIONS.submit(()->{try{destination.check(uri);}catch(Exception e){throw new CompletionException(e);}});validation.get(5,TimeUnit.SECONDS); }
         catch(InterruptedException interrupted) { Thread.currentThread().interrupt();throw attempt.fail("ENDPOINT_REJECTED",false); }
         catch(Exception rejected) { throw attempt.fail("ENDPOINT_REJECTED",false); }
         finally {if(validation!=null && !validation.isDone())validation.cancel(true);}
+        int timeoutSeconds=attempt.stage==Stage.GENERATION?p.getGenerationTimeoutSeconds():p.getHttpTimeoutSeconds();
         final HttpRequest request;
         try {
-            request=HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(p.getHttpTimeoutSeconds()))
+            request=HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(timeoutSeconds))
                     .header("Content-Type","application/json").header("Authorization","Bearer "+key)
                     .POST(HttpRequest.BodyPublishers.ofString(JSON.toJSONString(payload))).build();
         } catch(RuntimeException invalid) { throw attempt.fail("CONFIGURATION_INVALID",false); }
         attempt.sent=true;
         var future=client.sendAsync(request,ignored->new LimitedBody(p.getMaxResponseBytes()));
         try {
-            HttpResponse<byte[]> response=future.get(p.getHttpTimeoutSeconds(),TimeUnit.SECONDS);
+            long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(timeoutSeconds);
+            HttpResponse<byte[]> response;
+            while(true) {
+                long remaining=deadline-System.nanoTime();
+                if(remaining<=0)throw new TimeoutException();
+                try {response=future.get(Math.min(remaining,TimeUnit.SECONDS.toNanos(15)),TimeUnit.NANOSECONDS);break;}
+                catch(TimeoutException elapsed) {
+                    if(System.nanoTime()>=deadline)throw elapsed;
+                    heartbeat(heartbeat);
+                }
+            }
+            // Return any received usage before the worker's final state/version checks and fenced publication.
             attempt.http=response.statusCode();attempt.bytes=response.body().length;
             if(response.statusCode()!=200) throw attempt.fail(switch(response.statusCode()) {case 401,403->"AUTH_REJECTED";case 429->"RATE_LIMIT";default->"PROVIDER_REJECTED";},false);
             JSONObject result=JSON.parseObject(response.body());
             if(result==null || result.get("error")!=null) throw attempt.fail("RESPONSE_INVALID",false);
             attempt.readUsage(result);
             return result;
-        } catch(Failure failure) { throw failure; }
+        } catch(HeartbeatFailure stopped) {
+            future.cancel(true);attempt.code=attempt.stage.name()+"_TASK_INACTIVE";throw stopped.original;
+        }
+        catch(Failure failure) { throw failure; }
         catch(InterruptedException interrupted) { future.cancel(true);Thread.currentThread().interrupt();throw attempt.fail("INTERRUPTED",true); }
         catch(TimeoutException timeout) { future.cancel(true);throw attempt.fail("REQUEST_TIMEOUT",true); }
         catch(ExecutionException failure) {
@@ -105,6 +123,13 @@ public final class DiaryAiCloud {
             throw attempt.fail("NETWORK_UNKNOWN",true);
         }
         catch(RuntimeException invalid) { throw attempt.fail("RESPONSE_INVALID",false); }
+    }
+    private static void heartbeat(Runnable heartbeat) {
+        if(heartbeat!=null)try {heartbeat.run();}catch(RuntimeException stopped) {throw new HeartbeatFailure(stopped);}
+    }
+    private static final class HeartbeatFailure extends RuntimeException {
+        final RuntimeException original;
+        HeartbeatFailure(RuntimeException original){this.original=original;}
     }
     public Embeddings embed(List<String> input) {
         return embed(input,null);
@@ -135,6 +160,10 @@ public final class DiaryAiCloud {
         return generate(system,context,null);
     }
     public Generation generate(String system,String context,UUID task) {
+        return generate(system,context,task,null);
+    }
+    /** The callback checks the task and renews its lease in short transactions while HTTP remains outside a transaction. */
+    public Generation generate(String system,String context,UUID task,Runnable heartbeat) {
         Attempt attempt=new Attempt(Stage.GENERATION,task);
         try {
         if(DiaryAiModels.points(system)+DiaryAiModels.points(context)>p.getMaxPromptCharacters())throw attempt.fail("CONTEXT_LIMIT",false);
@@ -143,7 +172,7 @@ public final class DiaryAiCloud {
                 "max_tokens",p.getMaxOutputTokens()));
         if(p.getGenerationThinking()!=null)payload.put("thinking",Map.of("type",p.getGenerationThinking()?"enabled":"disabled"));
         if(Boolean.TRUE.equals(p.getGenerationJsonOutput()))payload.put("response_format",Map.of("type","json_object"));
-        JSONObject response=send(attempt,p.getGenerationEndpoint(),p.getGenerationKey(),payload);
+        JSONObject response=send(attempt,p.getGenerationEndpoint(),p.getGenerationKey(),payload,heartbeat);
         try {
             if(!(response.get("choices") instanceof JSONArray choices) || choices.size()!=1 || !(choices.get(0) instanceof JSONObject choice))throw attempt.fail("RESPONSE_INVALID",false);
             Object finish=choice.get("finish_reason");
@@ -159,7 +188,7 @@ public final class DiaryAiCloud {
             if(function instanceof JSONObject)throw attempt.fail("RESPONSE_INVALID",false);
             if(message.get("refusal")!=null && !"".equals(message.get("refusal")))throw attempt.fail("REFUSED",false);
             Object raw=message.get("content");if(raw==null || raw instanceof String value && value.isBlank())throw attempt.fail("EMPTY",false);
-            if(!(raw instanceof String content) || DiaryAiModels.points(content)>20000 || !attempt.usageValid)throw attempt.fail("RESPONSE_INVALID",false);
+            if(!(raw instanceof String content) || DiaryAiModels.points(content)>DiaryValidation.MAX_RESULT_CHARACTERS || !attempt.usageValid)throw attempt.fail("RESPONSE_INVALID",false);
             attempt.code="OK";return new Generation(content,attempt.input,attempt.output);
         } catch(Failure failure){throw failure;}catch(RuntimeException invalid) { throw attempt.fail("RESPONSE_INVALID",false); }
         } finally {attempt.record();}

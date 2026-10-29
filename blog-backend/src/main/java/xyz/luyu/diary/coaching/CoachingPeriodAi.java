@@ -81,7 +81,7 @@ public final class CoachingPeriodAi implements DiaryAiExtension {
             String system=CoachingEvidence.system();
             String context=canonical(CoachingPeriods.context(preview));
             int remaining=Math.min(32000,p.getMaxPromptCharacters())-points(context)-points(system)-32;
-            DiaryQuoteCatalog catalog=DiaryQuoteCatalog.build(work.id(),preview.sources().stream().map(s->new DiaryQuoteCatalog.SourceText(s.sourceId(),s.kind(),s.revision(),s.text())).toList(),Math.min(5000,remaining));
+            DiaryQuoteCatalog catalog=DiaryQuoteCatalog.build(work.id(),preview.sources().stream().map(s->new DiaryQuoteCatalog.SourceText(s.sourceId(),s.kind(),s.revision(),s.text())).toList(),remaining);
             if(catalog.items().isEmpty())throw DiaryFailure.invalid("完整资料超出引文预算，请缩小范围");
             context=catalog.attach(context);
             if(points(context)+points(system)>Math.min(32000,p.getMaxPromptCharacters())) throw DiaryFailure.invalid("整体提示超过预算");
@@ -92,7 +92,17 @@ public final class CoachingPeriodAi implements DiaryAiExtension {
                 var params=CoachingStore.parameters(owner,work.id()).addValue("token",lease).addValue("sources",JSON.toJSONString(preview.sources()));
                 if(store.jdbc.update("UPDATE diary_coaching.period_job SET sources=CAST(:sources AS jsonb),possibly_charged=true WHERE owner_id=:owner AND id=:id AND state='RUNNING' AND lease_token=:token",params)!=1) throw DiaryFailure.conflict();return null;
             });
-            sent=true;var generation=cloud.generate(system,context,work.id());
+            sent=true;var generation=cloud.generate(system,context,work.id(),()->{
+                if(!active.getAsBoolean()) throw new DiaryFailure(403,"账号不可用");
+                store.tx(owner,true,()->{
+                    execution.lease(owner,lease);
+                    var params=CoachingStore.parameters(owner,work.id()).addValue("token",lease);
+                    if(!Boolean.TRUE.equals(store.jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM diary_coaching.period_job WHERE owner_id=:owner AND id=:id AND state='RUNNING' AND lease_token=:token)",params,Boolean.class)))
+                        throw new DiaryFailure(409,"任务已取消或失效");
+                    validatePreview(periods.build(owner,work.request().period()),work.digest());
+                    return null;
+                });
+            });
             inputTokens=generation.inputTokens();outputTokens=generation.outputTokens();
             invalidOutput=generation.content();
             diagnosticSources=preview.sources().stream().map(s->new DiaryDiagnostics.Source(s.sourceId(),s.kind(),s.entityId(),s.revision(),s.text())).toList();

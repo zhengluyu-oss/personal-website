@@ -23,19 +23,25 @@ public final class DiaryQuoteCatalog {
     public List<Item> items(){return items;}
 
     public static DiaryQuoteCatalog build(UUID task,List<SourceText> sources,int budget) {
+        return build(task,sources,budget,"");
+    }
+
+    public static DiaryQuoteCatalog build(UUID task,List<SourceText> sources,int budget,String focus) {
         String prefix="Q"+task+"-";
         if(budget<160 || sources.isEmpty())return new DiaryQuoteCatalog(List.of(),prefix);
         List<List<String>> choices=new ArrayList<>();
         for(SourceText source:sources)choices.add(chunks(source.text()));
         List<Item> result=new ArrayList<>();
-        int used=2,slots=Math.min(80,Math.max(1,budget/105));
+        int used=2,slots=Math.max(1,budget/105);
         int perSource=(slots+sources.size()-1)/sources.size();
+        var terms=terms(focus);
+        var order=choices.stream().map(values->ordered(values,terms,perSource)).toList();
         for(int round=0;round<perSource && result.size()<slots;round++) {
             boolean added=false;
             for(int sourceIndex=0;sourceIndex<sources.size() && result.size()<slots;sourceIndex++) {
                 var candidates=choices.get(sourceIndex);
-                if(round>=candidates.size())continue;
-                int index=sample(round,candidates.size(),perSource);
+                if(round>=order.get(sourceIndex).size())continue;
+                int index=order.get(sourceIndex).get(round);
                 String quote=candidates.get(index);
                 SourceText source=sources.get(sourceIndex);
                 Item item=new Item(prefix+(result.size()+1),source.sourceId(),source.kind(),source.revision(),quote);
@@ -46,6 +52,36 @@ public final class DiaryQuoteCatalog {
             if(!added)break;
         }
         return new DiaryQuoteCatalog(result,prefix);
+    }
+
+    private static Set<String> terms(String focus) {
+        Set<String> terms=new HashSet<>();
+        for(String word:Objects.toString(focus,"").toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}]+")) {
+            int length=DiaryAiModels.points(word);
+            if(length<2)continue;
+            terms.add(word);
+            if(word.codePoints().anyMatch(cp->Character.UnicodeScript.of(cp)==Character.UnicodeScript.HAN))
+                for(int i=0;i+2<=length;i++)terms.add(DiaryAiModels.slice(word,i,i+2));
+        }
+        return terms;
+    }
+
+    private static List<Integer> ordered(List<String> values,Set<String> terms,int perSource) {
+        List<Integer> ranked=new ArrayList<>();
+        for(int i=0;i<values.size();i++)ranked.add(i);
+        ranked.sort(Comparator.<Integer>comparingInt(i->score(values.get(i),terms)).reversed().thenComparingInt(i->i));
+        Set<Integer> order=new LinkedHashSet<>();
+        if(!ranked.isEmpty() && score(values.get(ranked.get(0)),terms)>0)order.add(ranked.get(0));
+        if(!values.isEmpty()){order.add(0);order.add(values.size()-1);}
+        int samples=Math.max(1,perSource-order.size());
+        for(int i=0;i<Math.min(samples,values.size());i++)order.add(sample(i,values.size(),samples));
+        order.addAll(ranked);
+        return List.copyOf(order);
+    }
+
+    private static int score(String text,Set<String> terms) {
+        String normalized=text.toLowerCase(Locale.ROOT);
+        return (int)terms.stream().filter(normalized::contains).count();
     }
 
     private static int sample(int ordinal,int size,int perSource) {

@@ -57,7 +57,7 @@ class DiaryAiResponseTest {
         response("stop",Map.of("content","{}"));cloud.generate("JSON system","fictional");assertFalse(lastRequest.containsKey("response_format"));
         p.setGenerationJsonOutput(true);p.setGenerationThinking(false);cloud.generate("JSON system","fictional");
         assertEquals("json_object",lastRequest.getJSONObject("response_format").getString("type"));
-        assertEquals("disabled",lastRequest.getJSONObject("thinking").getString("type"));assertEquals(2000,lastRequest.getIntValue("max_tokens"));
+        assertEquals("disabled",lastRequest.getJSONObject("thinking").getString("type"));assertEquals(100000,lastRequest.getIntValue("max_tokens"));
         reply="{\"data\":[{\"index\":0,\"embedding\":[1,0,0]}]}";cloud.embed(List.of("fictional"));
         assertFalse(lastRequest.containsKey("response_format"));assertFalse(lastRequest.containsKey("thinking"));
         var source=new MapConfigurationPropertySource(Map.of("diary.ai.generation-json-output","true"));
@@ -74,7 +74,7 @@ class DiaryAiResponseTest {
         assertEquals("GENERATION_STOP_INVALID",stopped.code());assertEquals("OTHER",stopped.diagnostic().finish());
         response("length",Map.of("content",secret));var truncated=assertThrows(DiaryAiCloud.Failure.class,()->cloud.generate(secret,secret));
         assertEquals(21L,truncated.diagnostic().inputTokens());assertEquals(13L,truncated.diagnostic().outputTokens());
-        assertEquals(2000,truncated.diagnostic().outputLimit());assertTrue(truncated.diagnostic().possiblySent());
+        assertEquals(100000,truncated.diagnostic().outputLimit());assertTrue(truncated.diagnostic().possiblySent());
         reply=secret;status=401;assertEquals("GENERATION_AUTH_REJECTED",assertThrows(DiaryAiCloud.Failure.class,()->cloud.generate(secret,secret)).code());
         status=429;assertEquals("EMBEDDING_RATE_LIMIT",assertThrows(DiaryAiCloud.Failure.class,()->cloud.embed(List.of(secret))).code());
         assertFalse(output.getAll().contains(secret));assertFalse(truncated.toString().contains(secret));assertNull(truncated.getCause());

@@ -25,7 +25,7 @@ class DiaryAiThinkingTest {
         JSONObject body=request(false);
         assertEquals("disabled",body.getJSONObject("thinking").getString("type"));
         assertEquals("deepseek-flash",body.getString("model"));
-        assertEquals(2000,body.getIntValue("max_tokens"));
+        assertEquals(100000,body.getIntValue("max_tokens"));
         assertEquals(2,body.getJSONArray("messages").size());
     }
 

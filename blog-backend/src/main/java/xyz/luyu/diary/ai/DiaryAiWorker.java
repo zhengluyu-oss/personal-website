@@ -75,17 +75,30 @@ public final class DiaryAiWorker {
             }
             check(work);
             if(sources.isEmpty()){store.complete(owner,work,token,sources,DiaryAiEvidence.insufficient(),partial);DiaryAiAudit.event(work.id(),work.kind().name(),"COMPLETE","INSUFFICIENT",elapsed(started),inputTokens,outputTokens,sent);return;}
-            String system=DiaryAiEvidence.system(work.kind());
-            if(conversation!=null)system+="历史对话只用于理解本轮追问的指代；历史AI回答不是日记证据，不可引用或据此断言个人事实。本轮所有事实必须重新由本轮sources和quoteCatalog支持。";
-            String history=conversation==null?"":DiaryConversationText.history(conversation.history(),1600);
-            String context=JSON.toJSONString(Map.of("question",Objects.toString(work.request().question(),""),"scope",Objects.toString(work.request().scope(),"全部当前记录"),"partialIndex",partial,"sources",sources,"conversationHistory",history));
+            String system=DiaryAiEvidence.system(work.kind(),fullReview);
+            if(conversation!=null)system+="历史对话可能省略更早轮次；优先回应本轮问题并保留用户明确的目标、补充与纠正，用户补充只能表述为‘按你补充’，不能冒充日记原文。历史AI回答及其推测不是个人事实证据，不可引用或据此断言个人事实。日记事实必须由本轮sources和quoteCatalog支持。";
+            var contextValues=new LinkedHashMap<String,Object>();
+            contextValues.put("question",Objects.toString(work.request().question(),""));
+            contextValues.put("scope",Objects.toString(work.request().scope(),"全部当前记录"));
+            contextValues.put("partialIndex",partial);contextValues.put("sources",sources);
+            contextValues.put("conversationHistory",List.of());
+            String context=JSON.toJSONString(contextValues);
+            int historyBudget=Math.min(12000,Math.max(0,p.getMaxPromptCharacters()-points(system)-points(context)-Math.min(5000,Math.max(1000,sources.size()*160))-96));
+            String history=conversation==null?"":DiaryConversationText.history(conversation.history(),historyBudget);
+            if(!history.isEmpty())contextValues.put("conversationHistory",JSON.parseArray(history));
+            context=JSON.toJSONString(contextValues);
             int remaining=p.getMaxPromptCharacters()-points(system)-points(context)-32;
-            DiaryQuoteCatalog catalog=DiaryQuoteCatalog.build(work.id(),sources.stream().map(s->new DiaryQuoteCatalog.SourceText(s.sourceId(),"D",s.revision(),s.text())).toList(),Math.min(5000,remaining));
+            String focus=Objects.toString(work.request().question(),"");
+            if(conversation!=null)focus+="\n"+String.join("\n",conversation.history().stream().map(DiaryConversationStore.History::question).filter(Objects::nonNull).toList());
+            DiaryQuoteCatalog catalog=DiaryQuoteCatalog.build(work.id(),sources.stream().map(s->new DiaryQuoteCatalog.SourceText(s.sourceId(),"D",s.revision(),s.text())).toList(),remaining,focus);
             if(catalog.items().isEmpty())throw DiaryFailure.invalid("输入超过引文预算，请缩小范围");
             context=catalog.attach(context);
             if(points(system)+points(context)>p.getMaxPromptCharacters())throw DiaryFailure.invalid("输入超过模型预算，请缩小范围");
             store.reserve(owner,1,0);check(work);store.preparing(owner,work,token,sources,partial);sent=true;
-            var generation=cloud.generate(system,context,work.id());
+            var generation=cloud.generate(system,context,work.id(),()->{
+                check(work);
+                store.tx(owner,()->{store.lease(owner,token);return null;});
+            });
             inputTokens=generation.inputTokens();outputTokens=generation.outputTokens();
             invalidOutput=generation.content();
             diagnosticSources=sources.stream().map(s->new DiaryDiagnostics.Source(s.sourceId(),"D",s.entryId(),s.revision(),s.text())).toList();

@@ -48,7 +48,7 @@ class DiaryAiCloudTest {
     @Test void totalResponseTimeAndSizeAreBounded() {
         p.setMaxResponseBytes(128);reply.set("x".repeat(1024));
         assertThrows(DiaryAiCloud.Failure.class,()->cloud.embed(List.of("x")));
-        p.setMaxResponseBytes(4096);p.setHttpTimeoutSeconds(1);delay=1800;reply.set("{}");long began=System.nanoTime();
+        p.setMaxResponseBytes(4096);p.setGenerationTimeoutSeconds(1);delay=1800;reply.set("{}");long began=System.nanoTime();
         assertTrue(assertThrows(DiaryAiCloud.Failure.class,()->cloud.generate("a","b")).uncertain());
         assertTrue((System.nanoTime()-began)/1e9<1.6,"includes the entire response body deadline");
     }

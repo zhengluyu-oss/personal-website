@@ -12,6 +12,10 @@ diary:
     generation-model: ${DIARY_AI_GENERATION_MODEL:}
     # DeepSeek: explicitly set generation-thinking: false to avoid spending the output budget on reasoning.
     # Omit for providers that do not implement the thinking parameter.
+    # Output ceiling, not a target response length. Explicit older values override the defaults.
+    max-output-tokens: 100000
+    generation-timeout-seconds: 1800
+    max-response-bytes: 16777216
     dimensions: ${DIARY_AI_DIMENSIONS:0}
     allowed-hosts: ${DIARY_AI_ALLOWED_HOSTS:}
     data-policy: ${DIARY_AI_DATA_POLICY:}

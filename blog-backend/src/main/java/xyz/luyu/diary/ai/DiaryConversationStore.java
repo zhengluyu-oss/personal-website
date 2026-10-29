@@ -193,10 +193,12 @@ public final class DiaryConversationStore {
             if(row.kind()==Kind.REVIEW && !row.digest().equals(ai.scopeDigest(owner,row.scope())))
                 throw new DiaryFailure(409,"复盘资料已变化");
             p.addValue("conversation",row.conversation()).addValue("sequence",row.sequence());
-            var previous=ai.jdbc.query("SELECT t.user_text,r.id,r.result FROM diary_conversation.turn t " +
+            var previous=ai.jdbc.query("WITH valid AS (SELECT t.user_text,r.id,r.result,t.sequence_no FROM diary_conversation.turn t " +
                 "JOIN diary_ai.report r ON r.owner_id=t.owner_id AND r.job_id=t.job_id AND r.state='SUCCEEDED' " +
-                "WHERE t.owner_id=:owner AND t.conversation_id=:conversation AND t.sequence_no<:sequence " +
-                "ORDER BY t.sequence_no DESC LIMIT 4",p,(r,n)->new Prior(r.getString(1),r.getObject(2,UUID.class),r.getString(3)));
+                "WHERE t.owner_id=:owner AND t.conversation_id=:conversation AND t.sequence_no<:sequence) " +
+                "SELECT user_text,id,result FROM valid WHERE sequence_no=1 OR sequence_no IN " +
+                "(SELECT sequence_no FROM valid ORDER BY sequence_no DESC LIMIT 8) ORDER BY sequence_no DESC",
+                p,(r,n)->new Prior(r.getString(1),r.getObject(2,UUID.class),r.getString(3)));
             var history=new ArrayList<History>();
             for(int i=previous.size()-1;i>=0;i--) {
                 Prior item=previous.get(i);

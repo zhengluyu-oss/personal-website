@@ -100,6 +100,59 @@ class DiaryReflectionContractTest {
         }
     }
 
+    @Test void extendedPeriodAnalysisUsesSameLargeNarrativeBudgetWithoutWeakeningTypedQuotes() {
+        String extended="可以比较目标、现实条件与其他可能解释，并由本人验证。".repeat(2500);
+        var sources=List.of(coachingSource("D1","D","虚构记录：一次散步后感觉放松。"));
+        var observation=claim(extended,"OBSERVATION","D1","一次散步后感觉放松");
+        var explanation=claim("可能有环境改变的作用，也可能是其他当日安排；可以比较下一次活动前后的感受。","HYPOTHESIS","D1","一次散步后感觉放松");
+        var method=new CoachingEvidence.Suggestion(extended,extended,List.of(),extended,extended,true);
+        var candidate=new CoachingEvidence.Result(extended,List.of(),List.of(observation),List.of(),
+                java.util.Collections.nCopies(21,explanation),List.of(method),List.of(extended));
+        String raw=JSON.toJSONString(candidate);
+
+        assertTrue(points(raw)>32000,"Fixture must cross the old result limit");
+        assertDoesNotThrow(()->DiaryValidation.check(raw,List.of(new DiaryValidation.Evidence("D1",sources.get(0).text(),"D")),"PERIOD"));
+        assertEquals(candidate,CoachingEvidence.validate(raw,sources));
+
+        String oversizedQuote="引".repeat(2001);
+        var quoteSources=List.of(coachingSource("D1","D",oversizedQuote));
+        var invalid=new CoachingEvidence.Result("引用边界",List.of(),List.of(claim("记录中的文字","OBSERVATION","D1",oversizedQuote)),
+                List.of(),List.of(),List.of(),List.of("只用于检查逐字引用长度保护"));
+        assertThrows(DiaryFailure.class,()->CoachingEvidence.validate(JSON.toJSONString(invalid),quoteSources));
+        var issue=assertThrows(DiaryValidation.Issue.class,()->DiaryValidation.check(JSON.toJSONString(invalid),
+                List.of(new DiaryValidation.Evidence("D1",oversizedQuote,"D")),"PERIOD"));
+        assertEquals(DiaryValidation.Reason.TEXT_LIMIT,issue.reason());
+        assertEquals("$.observations[0].quotes[0].text",issue.path());
+    }
+
+    @Test void suggestionCountMatchesExistingAdoptableOriginIndexesForBothReportShapes() {
+        Source source=diarySource();
+        var lead=new Statement("记录中有一次散步。",List.of("S1"),List.of(new Quote("S1","散步过一次")));
+        var general=new Suggestion("可选地记录一种环境调整。","通用方法，不代表个人事实。",List.of(),"尝试一次。","下次尝试后比较。",true);
+        var accepted=new Result(lead,null,List.of(),List.of(),java.util.Collections.nCopies(20,general),List.of("仅依据当前资料。"),false);
+        var rejected=new Result(lead,null,List.of(),List.of(),java.util.Collections.nCopies(21,general),accepted.limitations(),false);
+        String rawAccepted=JSON.toJSONString(accepted,com.alibaba.fastjson2.JSONWriter.Feature.WriteNulls);
+        String rawRejected=JSON.toJSONString(rejected,com.alibaba.fastjson2.JSONWriter.Feature.WriteNulls);
+        var diaryEvidence=List.of(new DiaryValidation.Evidence("S1",source.text(),"D"));
+        assertDoesNotThrow(()->DiaryValidation.check(rawAccepted,diaryEvidence,"QUESTION"));
+        assertEquals(20,DiaryAiEvidence.validate(rawAccepted,List.of(source),Kind.QUESTION).suggestions().size());
+        var questionIssue=assertThrows(DiaryValidation.Issue.class,()->DiaryValidation.check(rawRejected,diaryEvidence,"QUESTION"));
+        assertEquals(DiaryValidation.Reason.ARRAY_LIMIT,questionIssue.reason());assertEquals("$.suggestions",questionIssue.path());
+        assertThrows(DiaryAiCloud.Failure.class,()->DiaryAiEvidence.validate(rawRejected,List.of(source),Kind.QUESTION));
+
+        var periodSources=List.of(coachingSource("D1","D","虚构记录：散步一次。"));
+        var periodMethod=new CoachingEvidence.Suggestion(general.action(),general.reason(),List.of(),general.effort(),general.reviewAfter(),true);
+        var acceptedPeriod=new CoachingEvidence.Result("当前虚构期间。",List.of(),List.of(),List.of(),List.of(),java.util.Collections.nCopies(20,periodMethod),List.of("仅依据当前资料。"));
+        var rejectedPeriod=new CoachingEvidence.Result(acceptedPeriod.coverage(),List.of(),List.of(),List.of(),List.of(),java.util.Collections.nCopies(21,periodMethod),acceptedPeriod.limitations());
+        String rawPeriodAccepted=JSON.toJSONString(acceptedPeriod),rawPeriodRejected=JSON.toJSONString(rejectedPeriod);
+        var periodEvidence=List.of(new DiaryValidation.Evidence("D1",periodSources.get(0).text(),"D"));
+        assertDoesNotThrow(()->DiaryValidation.check(rawPeriodAccepted,periodEvidence,"PERIOD"));
+        assertEquals(20,CoachingEvidence.validate(rawPeriodAccepted,periodSources).suggestions().size());
+        var periodIssue=assertThrows(DiaryValidation.Issue.class,()->DiaryValidation.check(rawPeriodRejected,periodEvidence,"PERIOD"));
+        assertEquals(DiaryValidation.Reason.ARRAY_LIMIT,periodIssue.reason());assertEquals("$.suggestions",periodIssue.path());
+        assertThrows(DiaryFailure.class,()->CoachingEvidence.validate(rawPeriodRejected,periodSources));
+    }
+
     @Test void allThreePromptsUseSystemRoleAndKeepUserContextJsonModeAndOutputBudgetSeparate() throws Exception {
         var requests=new CopyOnWriteArrayList<JSONObject>();
         HttpServer server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
@@ -137,7 +190,7 @@ class DiaryReflectionContractTest {
                 assertNotEquals(context,messages.getJSONObject(0).getString("content"));
                 assertEquals("json_object",sent.getJSONObject("response_format").getString("type"));
                 assertEquals("disabled",sent.getJSONObject("thinking").getString("type"));
-                assertEquals(2000,sent.getIntValue("max_tokens"));
+                assertEquals(100000,sent.getIntValue("max_tokens"));
             }
             assertEquals(3,requests.size(),"One request per task; no automatic extra calls");
         } finally { server.stop(0); }

@@ -28,8 +28,8 @@ public final class DiaryAiModels {
     public record Request(UUID requestId,String question,Scope scope,String snapshotDigest,boolean allowPartialIndex) {
         public void validate(Kind kind) {
             if(requestId==null) throw DiaryFailure.invalid("缺少请求标识");
-            if(question!=null && points(question)>1000 || kind==Kind.REVIEW && question!=null
-                    || kind==Kind.QUESTION && snapshotDigest!=null)throw DiaryFailure.invalid("请求字段不符合当前操作");
+            if(question!=null && points(question)>1000 || kind==Kind.QUESTION && snapshotDigest!=null)
+                throw DiaryFailure.invalid("请求字段不符合当前操作");
             if(kind==Kind.QUESTION && (question==null || question.isBlank() || points(question)>1000))
                 throw DiaryFailure.invalid("问题需为1至1000字");
             if(kind==Kind.REVIEW && (snapshotDigest==null || !snapshotDigest.matches("[0-9a-f]{64}")))

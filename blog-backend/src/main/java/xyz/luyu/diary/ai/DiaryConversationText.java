@@ -17,11 +17,12 @@ final class DiaryConversationText {
         try {
             Result result=JSON.parseObject(raw,Result.class);
             StringBuilder value=new StringBuilder();
-            if(result.answer()!=null) append(value,result.answer().text());
-            if(result.summary()!=null) append(value,result.summary().text());
-            if(result.observations()!=null) result.observations().stream().limit(2).forEach(item->append(value,item.text()));
-            if(result.suggestions()!=null) result.suggestions().stream().limit(2).forEach(item->append(value,item.action()));
-            return limit(value.toString(),1400);
+            if(result.answer()!=null) append(value,"上轮回答："+limit(result.answer().text(),800));
+            if(result.summary()!=null) append(value,"上轮概览："+limit(result.summary().text(),800));
+            if(result.observations()!=null) result.observations().stream().limit(2).forEach(item->append(value,"上轮观察："+limit(item.text(),250)));
+            if(result.hypotheses()!=null) result.hypotheses().stream().limit(2).forEach(item->append(value,"上轮待核实解释："+limit(item.text(),250)));
+            if(result.suggestions()!=null) result.suggestions().stream().limit(3).forEach(item->append(value,"上轮可选建议："+limit(item.action(),200)));
+            return limit(value.toString(),2400);
         } catch(RuntimeException invalid) { return ""; }
     }
 
@@ -30,22 +31,24 @@ final class DiaryConversationText {
         var rows=new ArrayList<Map<String,String>>();
         for(var turn:turns) {
             var row=new LinkedHashMap<String,String>();
-            row.put("question",limit(Objects.toString(turn.question(),"首轮复盘"),500));
-            row.put("previousAssistantText",limit(turn.answer(),1000));
+            row.put("question",Objects.toString(turn.question(),"首轮复盘"));
+            row.put("previousAssistantText",limit(turn.answer(),2400));
             rows.add(row);
         }
         String json=JSON.toJSONString(rows);
+        // Preserve the user's exact goals/corrections before spending budget on old AI text.
+        for(var row:rows) {
+            while(points(json)>maximum && !row.get("previousAssistantText").isEmpty()) {
+                row.put("previousAssistantText",limit(row.get("previousAssistantText"),Math.max(0,points(row.get("previousAssistantText"))-200)));
+                json=JSON.toJSONString(rows);
+            }
+        }
         while(points(json)>maximum && rows.size()>1) {
-            rows.remove(0);json=JSON.toJSONString(rows);
+            // Keep the initial goal and newest correction as long as both fit.
+            rows.remove(rows.size()>2?1:0);json=JSON.toJSONString(rows);
         }
-        while(points(json)>maximum) {
-            var row=rows.get(0);
-            String key=row.get("previousAssistantText").isEmpty()?"question":"previousAssistantText";
-            if(row.get(key).isEmpty()) return "";
-            row.put(key,limit(row.get(key),Math.max(0,points(row.get(key))-100)));
-            json=JSON.toJSONString(rows);
-        }
-        return json;
+        // Omit a history row rather than changing the meaning of a truncated user correction.
+        return points(json)<=maximum?json:"";
     }
 
     static String retrievalQuestion(String current,List<DiaryConversationStore.History> history) {

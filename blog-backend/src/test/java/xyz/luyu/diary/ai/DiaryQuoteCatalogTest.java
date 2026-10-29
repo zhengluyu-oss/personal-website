@@ -70,4 +70,19 @@ class DiaryQuoteCatalogTest {
         assertEquals(DiaryValidation.Reason.QUOTE_ID_UNKNOWN,assertThrows(DiaryValidation.Issue.class,()->catalog.hydrate(rewritten)).reason());
         assertThrows(DiaryValidation.Issue.class,()->DiaryValidation.check(catalog.hydrate("{}"),List.of(new DiaryValidation.Evidence("S1",BODY,"D")),"QUESTION"));
     }
+    @Test void focusedCatalogIncludesRelevantMiddleEvidenceAndStillSpansTheSource(){
+        String body="开头记录一次散步。"+"这是普通日常记录。".repeat(100)+"工作安排导致当天无法调整项目排期。"+"这是另一条日常记录。".repeat(100)+"末尾记录新的结果。";
+        var catalog=DiaryQuoteCatalog.build(TASK,List.of(new DiaryQuoteCatalog.SourceText("S1","D",1,body)),1800,"工作安排是否影响项目排期？");
+        assertTrue(catalog.items().stream().anyMatch(item->item.text().contains("工作安排")));
+        assertTrue(catalog.items().stream().anyMatch(item->item.text().contains("开头")));
+        assertTrue(catalog.items().stream().anyMatch(item->item.text().contains("末尾")));
+        assertTrue(catalog.items().stream().allMatch(item->body.contains(item.text())));
+        assertTrue(DiaryAiModels.points(JSON.parseObject(catalog.attach("{}")).getJSONArray("quoteCatalog").toJSONString())<=1800);
+    }
+    @Test void sufficientBudgetCanCoverEverySentenceWithoutAnEightyItemCeiling(){
+        String body=java.util.stream.IntStream.range(0,100).mapToObj(i->"第"+i+"条独立的日记内容。").collect(java.util.stream.Collectors.joining());
+        var catalog=DiaryQuoteCatalog.build(TASK,List.of(new DiaryQuoteCatalog.SourceText("S1","D",1,body)),20000);
+        assertEquals(100,catalog.items().size());
+        assertEquals(100,catalog.items().stream().map(DiaryQuoteCatalog.Item::text).distinct().count());
+    }
 }

@@ -182,6 +182,8 @@ public final class DiaryAiStore {
     void usage(long owner,Long input,Long output) {
         if(input==null && output==null)return;
         tx(owner,()->{var p=params(owner);p.put("day",LocalDate.now(ZoneId.of("Asia/Shanghai")));p.put("input",input);p.put("output",output);
+            // A long generation may finish after midnight, before any attempt has reserved today's row.
+            jdbc.update("INSERT INTO diary_ai.usage_budget(owner_id,day) VALUES(:owner,:day) ON CONFLICT DO NOTHING",p);
             jdbc.update("UPDATE diary_ai.usage_budget SET input_tokens=CASE WHEN CAST(:input AS bigint) IS NULL THEN input_tokens ELSE coalesce(input_tokens,0)+:input END,output_tokens=CASE WHEN CAST(:output AS bigint) IS NULL THEN output_tokens ELSE coalesce(output_tokens,0)+:output END WHERE owner_id=:owner AND day=:day",p);return null;
         });
     }

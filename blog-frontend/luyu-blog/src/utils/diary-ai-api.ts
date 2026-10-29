@@ -6,7 +6,7 @@ export interface AiSource { sourceId: string; entryId: string; revision: number;
 export interface AiStatement { text: string; evidenceIds: string[]; quotes: { sourceId: string; text: string }[] }
 export interface AiResult { answer?: AiStatement; summary?: AiStatement; observations: AiStatement[]; hypotheses: AiStatement[]; suggestions: { action: string; reason: string; effort: string; reviewAfter: string; general: boolean; evidenceIds: string[] }[]; limitations: string[]; insufficientEvidence: boolean }
 export interface AiReport { id: string; kind: string; result: string; sources: AiSource[]; model: string; createdAt: string; partial: boolean }
-export interface AiPreview { entries: number; characters: number; snapshotDigest: string; records: { id: string; title: string }[]; limitation: string }
+export interface AiPreview { entries: number; characters: number; snapshotDigest: string; records: { id: string; title: string; coveredFrom?: string; coveredTo?: string; revision?: number }[]; limitation: string }
 export interface AiIndex { syncing: boolean; coverage: { total: number; indexed: number; failed: number }; remainingBlocks: number; message: string }
 export interface AiReportSummary { id: string; kind: string; state: string; createdAt: string; entries: number; model: string }
 export interface AiConversationSummary { id: string; kind: 'QUESTION' | 'REVIEW'; firstQuestion?: string; createdAt: string; updatedAt: string }

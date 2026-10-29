@@ -16,8 +16,8 @@ const date = computed(() => new Date(props.report.createdAt).toLocaleString('zh-
 
 <template>
   <article class="ai-result" aria-label="AI 分析结果">
-    <div v-if="isAnswer && question" class="answer-question">
-      <span class="result-label">你的问题</span>
+    <div v-if="question" class="answer-question">
+      <span class="result-label">{{ isAnswer ? '你的问题' : '这次复盘重点' }}</span>
       <p>{{ question }}</p>
     </div>
     <div v-else-if="isAnswer" class="answer-question history-context">
@@ -46,8 +46,8 @@ const date = computed(() => new Date(props.report.createdAt).toLocaleString('zh-
         <p>{{ item.text }}</p><details v-if="item.quotes?.length" class="answer-quotes"><summary>核对原文</summary><blockquote v-for="(quote, q) in item.quotes" :key="q"><span>日记原文 · {{ quote.sourceId }}</span><p>{{ quote.text }}</p></blockquote></details>
       </div>
     </section>
-    <details v-if="result.hypotheses?.length" class="result-section result-disclosure">
-      <summary>可能的解释 <span>待你核实，{{ result.hypotheses.length }} 项</span></summary>
+    <details v-if="result.hypotheses?.length" class="result-section result-disclosure" open>
+      <summary>值得核实的新视角 <span>这些是可能的解释，{{ result.hypotheses.length }} 项</span></summary>
       <div v-for="(item, i) in result.hypotheses" :key="i" class="result-claim"><p>{{ item.text }}</p><details v-if="item.quotes?.length" class="answer-quotes"><summary>核对原文</summary><blockquote v-for="(quote, q) in item.quotes" :key="q"><span>日记原文 · {{ quote.sourceId }}</span><p>{{ quote.text }}</p></blockquote></details></div>
     </details>
     <section v-if="result.suggestions?.length" class="result-section">
