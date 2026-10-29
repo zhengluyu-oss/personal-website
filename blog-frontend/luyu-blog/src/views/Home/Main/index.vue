@@ -279,7 +279,20 @@ onBeforeUnmount(() => {
         <div><h2 id="knowledge-home-title">知识库</h2><p>按主题整理的笔记、资料和概念。</p></div>
         <RouterLink class="section-link" to="/knowledge">查看知识库 <span aria-hidden="true">→</span></RouterLink>
       </header>
-      <div v-if="!canViewModule('knowledge')" class="module-empty">知识库仅向获授权的账号开放。<RouterLink to="/knowledge">查看访问说明 →</RouterLink></div>
+      <div v-if="!canViewModule('knowledge')" class="restricted-work restricted-knowledge" role="status">
+        <div class="restricted-work__intro">
+          <span class="restricted-work__mark">知识目录</span>
+          <strong>笔记、资料与概念</strong>
+          <p>知识库仅向获授权的账号开放。获得访问权限后，可以查看条目标题和内容。</p>
+        </div>
+        <ol class="restricted-work__list">
+          <li v-for="(kind, index) in ['笔记', '文件资料', '概念']" :key="kind">
+            <span class="restricted-work__index">{{ String(index + 1).padStart(2, '0') }}</span>
+            <span class="restricted-work__label">{{ kind }}<small>内容需授权</small></span>
+          </li>
+        </ol>
+        <RouterLink class="restricted-work__link" to="/knowledge">查看访问说明 <span aria-hidden="true">→</span></RouterLink>
+      </div>
       <div v-else-if="pending(knowledge)" class="collection-skeleton collection-skeleton--knowledge" role="status" aria-label="知识库加载中"><span v-for="index in 4" :key="index" /></div>
       <div v-else-if="knowledge.data?.length" class="knowledge-preview-grid">
         <RouterLink v-for="item in knowledge.data" :key="item.entry.id" class="knowledge-preview" :to="{ path: '/knowledge', query: { entry: item.entry.id } }">
@@ -421,6 +434,7 @@ onBeforeUnmount(() => {
 .restricted-work__loading { display: grid; gap: .75rem; padding: 1.5rem 2rem; }
 .restricted-work__loading span { width: 100%; height: 3rem; border-radius: var(--brand-radius-sm); background: var(--brand-canvas-soft); }
 .restricted-work__link { display: inline-flex; align-items: center; gap: .4rem; margin: .5rem 2rem 1.5rem; color: var(--brand-accent-strong); font-size: .9rem; font-weight: 650; text-decoration: none; }
+.restricted-knowledge .restricted-work__list li { grid-template-columns: 3.5rem minmax(0, 1fr); min-height: 4.75rem; }
 a:focus-visible, button:focus-visible { outline: 2px solid var(--brand-accent); outline-offset: 4px; }
 button:hover { background: var(--brand-accent-soft); }
 @media (max-width: 767px) {
@@ -447,6 +461,7 @@ button:hover { background: var(--brand-accent-soft); }
   .restricted-work__list { padding: 0 1.2rem; }
   .restricted-work__list li { grid-template-columns: 2.5rem minmax(0, 1fr) auto; gap: .45rem; }
   .restricted-work__index { font-size: 1rem; }
+  .restricted-knowledge .restricted-work__list li { grid-template-columns: 2.5rem minmax(0, 1fr); }
   .restricted-work__list strong { font-size: 1.1rem; }
   .restricted-work__link { margin-left: 1.2rem; }
   .home-collection { padding: 2rem 0; }
