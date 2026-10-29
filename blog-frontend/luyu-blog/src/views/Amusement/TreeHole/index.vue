@@ -2,9 +2,7 @@
 import vueDanmaku from 'vue3-danmaku'
 import {addTreeHole, getTreeHoleList} from "@/apis/treeHole";
 import {ElMessage} from "element-plus";
-import { ossUrl } from '@/config/site'
 
-const treeHoleBg = ossUrl('blog/TreeHole/TreeHole-back_compressed.webp')
 const treeHoleList = ref([])
 const isShowSubmit = ref(false)
 const content = ref('')
@@ -41,7 +39,7 @@ function getTreeHole() {
 }
 </script>
 <template>
-  <div class="container" :style="{ backgroundImage: `url(${treeHoleBg})` }">
+  <div class="container">
     <div class="content_container">
       <div>树洞</div>
       <div class="compose-row">
@@ -71,8 +69,8 @@ function getTreeHole() {
 
 <style scoped lang="scss">
 .container {
-  background-size: cover;
-  background-position: center;
+  background: radial-gradient(circle at 50% 35%, var(--brand-accent-soft), transparent 55%), var(--brand-canvas);
+  color: var(--brand-ink);
   width: 100%;
   max-width: 100vw;
   height: 100vh;
@@ -89,10 +87,9 @@ function getTreeHole() {
     box-sizing: border-box;
 
     & > div:first-child {
-      color: white;
+      color: var(--brand-ink);
       font-size: clamp(1.5rem, 6vw, 2rem);
       font-weight: bold;
-      text-shadow: 0 0 10px #000;
       text-align: center;
       text-transform: uppercase;
       letter-spacing: 0.2rem;
@@ -113,18 +110,23 @@ function getTreeHole() {
         width: 100%;
         max-width: 100%;
         height: 2.75rem;
-        border: #409EFF solid 1px;
+        border: 1px solid var(--brand-line);
         border-radius: 1rem;
         outline: none;
         padding: 0 1rem;
         font-size: 1rem;
-        background-color: rgba(255, 255, 255, 0.2);
+        background-color: var(--brand-surface-solid);
         box-sizing: border-box;
-        color: #fff;
+        color: var(--brand-ink);
+
+        &:focus-visible {
+          outline: 2px solid var(--brand-accent);
+          outline-offset: 2px;
+        }
       }
 
       input::placeholder {
-        color: white;
+        color: var(--brand-ink-soft);
         font-style: italic;
       }
 
@@ -135,20 +137,25 @@ function getTreeHole() {
         padding: 0 1rem;
         border-radius: 1rem;
         outline: none;
-        background-color: rgba(255, 255, 255, 0.2);
-        border: #409EFF solid 1px;
-        color: white;
+        background-color: var(--brand-surface-solid);
+        border: 1px solid var(--brand-accent-strong);
+        color: var(--brand-accent-strong);
         font-size: 1rem;
         cursor: pointer;
 
         span {
-          color: #e8e8e8;
+          color: inherit;
           font-style: italic;
           font-weight: bold;
         }
 
         &:hover {
-          background-color: rgba(255, 255, 255, 0.5);
+          background-color: var(--brand-accent-soft);
+        }
+
+        &:focus-visible {
+          outline: 2px solid var(--brand-accent);
+          outline-offset: 2px;
         }
       }
     }
@@ -174,7 +181,7 @@ function getTreeHole() {
       width: 0;
       height: 0.2em;
       border-radius: 0.1em;
-      background: linear-gradient(to right, #00c6ff, #0072ff);
+      background: var(--brand-accent);
       transition: width 0.3s ease;
     }
 
@@ -184,22 +191,33 @@ function getTreeHole() {
 
     & div:last-child span:first-child {
       margin-left: 0.5rem;
-      color: white;
+      color: var(--brand-accent-strong);
       font-weight: bold;
     }
 
     & div:last-child span:last-child {
       font-size: 1.2rem;
+      color: var(--brand-ink);
       overflow-wrap: anywhere;
     }
 
     & div:last-child {
-      border-bottom: 1px solid #ebebeb;
+      border: 1px solid var(--brand-line);
       padding: 0.5rem;
       margin-left: 0.5rem;
       border-radius: $border-radius;
-      background-color: rgba(255, 255, 255, 0.2);
+      background-color: var(--brand-surface-solid);
       min-width: 0;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .content_container .compose-row {
+      justify-content: flex-end;
+
+      input {
+        flex-basis: 100%;
+      }
     }
   }
 }
