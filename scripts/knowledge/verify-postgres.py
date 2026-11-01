@@ -56,10 +56,12 @@ VALUES (1,md5('unclassified-git')::uuid,1,'{"kind":"NOTE","title":"Git 笔记","
      WHERE e.id=md5('unclassified-git')::uuid""").stdout.strip()=='t'
     assert sql("""INSERT INTO knowledge.label(owner_id,id,kind,name,parent_category_id,revision)
       VALUES (1,md5('bad-tag')::uuid,'TAG','错误',md5('git-tag')::uuid,1)""",False).returncode!=0
+    tag_migration=(ROOT/'scripts/knowledge/005-tag-order.sql').read_text(encoding='utf-8')
+    sql(tag_migration);sql(tag_migration)
     env=os.environ.copy();env['BLOG_KNOWLEDGE_QA']='true'
     missing=pathlib.Path(os.environ.get('TEMP','.'))/('qa-missing-'+uuid.uuid4().hex)
     jvm=['-DargLine=-Djdk.net.unixdomain.tmpdir='+missing.as_posix()] if os.name=='nt' else []
-    r=subprocess.run(['mvn.cmd' if os.name=='nt' else 'mvn','-q',*jvm,'-Dtest=KnowledgeStorePostgresTest,KnowledgeAssistantPostgresTest','test'],cwd=ROOT/'blog-backend',env=env,capture_output=True,text=True,encoding='utf-8',errors='replace')
+    r=subprocess.run(['mvn.cmd' if os.name=='nt' else 'mvn','-q',*jvm,'-Dtest=KnowledgeStorePostgresTest,KnowledgeAssistantPostgresTest,KnowledgeTagOrderPostgresTest','test'],cwd=ROOT/'blog-backend',env=env,capture_output=True,text=True,encoding='utf-8',errors='replace')
     if r.returncode: raise RuntimeError(r.stdout[-6000:]+r.stderr[-2000:])
     sql('ALTER TABLE knowledge.entry ADD COLUMN unexpected text')
     assert sql(migration,False).returncode!=0

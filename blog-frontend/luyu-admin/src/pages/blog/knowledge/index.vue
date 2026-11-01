@@ -10,6 +10,38 @@ import { useAuthorization } from '~/composables/authorization'
 import { knowledgeRequest as request, knowledgeUploadFile, knowledgeDownloadFile, knowledgeUploadImage, type KnowledgeFileInfo, type KnowledgeAck, type KnowledgeCapability, type KnowledgeContent, type KnowledgeEntry, type KnowledgeLabel, type KnowledgePage } from '~/utils/knowledge-api'
 
 const authorization = useAuthorization()
+const tagNumbers = ref<Record<string, Record<string, number>>>({})
+const numberLabel = (id: string) => Object.entries(tagNumbers.value[id] || {}).filter(([key]) => !tag.value || key === tag.value).map(([key, value]) => `${labels.value.find(l => l.id === key)?.name || '标签'} · ${value}`).join(' / ')
+
+type TagOrder = { entryIds: string[]; digest: string }
+const tagOrder = ref<TagOrder>(), appliedTag = ref(''), ordering = ref(false)
+const orderPending = ref<{ tag: string; body: { mutationId: string; entryId: string; position: number; expectedDigest: string } }>()
+async function moveEntry(id: string, delta?: number) {
+  if (ordering.value || busy.value || !orderPending.value && (dirty.value || trash.value)) return
+  if (!orderPending.value) {
+    if (!tag.value || tag.value !== appliedTag.value || !tagOrder.value) return
+    const old = tagNumbers.value[id]?.[tag.value]
+    if (!old) return
+    const raw = delta === undefined ? window.prompt(`移到该标签的第几位？（1 至 ${tagOrder.value.entryIds.length}）`, String(old)) : String(old + delta)
+    if (raw === null) return
+    const position = Number(raw)
+    if (!Number.isInteger(position) || position < 1 || position > tagOrder.value.entryIds.length) { error.value = '请输入有效的位置'; return }
+    orderPending.value = { tag: tag.value, body: { mutationId: crypto.randomUUID(), entryId: id, position, expectedDigest: tagOrder.value.digest } }
+  }
+  ordering.value = true; error.value = ''
+  const attempt = orderPending.value!, current = generation
+  try {
+    await request('POST', `/manage/tags/${attempt.tag}/order`, attempt.body)
+    if (disposed || current !== generation) return
+    orderPending.value = undefined; tag.value = attempt.tag; page.value = Math.floor((attempt.body.position - 1) / 20) + 1
+    notice.value = '标签内顺序已保存'; await load()
+  } catch (failure: any) {
+    if (disposed || current !== generation) return
+    error.value = failure.message || '调整结果未确认，请确认原请求'
+    if (failure.status >= 400 && failure.status < 500) { orderPending.value = undefined; await load(); error.value = failure.message }
+  } finally { if (!disposed && current === generation) ordering.value = false }
+}
+
 const capability = ref<KnowledgeCapability>(), rows = ref<KnowledgeEntry[]>([]), labels = ref<KnowledgeLabel[]>([])
 const selected = ref<KnowledgeEntry>(), editor = ref<KnowledgeContent>(), baseline = ref('')
 const keyword = ref(''), kind = ref(''), category = ref(''), tag = ref(''), trash = ref(false), page = ref(1), total = ref(0)
@@ -35,8 +67,8 @@ let generation = 0, listSequence = 0, detailSequence = 0, fileSegmentsSequence =
 let pending: { snapshot: string; mutationId: string } | undefined
 let filePending: { entryId: string; revision: number; fingerprint: string; mutationId: string } | undefined
 let timer: ReturnType<typeof setInterval> | undefined
-const discard = () => !uploadingImage.value && (!dirty.value || window.confirm('编辑尚未获得服务器保存确认，确定离开并放弃吗？'))
-function clearPrivate() { generation++; listSequence++; detailSequence++; fileSegmentsSequence++; rows.value = []; labels.value = []; searchLocations.value = {}; selected.value = undefined; editor.value = undefined; currentFile.value = undefined; fileSegments.value = []; fileSegmentsVisible.value = false; history.value = []; total.value = 0; pending = undefined; filePending = undefined; baseline.value = ''; saving.value = false; busy.value = false; editingLabel.value = undefined; renameName.value = ''; renameError.value = ''; renameSaving.value = false; labelNotice.value = '' }
+const discard = () => !orderPending.value && !ordering.value && !uploadingImage.value && (!dirty.value || window.confirm('编辑尚未获得服务器保存确认，确定离开并放弃吗？'))
+function clearPrivate() { generation++; listSequence++; detailSequence++; fileSegmentsSequence++; tagNumbers.value = {}; tagOrder.value = undefined; appliedTag.value = ''; orderPending.value = undefined; ordering.value = false; rows.value = []; labels.value = []; searchLocations.value = {}; selected.value = undefined; editor.value = undefined; currentFile.value = undefined; fileSegments.value = []; fileSegmentsVisible.value = false; history.value = []; total.value = 0; pending = undefined; filePending = undefined; baseline.value = ''; saving.value = false; busy.value = false; editingLabel.value = undefined; renameName.value = ''; renameError.value = ''; renameSaving.value = false; labelNotice.value = '' }
 function denied() { clearPrivate(); capability.value = undefined; error.value = '查看资格已变化，请重新确认权限。' }
 async function check(reset = false) {
   if (reset) { clearPrivate(); capability.value = undefined }
@@ -50,13 +82,16 @@ async function check(reset = false) {
   } catch (e: any) { if (current === generation) error.value = e.message }
 }
 async function load() {
+  if (orderPending.value) { error.value = '请先确认上次排序请求'; return }
   const seq = ++listSequence, current = generation; busy.value = true; error.value = ''
   try {
     const [entries, options] = await Promise.all([
       request<KnowledgePage<{ entry: KnowledgeEntry } & SearchLocation>>('POST', '/view/search', { keyword: keyword.value || null, kind: kind.value || null, categoryId: category.value || null, tagId: tag.value || null, page: page.value, pageSize: 20, deleted: trash.value }),
       request<KnowledgeLabel[]>('GET', '/view/labels'),
     ])
+    const [numbers, order] = await Promise.all([request<Record<string, Record<string, number>>>('POST', '/view/tag-numbers', entries.records.map(hit => hit.entry.id)), tag.value && !trash.value ? request<TagOrder>('GET', `/view/tags/${tag.value}/order`) : Promise.resolve(undefined)])
     if (disposed || seq !== listSequence || current !== generation) return
+    tagNumbers.value = numbers; tagOrder.value = order; appliedTag.value = tag.value
     rows.value = entries.records.map(hit => hit.entry); searchLocations.value = Object.fromEntries(entries.records.map(({ entry, excerpt, page, fromLine, toLine }) => [entry.id, { excerpt, page, fromLine, toLine }])); total.value = entries.total; labels.value = options
     labelParentDrafts.value = Object.fromEntries(options.filter(l => l.kind === 'TAG').map(l => [l.id, l.parentCategoryId || '']))
   } catch (e: any) { if (seq === listSequence && current === generation) error.value = e.message }
@@ -253,6 +288,7 @@ function beforeUnload(e: BeforeUnloadEvent) { if (dirty.value || uploadingImage.
 const refresh = () => { void check() }
 watch(() => authorization.value, () => { void check(true) }, { immediate: true, flush: 'sync' })
 onBeforeRouteLeave(discard)
+watch([tag, category, keyword, kind, trash], () => { listSequence++; busy.value = false; tagNumbers.value = {}; tagOrder.value = undefined; appliedTag.value = '' }, { flush: 'sync' })
 onMounted(() => { window.addEventListener('beforeunload', beforeUnload); window.addEventListener('knowledge-access-invalid', denied); window.addEventListener('focus', refresh); timer = setInterval(refresh, 30000) })
 onBeforeUnmount(() => { disposed = true; clearPrivate(); clearInterval(timer); window.removeEventListener('beforeunload', beforeUnload); window.removeEventListener('knowledge-access-invalid', denied); window.removeEventListener('focus', refresh) })
 </script>
@@ -300,7 +336,7 @@ onBeforeUnmount(() => { disposed = true; clearPrivate(); clearInterval(timer); w
         <label v-if="capability.canManage"><input v-model="trash" type="checkbox">回收站</label><button :disabled="busy">{{ busy ? '读取中…' : '查找' }}</button><button v-if="capability.canManage && trash" type="button" @click="purgeExpired">清理30天前的回收站</button>
       </form>
       <div class="columns">
-        <aside><p>{{ total }} 个条目</p><ul><li v-for="row in rows" :key="row.id"><button :class="{ active: selected?.id === row.id }" @click="open(row.id)"><small>{{ kindNames[row.content.kind] }}</small><strong>{{ row.content.title }}</strong><span v-if="keyword">{{ searchLocations[row.id]?.excerpt }}</span><small v-if="keyword && searchLocations[row.id]?.page">命中第 {{ searchLocations[row.id].page }} 页</small><small v-else-if="keyword && searchLocations[row.id]?.fromLine">命中第 {{ searchLocations[row.id].fromLine }}–{{ searchLocations[row.id].toLine }} 行</small><time>{{ new Date(row.updatedAt).toLocaleDateString('zh-CN') }}</time></button></li></ul><p v-if="!busy && !rows.length">当前范围没有条目。</p><nav><button :disabled="page <= 1 || busy" @click="page--; load()">上一页</button><span>{{ page }}</span><button :disabled="page * 20 >= total || busy" @click="page++; load()">下一页</button></nav></aside>
+        <aside><p>{{ total }} 个条目</p><p class="tag-order-help">选择标签并查找后可调整标签内顺序。筛选结果显示原序号，未标标签的条目不编号。</p><button v-if="orderPending" :disabled="ordering" @click="moveEntry(orderPending.body.entryId)">确认上次排序请求</button><ul><li v-for="row in rows" :key="row.id"><button :class="{ active: selected?.id === row.id }" @click="open(row.id)"><small>{{ kindNames[row.content.kind] }}</small><small v-if="numberLabel(row.id)" class="tag-number">{{ numberLabel(row.id) }}</small><strong>{{ row.content.title }}</strong><span v-if="keyword">{{ searchLocations[row.id]?.excerpt }}</span><small v-if="keyword && searchLocations[row.id]?.page">命中第 {{ searchLocations[row.id].page }} 页</small><small v-else-if="keyword && searchLocations[row.id]?.fromLine">命中第 {{ searchLocations[row.id].fromLine }}–{{ searchLocations[row.id].toLine }} 行</small><time>{{ new Date(row.updatedAt).toLocaleDateString('zh-CN') }}</time></button><div v-if="tag && tag === appliedTag && !trash && tagNumbers[row.id]?.[tag]" class="tag-order-actions"><button :disabled="ordering || busy || dirty || !!orderPending || tagNumbers[row.id][tag] <= 1" @click="moveEntry(row.id, -1)">上移</button><button :disabled="ordering || busy || dirty || !!orderPending || tagNumbers[row.id][tag] >= (tagOrder?.entryIds.length || 0)" @click="moveEntry(row.id, 1)">下移</button><button :disabled="ordering || busy || dirty || !!orderPending" @click="moveEntry(row.id)">指定位置</button></div></li></ul><p v-if="!busy && !rows.length">当前范围没有条目。</p><nav><button :disabled="page <= 1 || busy" @click="page--; load()">上一页</button><span>{{ page }}</span><button :disabled="page * 20 >= total || busy" @click="page++; load()">下一页</button></nav></aside>
         <section class="detail">
           <template v-if="editor">
             <div v-if="keyword && selected && searchLocations[selected.id]?.excerpt" class="search-context"><strong>本次检索命中</strong><span v-if="searchLocations[selected.id].page"> · 文件第 {{ searchLocations[selected.id].page }} 页</span><span v-else-if="searchLocations[selected.id].fromLine"> · 第 {{ searchLocations[selected.id].fromLine }}–{{ searchLocations[selected.id].toLine }} 行</span><p>{{ searchLocations[selected.id].excerpt }}</p></div>
@@ -352,4 +388,8 @@ onBeforeUnmount(() => { disposed = true; clearPrivate(); clearInterval(timer); w
 .label-edit{margin-top:12px;padding:16px;border:1px solid #cbd8ec;border-radius:8px;background:#f6f9ff}
 .label-edit label{display:grid;gap:8px;max-width:420px;margin:12px 0}.label-edit p{margin:8px 0;color:#52657d}.label-edit-error{color:#b23d32!important}
 @media(max-width:760px){.label-row-main{align-items:flex-start;flex-direction:column}.label-manager{padding:14px}}
+</style>
+
+<style scoped>
+.tag-number{font-weight:600;color:var(--brand-accent-strong,#285de0)}.tag-order-help{font-size:12px;line-height:1.7}.tag-order-actions{display:flex;gap:6px;margin:6px 0 14px}.tag-order-actions button{width:auto;padding:5px 9px;font-size:12px}
 </style>

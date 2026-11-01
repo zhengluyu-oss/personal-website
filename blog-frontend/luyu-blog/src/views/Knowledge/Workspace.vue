@@ -10,6 +10,9 @@ import { knowledgeRequest as request, knowledgeDownloadFile, type KnowledgeCapab
 type SearchLocation = { excerpt: string; page: number | null; fromLine: number | null; toLine: number | null }
 type Segment = { ordinal: number; page: number | null; fromLine: number | null; toLine: number | null; text: string }
 const user = useUserStore()
+const tagNumbers = ref<Record<string, Record<string, number>>>({})
+const numberLabel = (id: string) => Object.entries(tagNumbers.value[id] || {}).filter(([key]) => !tag.value || key === tag.value).map(([key, value]) => `${labels.value.find(l => l.id === key)?.name || '标签'} · ${value}`).join(' / ')
+
 const route = useRoute()
 const capability = ref<KnowledgeCapability>(), rows = ref<KnowledgeEntry[]>([]), labels = ref<KnowledgeLabel[]>([])
 const selected = ref<KnowledgeEntry>(), currentFile = ref<KnowledgeFileInfo>(), segments = ref<Segment[]>([])
@@ -25,7 +28,7 @@ let timer: ReturnType<typeof setInterval> | undefined
 
 function clear() {
   generation++; listSequence++; detailSequence++; segmentSequence++
-  rows.value = []; labels.value = []; selected.value = undefined; currentFile.value = undefined
+  tagNumbers.value = {}; rows.value = []; labels.value = []; selected.value = undefined; currentFile.value = undefined
   segments.value = []; showSegments.value = false; total.value = 0; matches.value = {}
 }
 function denied() { clear(); capability.value = undefined; error.value = '查看资格已变化，请重新确认权限。' }
@@ -54,7 +57,9 @@ async function load() {
       }),
       request<KnowledgeLabel[]>('GET', '/view/labels'),
     ])
+    const numbers = await request<Record<string, Record<string, number>>>('POST', '/view/tag-numbers', result.records.map(hit => hit.entry.id))
     if (disposed || seq !== listSequence || current !== generation) return
+    tagNumbers.value = numbers
     rows.value = result.records.map(hit => hit.entry)
     matches.value = Object.fromEntries(result.records.map(({ entry, excerpt, page, fromLine, toLine }) =>
       [entry.id, { excerpt, page, fromLine, toLine }]))
@@ -103,6 +108,7 @@ watch(() => user.token, () => { void check(true) }, { immediate: true, flush: 's
 watch(() => route.query.entry, id => {
   if (capability.value?.allowed && capability.value.available && typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(id) && selected.value?.id !== id) void open(id)
 })
+watch([tag, category, keyword, kind], () => { listSequence++; busy.value = false; tagNumbers.value = {};  }, { flush: 'sync' })
 onMounted(() => {
   window.addEventListener('knowledge-access-invalid', denied)
   window.addEventListener('focus', refresh)
@@ -126,7 +132,7 @@ onBeforeUnmount(() => { disposed = true; clear(); clearInterval(timer); window.r
         <button :disabled="busy">{{ busy ? '读取中…' : '查找' }}</button>
       </form>
       <div class="columns" :class="{ 'reading-mode': selected }">
-        <aside v-if="!selected"><p>{{ total }} 个条目</p><ul><li v-for="row in rows" :key="row.id"><button @click="open(row.id)"><small>{{ kinds[row.content.kind] }}</small><strong>{{ row.content.title }}</strong><span v-if="keyword">{{ matches[row.id]?.excerpt }}</span><small v-if="keyword && matches[row.id]?.page">命中第 {{ matches[row.id].page }} 页</small><small v-else-if="keyword && matches[row.id]?.fromLine">命中第 {{ matches[row.id].fromLine }}–{{ matches[row.id].toLine }} 行</small><time>{{ new Date(row.updatedAt).toLocaleDateString('zh-CN') }}</time></button></li></ul><p v-if="!busy && !rows.length">当前范围没有条目。</p><nav><button :disabled="page <= 1 || busy" @click="page--; load()">上一页</button><span>{{ page }}</span><button :disabled="page * 20 >= total || busy" @click="page++; load()">下一页</button></nav></aside>
+        <aside v-if="!selected"><p>{{ total }} 个条目</p><ul><li v-for="row in rows" :key="row.id"><button @click="open(row.id)"><small>{{ kinds[row.content.kind] }}</small><small v-if="numberLabel(row.id)" class="tag-number">{{ numberLabel(row.id) }}</small><strong>{{ row.content.title }}</strong><span v-if="keyword">{{ matches[row.id]?.excerpt }}</span><small v-if="keyword && matches[row.id]?.page">命中第 {{ matches[row.id].page }} 页</small><small v-else-if="keyword && matches[row.id]?.fromLine">命中第 {{ matches[row.id].fromLine }}–{{ matches[row.id].toLine }} 行</small><time>{{ new Date(row.updatedAt).toLocaleDateString('zh-CN') }}</time></button></li></ul><p v-if="!busy && !rows.length">当前范围没有条目。</p><nav><button :disabled="page <= 1 || busy" @click="page--; load()">上一页</button><span>{{ page }}</span><button :disabled="page * 20 >= total || busy" @click="page++; load()">下一页</button></nav></aside>
         <section v-if="selected" class="detail">
             <button class="back-to-list" type="button" @click="closeDetail">← 返回条目列表</button>
             <div v-if="keyword && matches[selected.id]?.excerpt" class="search-context"><strong>本次检索命中</strong><span v-if="matches[selected.id].page"> · 文件第 {{ matches[selected.id].page }} 页</span><span v-else-if="matches[selected.id].fromLine"> · 第 {{ matches[selected.id].fromLine }}–{{ matches[selected.id].toLine }} 行</span><p>{{ matches[selected.id].excerpt }}</p></div>
@@ -159,4 +165,8 @@ aside li time{align-self:end}
 .detail :deep(.md-editor-preview pre){max-width:100%;overflow-x:auto}
 .detail :deep(.md-editor-preview table){display:block;max-width:100%;overflow-x:auto}
 @media(max-width:760px){.columns{grid-template-columns:minmax(0,1fr)}}
+</style>
+
+<style scoped>
+.tag-number{font-weight:600;color:var(--brand-accent-strong,#285de0)}.tag-order-help{font-size:12px;line-height:1.7}.tag-order-actions{display:flex;gap:6px;margin:6px 0 14px}.tag-order-actions button{width:auto;padding:5px 9px;font-size:12px}
 </style>

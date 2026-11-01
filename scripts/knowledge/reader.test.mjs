@@ -10,6 +10,7 @@ const { JSDOM } = admin('jsdom')
 const dom = new JSDOM('<html><body></body></html>', { url: 'https://fixture.invalid/knowledge' })
 for (const key of ['window', 'document', 'Document', 'Element', 'HTMLElement', 'SVGElement', 'Node', 'navigator'])
   Object.defineProperty(globalThis, key, { configurable: true, value: dom.window[key] })
+window.scrollTo=()=>{}
 const Vue = req('vue')
 const { parse, compileScript } = req('vue/compiler-sfc')
 const { build } = createRequire(req.resolve('vite/package.json'))('esbuild')
@@ -21,7 +22,8 @@ globalThis.__knowledgeReaderFixture = { user, request: async (method, path, data
   calls.push({ method, path, data })
   if (path === '/view/capabilities') return { allowed: true, available: true, canManage: true, filesAvailable: true, message: 'ready' }
   if (path === '/view/search') return { records: [{ entry, excerpt: '命中正文', page: null, fromLine: null, toLine: null }], total: 1, page: 1, pageSize: 20 }
-  if (path === '/view/labels') return []
+  if (path === '/view/tag-numbers') return {[id]:{'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa':7}}
+  if (path === '/view/labels') return [{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',kind:'TAG',name:'示例标签'}]
   if (path === '/view/entries/' + id) return structuredClone(entry)
   throw new Error('Unexpected request ' + method + ' ' + path)
 } }
@@ -30,12 +32,12 @@ const filename = root + '/src/views/Knowledge/Workspace.vue'
 const { descriptor } = parse(readFileSync(filename, 'utf8'), { filename })
 const source = compileScript(descriptor, { id: 'knowledge-reader-fixture', inlineTemplate: true }).content
 const built = await build({ stdin: { contents: source, loader: 'ts', resolveDir: root }, bundle: true, write: false, platform: 'node', format: 'cjs', external: ['vue'], plugins: [{ name: 'fixture', setup(builder) {
-  builder.onResolve({ filter: /^(md-editor-v3|@\/|\.\/Connections\.vue)/ }, args => ({ path: args.path, namespace: 'fixture' }))
+  builder.onResolve({ filter: /^(vue-router|md-editor-v3|@\/|\.\/(Connections|PrivateMarkdown)\.vue)/ }, args => ({ path: args.path, namespace: 'fixture' }))
   builder.onLoad({ filter: /.*/, namespace: 'fixture' }, args => ({ loader: 'js', contents: args.path.includes('knowledge-api')
     ? 'export const knowledgeRequest=globalThis.__knowledgeReaderFixture.request; export const knowledgeDownloadFile=async()=>{};'
     : args.path.includes('store/modules/user') ? 'export default ()=>globalThis.__knowledgeReaderFixture.user;'
       : args.path.includes('diary-preview') ? 'export const sanitizePrivateDiary=x=>x;'
-        : args.path === 'md-editor-v3' ? 'export const MdPreview={props:["modelValue"],template:"<article>{{modelValue}}</article>"};'
+        : args.path === 'vue-router' ? 'export const useRoute=()=>({query:{}});' : args.path.includes('PrivateMarkdown.vue') ? 'export default {props:["body"],template:"<article>{{body}}</article>"};' : args.path === 'md-editor-v3' ? 'export const MdPreview={props:["modelValue"],template:"<article>{{modelValue}}</article>"};'
           : args.path.includes('Connections.vue') ? 'export default {props:["entry","candidates","canManage"],template:"<section>知识关联</section>"};' : '' }))
 } }] })
 const module = { exports: {} }
@@ -50,10 +52,11 @@ test('owner has read-only public knowledge view and issues no write request', as
     assert.doesNotMatch(host.textContent, /新建条目|保存条目|上传文件|分类与标签管理|整理为博客草稿/)
     assert.equal(host.querySelector('textarea'), null)
     const row = [...host.querySelectorAll('button')].find(button => button.textContent.includes('已有笔记'))
+    assert.match(host.querySelector('.tag-number').textContent,/示例标签 · 7/)
     assert.ok(row); row.click(); await flush()
     assert.match(host.textContent, /可阅读的内容/)
     assert.equal(host.querySelector('textarea'), null)
     assert.equal(calls.some(call => call.path.startsWith('/manage/') || !['GET', 'POST'].includes(call.method)), false)
-    assert.equal(calls.some(call => call.method === 'POST' && call.path !== '/view/search'), false)
+    assert.equal(calls.some(call => call.method === 'POST' && !['/view/search','/view/tag-numbers'].includes(call.path)), false)
   } finally { app.unmount(); host.remove() }
 })

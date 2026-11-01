@@ -10,6 +10,7 @@ for(const key of ['window','document','Document','Element','HTMLElement','SVGEle
 window.confirm=()=>true
 const Vue=req('vue'),{parse,compileScript}=req('vue/compiler-sfc'),{build}=createRequire(req.resolve('vite/package.json'))('esbuild')
 const authorization=Vue.ref('fixture'),calls=[]
+let orderError, ordinal=7
 let canManage=true,allowed=true,saveError,readReply,saveReply,labelReply=[]
 const id='11111111-1111-4111-8111-111111111111'
 const content={kind:'NOTE',title:'合成笔记',body:'合成正文',sourceUrl:'',categoryId:null,tagIds:[]}
@@ -18,6 +19,9 @@ globalThis.__knowledgeFixture={authorization,request:async(method,path,data)=>{
   calls.push({method,path,data})
   if(path==='/view/capabilities')return{allowed,available:true,canManage,filesAvailable:false,message:'fixture'}
   if(path==='/view/search')return{records:[{entry,excerpt:'<img src=x onerror=alert(1)>中文命中',page:2,fromLine:null,toLine:null}],total:1,page:1,pageSize:20}
+  if(path==='/view/tag-numbers')return{[id]:{'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa':ordinal}}
+  if(path.startsWith('/view/tags/'))return{entryIds:[id,'22222222-2222-4222-8222-222222222222'],digest:'fixture-digest'}
+  if(path.startsWith('/manage/tags/')){if(orderError)throw orderError;return{entryIds:[id],digest:'updated'}}
   if(path==='/view/labels')return labelReply
   if(path==='/view/entries/'+id)return readReply||structuredClone(entry)
   if(path==='/manage/entries'){if(saveError)throw saveError;if(saveReply)return saveReply;return{id:data.entryId,revision:1,savedAt:'2026-10-20T00:00:00Z',deleted:false}}
@@ -75,3 +79,15 @@ test('conflict keeps edited text and unsaved changes block navigation',async()=>
   saveError=Object.assign(new Error('冲突'),{status:409});button(f.host,'保存条目').click();await flush()
   assert.match(f.host.textContent,/服务器版本已变化/);assert.equal(f.host.querySelector('textarea').value,'发生冲突但不能丢失')
 }finally{window.confirm=originalConfirm;f.close()}})
+
+
+test('tag sequence is displayed as the server ordinal rather than the row index',async()=>{const f=await mount();try{assert.match(f.host.querySelector('.tag-number').textContent,/7/);assert.notEqual(f.host.querySelector('.tag-number').textContent,'1')}finally{f.close()}})
+
+
+test('manual ordering retries its original request after a lost acknowledgement',async()=>{
+ labelReply=[{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',kind:'TAG',name:'排序标签',revision:1}];const f=await mount();ordinal=1
+ try{const select=f.host.querySelector('select[aria-label="标签"]');select.value=labelReply[0].id;select.dispatchEvent(new window.Event('change',{bubbles:true}));button(f.host,'查找').click();await flush();
+ orderError=new Error('确认丢失');button(f.host,'下移').click();await flush();assert.match(f.host.textContent,/确认上次排序请求/)
+ orderError=undefined;button(f.host,'确认上次排序请求').click();await flush();const writes=calls.filter(c=>c.path.startsWith('/manage/tags/'));assert.equal(writes.length,2);assert.deepEqual(writes[0].data,writes[1].data);assert.equal(writes[0].data.position,2)
+ }finally{orderError=undefined;ordinal=7;f.close()}
+})
