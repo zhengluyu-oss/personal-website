@@ -13,7 +13,7 @@ export interface KnowledgeFileInfo { version: string; filename: string; mime: st
 export interface KnowledgeFileCommit { ack: KnowledgeAck; accepted: boolean; version: string | null }
 const client = axios.create({ baseURL: import.meta.env.VITE_APP_BASE_API || '/api', timeout: 12000, withCredentials: false })
 export async function knowledgeRequest<T>(method: string, path: string, data?: unknown): Promise<T> {
-  if (!path.startsWith('/view/') || (method.toUpperCase() !== 'GET' && !(method.toUpperCase() === 'POST' && ['/view/search', '/view/relations/graph', '/view/relations/neighbors'].some(prefix => path.split('?')[0] === prefix))))
+  if (!path.startsWith('/view/') || (method.toUpperCase() !== 'GET' && !(method.toUpperCase() === 'POST' && ['/view/search', '/view/tag-numbers', '/view/relations/graph', '/view/relations/neighbors'].some(prefix => path.split('?')[0] === prefix))))
     throw new Error('前台知识库仅支持阅读；请到管理后台维护')
   const token = GET_TOKEN()
   if (new URL(client.defaults.baseURL || '/api', location.href).origin !== location.origin) throw new Error('知识库仅允许同源请求')

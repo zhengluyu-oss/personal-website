@@ -16,12 +16,14 @@ const { parse, compileScript } = req('vue/compiler-sfc')
 const { build } = createRequire(req.resolve('vite/package.json'))('esbuild')
 const user = Vue.reactive({ token: 'owner-token' })
 const calls = []
+let numbersFailure
 const id = '11111111-1111-4111-8111-111111111111'
 const entry = { id, revision: 2, content: { kind: 'NOTE', title: '已有笔记', body: '可阅读的内容', sourceUrl: '', categoryId: null, tagIds: [] }, fileVersion: null, updatedAt: '2026-10-20T00:00:00Z', deletedAt: null }
 globalThis.__knowledgeReaderFixture = { user, request: async (method, path, data) => {
   calls.push({ method, path, data })
   if (path === '/view/capabilities') return { allowed: true, available: true, canManage: true, filesAvailable: true, message: 'ready' }
   if (path === '/view/search') return { records: [{ entry, excerpt: '命中正文', page: null, fromLine: null, toLine: null }], total: 1, page: 1, pageSize: 20 }
+  if (path === '/view/tag-numbers' && numbersFailure) throw numbersFailure
   if (path === '/view/tag-numbers') return {[id]:{'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa':7}}
   if (path === '/view/labels') return [{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',kind:'TAG',name:'示例标签'}]
   if (path === '/view/entries/' + id) return structuredClone(entry)
@@ -59,4 +61,11 @@ test('owner has read-only public knowledge view and issues no write request', as
     assert.equal(calls.some(call => call.path.startsWith('/manage/') || !['GET', 'POST'].includes(call.method)), false)
     assert.equal(calls.some(call => call.method === 'POST' && !['/view/search','/view/tag-numbers'].includes(call.path)), false)
   } finally { app.unmount(); host.remove() }
+})
+
+
+test('failed numbering does not hide the entries or label options',async()=>{
+ numbersFailure=new Error('fixture number lookup failed')
+ const host=document.createElement('div');document.body.append(host);const app=Vue.createApp(module.exports.default);app.config.warnHandler=()=>{};app.mount(host)
+ try{await flush();assert.match(host.textContent,/已有笔记/);assert.match(host.querySelector('select[aria-label="标签"]').textContent,/示例标签/);assert.match(host.textContent,/仍可正常阅读/)}finally{app.unmount();host.remove();numbersFailure=undefined}
 })

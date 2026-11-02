@@ -57,13 +57,18 @@ async function load() {
       }),
       request<KnowledgeLabel[]>('GET', '/view/labels'),
     ])
-    const numbers = await request<Record<string, Record<string, number>>>('POST', '/view/tag-numbers', result.records.map(hit => hit.entry.id))
     if (disposed || seq !== listSequence || current !== generation) return
-    tagNumbers.value = numbers
+    tagNumbers.value = {}
     rows.value = result.records.map(hit => hit.entry)
     matches.value = Object.fromEntries(result.records.map(({ entry, excerpt, page, fromLine, toLine }) =>
       [entry.id, { excerpt, page, fromLine, toLine }]))
     total.value = result.total; labels.value = options
+    try {
+      const numbers = await request<Record<string, Record<string, number>>>('POST', '/view/tag-numbers', result.records.map(hit => hit.entry.id))
+      if (!disposed && seq === listSequence && current === generation) tagNumbers.value = numbers
+    } catch (failure: any) {
+      if (!disposed && seq === listSequence && current === generation) error.value = [401, 403].includes(Number(failure.status)) ? failure.message : '序号暂时无法显示，条目与分类仍可正常阅读。请稍后重试。'
+    }
   } catch (failure: any) { if (seq === listSequence && current === generation) error.value = failure.message }
   finally { if (seq === listSequence && current === generation) busy.value = false }
 }
