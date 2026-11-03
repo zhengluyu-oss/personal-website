@@ -1,0 +1,24 @@
+/home/wwwroot/zhengluyu-website/log/frontend-access.log
+/home/wwwroot/zhengluyu-website/log/frontend-error.log {
+    daily
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    create 0640 www-data adm
+    sharedscripts
+    postrotate
+        invoke-rc.d nginx rotate >/dev/null 2>&1
+    endscript
+}
+
+/home/wwwroot/zhengluyu-website/log/backend.log {
+    daily
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+}
