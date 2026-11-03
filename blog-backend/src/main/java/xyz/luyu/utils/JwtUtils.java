@@ -275,7 +275,7 @@ public class JwtUtils {
             List<RolePermission> rolePermissions = rolePermissionMapper.selectBatchIds(roles.stream().map(Role::getId).toList());
             // 查询角色权限
             List<Long> pIds = rolePermissions.stream().map(RolePermission::getPermissionId).toList();
-            List<Permission> permissions = permissionMapper.selectBatchIds(pIds);
+            List<Permission> permissions = pIds.isEmpty() ? List.of() : permissionMapper.selectBatchIds(pIds);
             // 组合角色，权限
             List<String> list = permissions.stream().map(Permission::getPermissionKey).collect(Collectors.toList());
             roles.forEach(role -> list.add(SecurityConst.ROLE_PREFIX + role.getRoleKey()));

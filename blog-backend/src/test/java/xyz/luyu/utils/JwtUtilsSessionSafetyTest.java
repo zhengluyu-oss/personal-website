@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -136,6 +137,23 @@ class JwtUtilsSessionSafetyTest {
         assertNotNull(user);
         assertTrue(user.getAuthorities().isEmpty());
         verifyNoInteractions(rolePermissionMapper, permissionMapper);
+    }
+
+    @Test
+    void roleWithoutPermissionsDoesNotFailTokenAuthentication() {
+        when(userMapper.selectById(USER_ID)).thenReturn(activeUser());
+        when(userRoleMapper.selectList(any())).thenReturn(List.of(
+                UserRole.builder().userId(USER_ID).roleId(7L).build()));
+        when(roleMapper.selectById(7L)).thenReturn(new Role()
+                .setId(7L).setRoleKey("ADMIN").setStatus(0).setIsDeleted(0));
+        when(rolePermissionMapper.selectBatchIds(List.of(7L))).thenReturn(List.of());
+
+        UserDetails user = jwtUtils.toUser(jwtForUser());
+
+        assertNotNull(user);
+        assertEquals(List.of("ROLE_ADMIN", "ADMIN"), user.getAuthorities().stream()
+                .map(authority -> authority.getAuthority()).toList());
+        verifyNoInteractions(permissionMapper);
     }
 
     private User activeUser() {
