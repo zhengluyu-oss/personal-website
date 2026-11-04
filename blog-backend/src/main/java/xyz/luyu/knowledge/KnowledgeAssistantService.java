@@ -56,11 +56,28 @@ public final class KnowledgeAssistantService {
         long owner=requireReady(),account=SecurityUtils.getUserId();
         String question=request.question().strip();List<Turn> history=request.history()==null?List.of():request.history();
         String previous=history.isEmpty()?null:history.get(history.size()-1).question();
-        List<String> terms=KnowledgeAssistantQuery.terms(question,previous);
+        boolean location=KnowledgeAssistantQuery.asksForLocation(question);
+        String focus=location?KnowledgeAssistantQuery.locationTerm(question):"";
+        List<String> terms=location?(focus.isBlank()?List.of():List.of(focus)):KnowledgeAssistantQuery.terms(question,previous);
         if(terms.isEmpty())return noEvidence();
         var evidence=store.find(owner,terms,properties.getMaxEvidence(),history.isEmpty()?properties.getMaxEvidenceChars():Math.min(4000,properties.getMaxEvidenceChars()));
         if(evidence.isEmpty())return noEvidence();
         recheck(owner,evidence);
+        if(location){
+            var item=evidence.get(0);var place=store.location(owner,item,focus);
+            if(place==null)return noEvidence();
+            recheck(owner,List.of(item));
+            StringBuilder answer=new StringBuilder("在知识库条目《").append(item.title()).append("》中找到“").append(focus).append("”。");
+            answer.append(place.category()==null?"该条目未设置分类。 ":"分类："+place.category()+"。 ");
+            answer.append(place.tags().isEmpty()?"该条目未设置标签。 ":"标签："+String.join("、",place.tags())+"。 ");
+            if(place.section()!=null)answer.append("所在部分：").append(place.section()).append("。 ");
+            else if(item.page()!=null)answer.append("见第 ").append(item.page()).append(" 页。 ");
+            else if(item.fromLine()!=null)answer.append("见第 ").append(item.fromLine()).append(" 行。 ");
+            else answer.append("未找到明确的章节标题。 ");
+            answer.append("请打开下方来源核对原文。");
+            Source source=new Source("S1",item.entryId(),item.revision(),item.fileVersion(),item.title(),item.excerpt(),item.page(),item.fromLine(),item.toLine(),"/knowledge?entry="+item.entryId());
+            return new Answer("ANSWERED",answer.toString(),List.of(source),List.of());
+        }
         var sources=new LinkedHashMap<String,KnowledgeAssistantStore.Evidence>();
         var prompt=new StringBuilder("当前问题：").append(question).append("\n");
         if(!history.isEmpty()){

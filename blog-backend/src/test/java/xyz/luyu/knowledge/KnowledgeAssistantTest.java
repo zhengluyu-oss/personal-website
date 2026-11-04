@@ -9,6 +9,7 @@ import xyz.luyu.domain.entity.LoginUser;
 import xyz.luyu.domain.entity.User;
 import java.net.URI;
 import java.util.*;
+import static xyz.luyu.knowledge.KnowledgeModels.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -39,6 +40,32 @@ class KnowledgeAssistantTest {
         authorize();when(store.find(eq(7L),anyList(),anyInt(),anyInt())).thenReturn(List.of());
         assertEquals("NO_EVIDENCE",service.ask(new KnowledgeAssistantService.Question("Redis 持久化")).state());
         verify(store,never()).reserve(anyLong(),anyLong(),any(),any());verifyNoInteractions(cloud);
+    }
+    @Test void locationAnswerUsesVerifiedMetadataWithoutModel(){
+        authorize();var id=UUID.randomUUID();var evidence=new KnowledgeAssistantStore.Evidence(id,3,null,false,"Linux 命令","九十一、查看主机名\n```bash\nhostname\n```",null,null,null);
+        when(store.find(eq(7L),eq(List.of("hostname")),anyInt(),anyInt())).thenReturn(List.of(evidence));
+        when(store.current(7,evidence)).thenReturn(true);
+        when(store.location(7,evidence,"hostname")).thenReturn(new KnowledgeAssistantStore.Location("操作系统",List.of("Linux","常用命令"),"九十一、查看主机名"));
+        var result=service.ask(new KnowledgeAssistantService.Question("hostname在知识库的哪个标签的哪个部分有介绍帮我找一下"));
+        assertEquals("ANSWERED",result.state());
+        assertTrue(result.answer().contains("标签：Linux、常用命令"));
+        assertTrue(result.answer().contains("所在部分：九十一、查看主机名"));
+        assertEquals("/knowledge?entry="+id,result.sources().get(0).url());
+        assertTrue(result.claims().isEmpty());
+        verifyNoInteractions(cloud);verify(store,never()).reserve(anyLong(),anyLong(),any(),any());
+    }
+    @Test void locationMetadataComesFromCurrentEntryAndLabels(){
+        KnowledgeStore knowledge=mock(KnowledgeStore.class);
+        when(access.store()).thenReturn(knowledge);
+        var assistant=new KnowledgeAssistantStore(access);
+        UUID id=UUID.randomUUID(),category=UUID.randomUUID(),tag=UUID.randomUUID();
+        var entry=new Entry(id,3,new Content(Kind.NOTE,"Linux 命令","九十一、查看主机名\n```bash\nhostname\n```",null,category,List.of(tag)),null,null,null,null);
+        var evidence=new KnowledgeAssistantStore.Evidence(id,3,null,false,"Linux 命令","hostname",null,null,null);
+        when(knowledge.read(7,id,false)).thenReturn(entry);
+        when(knowledge.labels(7)).thenReturn(List.of(new Label(category,"CATEGORY","操作系统",null,1),new Label(tag,"TAG","Linux",category,1)));
+        var place=assistant.location(7,evidence,"hostname");
+        assertEquals("操作系统",place.category());assertEquals(List.of("Linux"),place.tags());assertEquals("九十一、查看主机名",place.section());
+        assertNull(assistant.location(7,new KnowledgeAssistantStore.Evidence(id,2,null,false,"Linux 命令","hostname",null,null,null),"hostname"));
     }
     @Test void disabledConfigurationStopsBeforeDatabaseAndModel(){
         authorize();reset(store);config.setEnabled(false);

@@ -27,4 +27,14 @@ class KnowledgeAssistantQueryTest {
     @Test void longAsciiIdentifierDoesNotExceedSearchLimit(){
         assertTrue(KnowledgeAssistantQuery.terms("x".repeat(101)+" Redis",null).stream().allMatch(term->term.length()<=100));
     }
+    @Test void locationQuestionTargetsTopicAndFindsNearestHeading(){
+        String question="hostname在知识库的哪个标签的哪个部分有介绍帮我找一下";
+        assertTrue(KnowledgeAssistantQuery.asksForLocation(question));
+        assertEquals("hostname",KnowledgeAssistantQuery.locationTerm(question));
+        assertEquals("九十一、查看主机名",KnowledgeAssistantQuery.section("# Linux\n\n九十一、查看主机名\n\n```bash\nhostname\n```", "hostname"));
+        assertEquals("安装",KnowledgeAssistantQuery.section("## 安装\n\n运行 Redis", "Redis"));
+        assertEquals("hostname",KnowledgeAssistantQuery.section("# Linux\n## hostname\n运行示例", "hostname"));
+        assertNull(KnowledgeAssistantQuery.section("没有标题但提到 hostname", "hostname"));
+        assertFalse(KnowledgeAssistantQuery.asksForLocation("Redis 数据在哪里保存？"));
+    }
 }

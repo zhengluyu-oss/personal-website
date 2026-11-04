@@ -8,6 +8,7 @@ import static xyz.luyu.knowledge.KnowledgeModels.*;
 @Component
 public final class KnowledgeAssistantStore {
     public record Evidence(UUID entryId,long revision,UUID fileVersion,boolean fileSource,String title,String excerpt,Integer page,Integer fromLine,Integer toLine) {}
+    record Location(String category,List<String> tags,String section) {}
     private record Ranked(Evidence evidence,int score) {}
     private final KnowledgeAccess access;
     KnowledgeAssistantStore(KnowledgeAccess access){this.access=access;}
@@ -69,6 +70,17 @@ public final class KnowledgeAssistantStore {
         if(excerpt==0&&title<Math.min(2,terms.size()))return;
         if(terms.size()>1&&excerpt+title<2&&terms.stream().noneMatch(term->term.length()>=3&&evidence.excerpt().toLowerCase(Locale.ROOT).contains(term.toLowerCase(Locale.ROOT))))return;
         ranked.add(new Ranked(evidence,excerpt*5+title*2+(evidence.fileSource()?1:0)));
+    }
+    Location location(long owner,Evidence evidence,String term){
+        Entry entry=access.store().read(owner,evidence.entryId(),false);
+        if(entry.revision()!=evidence.revision()||!Objects.equals(entry.fileVersion(),evidence.fileVersion()))return null;
+        String body=evidence.fileSource()?evidence.excerpt():entry.content().body();
+        if(!body.toLowerCase(Locale.ROOT).contains(term.toLowerCase(Locale.ROOT)))return null;
+        Map<UUID,Label> labels=new HashMap<>();
+        for(Label label:access.store().labels(owner))labels.put(label.id(),label);
+        Label category=labels.get(entry.content().categoryId());
+        List<String> tags=entry.content().tagIds().stream().map(labels::get).filter(Objects::nonNull).map(Label::name).toList();
+        return new Location(category==null?null:category.name(),tags,KnowledgeAssistantQuery.section(body,term));
     }
     boolean current(long owner,Evidence evidence){
         try {Entry entry=access.store().read(owner,evidence.entryId(),false);

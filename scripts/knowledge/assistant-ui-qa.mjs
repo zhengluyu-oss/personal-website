@@ -22,7 +22,7 @@ try {
       else if (path === '/knowledge/view/assistant/ask') {
         const request = JSON.parse(route.request().postData() || '{}'); asks.push(request)
         const answer = request.question.includes('注入') ? '<img src=x onerror="window.assistantInjected=true">' : 'Redis 使用 AOF 记录命令。'
-        data = { state: 'ANSWERED', answer, claims: [{ text: answer, quote: 'AOF 记录命令', sourceId: 'S1' }], sources: [{ id: 'S1', entryId, revision: 1, fileVersion: null, title: 'Redis 持久化', excerpt: 'Redis 使用 AOF 记录命令。', page: null, fromLine: null, toLine: null, url: `/knowledge?entry=${entryId}` }] }
+        data = { state: 'ANSWERED', answer, claims: [{ text: answer, quote: 'AOF 记录命令', sourceId: 'S1' }], sources: [{ id: 'S1', entryId, revision: 1, fileVersion: null, title: 'Redis 持久化', excerpt: '## Redis 持久化\n```text\nRedis 使用 AOF 记录命令。\n```', page: null, fromLine: null, toLine: null, url: `/knowledge?entry=${entryId}` }] }
       }
       else if (path === '/knowledge/view/capabilities') data = { allowed: true, available: true, canManage: false, filesAvailable: false, message: '' }
       else if (path === '/knowledge/view/search') data = { records: [{ entry, excerpt: '', page: null, fromLine: null, toLine: null }], total: 1, page: 1, pageSize: 20 }
@@ -57,12 +57,14 @@ try {
     await panel.getByLabel('向知识库提问').fill('Redis 持久化')
     await panel.getByRole('button', { name: '发送' }).click()
     await panel.getByText('Redis 使用 AOF 记录命令。', { exact: true }).first().waitFor()
+    assert.equal((await panel.locator('.evidence pre code').first().textContent())?.trim(), 'Redis 使用 AOF 记录命令。', 'source Markdown renders as a code block')
     assert.deepEqual(asks[0].history, [], 'first question has no history')
     await panel.getByLabel('向知识库提问').fill('注入')
     await panel.getByRole('button', { name: '发送' }).click()
-    await panel.getByText('<img src=x onerror="window.assistantInjected=true">', { exact: true }).waitFor()
+    await panel.locator('.claim').nth(1).waitFor()
     assert.equal(asks[1].history.length, 1, 'follow-up sends recent turn')
-    assert.equal(await page.evaluate(() => window.assistantInjected === true), false, 'model HTML remains text')
+    assert.equal(await panel.locator('img').count(), 0, 'model HTML cannot inject images')
+    assert.equal(await page.evaluate(() => window.assistantInjected === true), false, 'model HTML cannot execute')
     await panel.getByRole('button', { name: '清空对话' }).click()
     await panel.getByLabel('向知识库提问').fill('Redis 持久化')
     await panel.getByRole('button', { name: '发送' }).click()
@@ -78,5 +80,5 @@ try {
     await page.getByRole('button', { name: '打开知识库客服' }).waitFor({ state: 'hidden' })
     await context.close()
   }
-  console.log(JSON.stringify({ widths: [360, 390, 430, 1440], routes: ['/', '/blog', '/about', '/blog/articles/1', '/knowledge'], sourceNavigation: true, clearsOnReloadAndRevocation: true }))
+  console.log(JSON.stringify({ widths: [360, 390, 430, 1440], routes: ['/', '/blog', '/about', '/blog/articles/1', '/knowledge'], sourceNavigation: true, markdownRendered: true, clearsOnReloadAndRevocation: true }))
 } finally { await browser.close() }
