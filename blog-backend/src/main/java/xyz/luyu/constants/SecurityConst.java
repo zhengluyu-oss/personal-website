@@ -18,11 +18,6 @@ public class SecurityConst {
     public static final String ARTICLE_CHECK = "/article/auth/**";
 
     /**
-     * 需要校验的树洞接口
-     */
-    public static final String TREE_HOLE_CHECK = "/treeHole/auth/**";
-
-    /**
      * 需要校验的评论接口
      */
     public static final String COMMENT_CHECK = "/comment/auth/**";
@@ -74,7 +69,6 @@ public class SecurityConst {
     public static final String[] AUTH_CHECK_ARRAY = {
             AUTH_CHECK,
             ARTICLE_CHECK,
-            TREE_HOLE_CHECK,
             COMMENT_CHECK,
             FAVORITE_CHECK,
             LIKE_CHECK,

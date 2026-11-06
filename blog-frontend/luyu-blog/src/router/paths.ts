@@ -10,7 +10,6 @@ export const PUBLIC_PATHS = {
   category: '/blog/:slug',
   tags: '/blog/tags',
   tag: '/blog/tags/:id',
-  treeHole: '/tree-hole',
   messages: '/messages',
   message: '/messages/:id',
   links: '/links',

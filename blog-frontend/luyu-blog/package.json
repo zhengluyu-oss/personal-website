@@ -34,8 +34,7 @@
     "screenfull": "^6.0.2",
     "swiper": "^11.1.1",
     "vue": "^3.3.4",
-    "vue-router": "^4.2.4",
-    "vue3-danmaku": "^1.6.0"
+    "vue-router": "^4.2.4"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

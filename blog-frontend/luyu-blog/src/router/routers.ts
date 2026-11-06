@@ -95,15 +95,6 @@ export const constantRouter = [
                 name: 'tag',
                 meta: { title: '文章标签' }
             },
-            // 树洞
-            {
-                path: PUBLIC_PATHS.treeHole,
-                component: () => import('@/views/Amusement/TreeHole/index.vue'),
-                name: 'treeHole',
-                meta: {
-                    title: '心灵树洞',
-                }
-            },
             // 留言版
             {
                 path: PUBLIC_PATHS.messages,

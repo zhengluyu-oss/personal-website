@@ -7,11 +7,6 @@ const footerTrigger = ref<HTMLElement | null>(null)
 const footerReady = ref(false)
 let footerObserver: IntersectionObserver | undefined
 
-const noDisplayComponent = computed(() => {
-  // 树洞不显示底部
-  return useRoute().path != '/tree-hole';
-})
-
 onMounted(() => {
   if (!footerTrigger.value || !('IntersectionObserver' in window)) {
     footerReady.value = true
@@ -39,7 +34,7 @@ onBeforeUnmount(() => footerObserver?.disconnect())
     </router-view>
   </div>
   <div ref="footerTrigger" class="footer-trigger" aria-hidden="true" />
-  <template v-if="noDisplayComponent && footerReady">
+  <template v-if="footerReady">
     <Footer/>
   </template>
   <BottomRightLayout to-top/>

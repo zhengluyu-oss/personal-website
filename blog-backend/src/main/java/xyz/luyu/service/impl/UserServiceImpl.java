@@ -82,9 +82,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private ArticleMapper articleMapper;
 
     @Resource
-    private TreeHoleMapper treeHoleMapper;
-
-    @Resource
     private LeaveWordMapper leaveWordMapper;
 
     @Resource
@@ -368,8 +365,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             favoriteMapper.delete(new LambdaQueryWrapper<Favorite>().in(Favorite::getUserId, ids));
             // 删除用户文章
             articleMapper.delete(new LambdaQueryWrapper<Article>().in(Article::getUserId, ids));
-            // 删除用户树洞
-            treeHoleMapper.delete(new LambdaQueryWrapper<TreeHole>().in(TreeHole::getUserId, ids));
             // 删除用户留言
             leaveWordMapper.delete(new LambdaQueryWrapper<LeaveWord>().in(LeaveWord::getUserId, ids));
             // 删除用户聊天记录

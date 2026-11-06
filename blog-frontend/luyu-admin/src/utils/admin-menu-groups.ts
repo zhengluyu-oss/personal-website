@@ -32,7 +32,7 @@ function groupKeyForPath(path: string) {
     return 'site'
   if (matches(path, ['/system/users', '/system/roles', '/system/menus', '/system/permissions', '/roles', '/permissions', '/users']))
     return 'access'
-  if (matches(path, ['/messages', '/comments', '/collections', '/tree-hole', '/links', '/blacklist']))
+  if (matches(path, ['/messages', '/comments', '/collections', '/links', '/blacklist']))
     return 'community'
   if (matches(path, ['/experiences', '/photos', '/blog/website-share']))
     return 'showcase'

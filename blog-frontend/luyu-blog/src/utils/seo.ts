@@ -9,7 +9,6 @@ const fixedSeo: Record<string, SeoMeta> = {
   category: { title: `博客主题 | ${SITE_NAME}`, description: '按主题浏览陆屿的技术笔记、项目实践与开发经验。', keywords: '博客主题,技术笔记,开发经验,陆屿' },
   tags: { title: `文章标签 | ${SITE_NAME}`, description: '通过标签快速发现感兴趣的技术主题与项目记录。', keywords: '文章标签,技术主题,项目记录' },
   tag: { title: `文章标签 | ${SITE_NAME}`, description: '通过标签快速发现感兴趣的技术主题与项目记录。', keywords: '文章标签,技术主题,项目记录' },
-  treeHole: { title: `心灵树洞 | ${SITE_NAME}`, description: '记录与分享生活中的想法、感受和温暖片段。', keywords: '心灵树洞,生活记录,随想' },
   messageList: { title: `留言板 | ${SITE_NAME}`, description: '欢迎在陆屿留言交流。', keywords: '留言板,博客交流,陆屿' },
   link: { title: `友情链接 | ${SITE_NAME}`, description: '发现值得访问的个人网站与优质博客。', keywords: '友情链接,个人博客,优质网站' },
   music: { title: `音乐空间 | ${SITE_NAME}`, description: '在音乐中短暂停留，分享喜欢的声音。', keywords: '音乐,歌单,个人博客' },

@@ -8,7 +8,6 @@ const env = import.meta.env
 
 const secondaryLinks = [
   { label: '标签', path: '/blog/tags' },
-  { label: '树洞', path: '/tree-hole' },
   { label: '留言板', path: '/messages' },
   { label: '友链', path: '/links' },
 ]

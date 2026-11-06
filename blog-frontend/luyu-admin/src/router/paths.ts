@@ -8,7 +8,6 @@ export const ADMIN_PATHS = {
   tags: '/tags',
   comments: '/comments',
   messages: '/messages',
-  treeHole: '/tree-hole',
   links: '/links',
   photos: '/photos',
   experiences: '/experiences',

@@ -54,7 +54,7 @@ public class SecurityConfiguration {
                                 "/link/list", "/link/email/apply", "/photo/list",
                                 "/oauth/gitee/render", "/oauth/gitee/callback", "/oauth/github/render", "/oauth/github/callback",
                                 "/public/ask-code", "/public/email-delivery", "/site-modules/access", "/site-modules/about",
-                                "/tag/list", "/treeHole/getTreeHoleList", "/websiteInfo/front",
+                                "/tag/list", "/websiteInfo/front",
                                 "/website-share/list", "/website-share/{id}", "/website-share/from-article/{articleId}",
                                 "/experience/list", "/experience/{id}").permitAll()
                         .requestMatchers(HttpMethod.POST,
@@ -67,7 +67,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, "/user/auth/update", "/user/auth/upload/avatar",
                                 "/user/auth/update/email", "/user/auth/third/update/email",
                                 "/comment/auth/add/comment", "/favorite/auth/favorite", "/like/auth/like",
-                                "/leaveWord/auth/userLeaveWord", "/link/auth/apply", "/treeHole/auth/addTreeHole").authenticated()
+                                "/leaveWord/auth/userLeaveWord", "/link/auth/apply").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/favorite/auth/favorite", "/like/auth/like").authenticated()
                         // Existing administrative methods retain their @PreAuthorize checks.
                         .requestMatchers(request -> {
