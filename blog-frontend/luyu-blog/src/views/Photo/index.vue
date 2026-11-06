@@ -129,7 +129,7 @@ const navigateToAlbum = (id: number) => {
 }
 
 // 优化 findAlbumPath 方法
-const findAlbumPath = (targetId: number, currentPath: number[] = []): number[] | null => {
+const findAlbumPath = (targetId: number): number[] | null => {
   // 检查根级相册
   for (const item of galleries.value['root']) {
     if (item.type === 'album') {

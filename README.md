@@ -54,7 +54,7 @@
 | --- | --- |
 | 公开前台 | Vue 3、TypeScript、Vite、Element Plus、Pinia |
 | 管理后台 | Vue 3、TypeScript、Ant Design Vue |
-| 后端 | JDK 17、Spring Boot 3、Spring Security、MyBatis-Plus |
+| 后端 | JDK 17、Spring Boot 4、Spring Security、MyBatis-Plus |
 | 数据与中间件 | MySQL 8、Redis、RabbitMQ |
 | 存储 | 阿里云 OSS |
 | 线上 | Nginx、systemd，脚本发布到云主机 |
@@ -72,7 +72,7 @@ deploy                          Nginx 等部署配置
 
 ## 本地开发
 
-需要 JDK 17、MySQL 8、Redis、Node.js 18+、pnpm。RabbitMQ 在用到邮件和操作日志时再启动。
+需要 JDK 17、MySQL 8、Redis、Node.js 22.12+ 的 22.x 版本（或 24.x）、pnpm。公开前台使用 pnpm 11.3.0，管理后台使用 pnpm 8.10.0；进入各自目录后按 `packageManager` 字段选择版本。RabbitMQ 在用到邮件和操作日志时再启动。
 
 ```bash
 # 后端
@@ -91,6 +91,31 @@ pnpm dev
 ```
 
 生产发布使用仓库内的发布脚本，按模块构建并上传静态资源或后端包。不要把开发默认账号直接用于线上。
+
+## 本地验证
+
+```bash
+# 仓库根目录：页面路由规则
+node scripts/check-page-routes.mjs
+
+# 公开前台：单元测试、类型检查、构建和首屏资源预算
+cd blog-frontend/luyu-blog
+pnpm install --frozen-lockfile
+pnpm build
+
+# 管理后台：兼容性测试、分页测试、类型检查、构建和入口预算
+cd ../luyu-admin
+pnpm install --frozen-lockfile
+pnpm test:build
+pnpm test:pagination
+pnpm build
+
+# 后端：默认测试集（JDK 17）
+cd ../../blog-backend
+mvn test
+```
+
+`mvn test` 的日记 AI 用例会启动仅供测试的本地 HTTP 服务，运行环境需允许回环地址和本地套接字。若 Windows 的临时目录让 JDK 报 `Unable to establish loopback connection`，从仓库根目录运行 `./scripts/test-backend.ps1`；脚本只为本次测试进程设置用户目录下的短临时路径。可选的数据库集成测试还需按测试说明准备 PostgreSQL。CI 在 Linux 上运行上述必需检查。
 
 ## 许可与版权
 

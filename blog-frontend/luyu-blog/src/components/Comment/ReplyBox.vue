@@ -51,7 +51,7 @@ onMounted(() => {
     const popover = document.querySelector('.emoji-popover-container');
     
     // 如果点击发生在弹出框内部，阻止默认行为并保持焦点
-    if (popover && popover.contains(event.target)) {
+    if (popover && popover.contains(event.target as Node)) {
       // 阻止鼠标点击从弹出框传播到文档
       event.preventDefault();
       event.stopPropagation();
@@ -64,7 +64,7 @@ onMounted(() => {
   }, true); // 使用捕获阶段处理事件
 })
 
-function addEmoji(emoji: string, comment: object) {
+function addEmoji(emoji: string, comment: { replyText?: string }) {
   // 在对应焦点的位置插入
   if (myInput.value.selectionStart || myInput.value.selectionStart === 0) {
     const startPos = myInput.value.selectionStart
@@ -106,7 +106,7 @@ function addChildComment(comment: any) {
           title: '回复成功',
           duration: 4000,
           type: 'warning',
-          message: h('i', { style: 'color: teal' }, res.data),
+          message: h('i', { style: 'color: teal' }, String(res.data)),
         })
       }
       comment.replyText = ''
@@ -115,18 +115,6 @@ function addChildComment(comment: any) {
       ElMessage.error(res.msg);
     }
   })
-}
-
-// 防止事件传播和默认行为
-function preventDefaultAndKeepFocus(event) {
-  // 阻止事件冒泡
-  event.stopPropagation();
-  
-  // 添加一点延迟
-  setTimeout(() => {
-    // 让回复框重新获得焦点
-    myInput.value.focus();
-  }, 10);
 }
 
 // 修改方法，确保选择表情后回复框保持焦点

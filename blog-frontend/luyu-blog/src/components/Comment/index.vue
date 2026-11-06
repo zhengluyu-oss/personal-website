@@ -40,7 +40,7 @@ const myInput = ref();
 const isLoading = ref(false)
 
 // 添加一个 ref 来跟踪当前活动的评论框
-const activeCommentId = ref(null);
+const activeCommentId = ref<number | null>(null);
 
 // 添加设置活动评论框的方法
 function setActiveComment(id: number | null) {
@@ -93,7 +93,6 @@ const showAllChildComments = ref(false)
 // 查询评论数
 const pageSize = ref(2)
 
-const mode = 'light'
 
 // 默认选中第一个
 onMounted(() => {
@@ -244,7 +243,7 @@ function getComments(typeId: number, pageNum: string, pageSize: string) {
 }
 
 // 点赞
-function likeBtn(comment: object) {
+function likeBtn(comment: { id: number; isLike: boolean; likeCount: number }) {
   userLike(<number>props.likeType, comment.id).then(res => {
     if (res.code === 200) {
       comment.isLike = true
@@ -257,7 +256,7 @@ function likeBtn(comment: object) {
 }
 
 // 取消点赞
-function cancelLikeBtn(comment: object) {
+function cancelLikeBtn(comment: { id: number; isLike: boolean; likeCount: number }) {
   cancelLike(<number>props.likeType, comment.id).then(res => {
     if (res.code === 200) {
       comment.isLike = false

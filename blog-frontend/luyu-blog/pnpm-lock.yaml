@@ -69,9 +69,12 @@ importers:
         specifier: ^1.6.0
         version: 1.6.7(vue@3.5.41(typescript@5.7.3))
     devDependencies:
+      '@types/node':
+        specifier: ^22.20.5
+        version: 22.20.5
       '@vitejs/plugin-vue':
         specifier: ^4.2.3
-        version: 4.6.2(vite@4.5.9(@types/node@26.2.0)(sass@1.103.0)(terser@5.50.0))(vue@3.5.41(typescript@5.7.3))
+        version: 4.6.2(vite@4.5.9(@types/node@22.20.5)(sass@1.103.0)(terser@5.50.0))(vue@3.5.41(typescript@5.7.3))
       autoprefixer:
         specifier: ^10.4.18
         version: 10.5.4(postcss@8.5.26)
@@ -107,13 +110,13 @@ importers:
         version: 0.25.2(@babel/parser@7.29.8)(rollup@3.29.5)(vue@3.5.41(typescript@5.7.3))
       vite:
         specifier: ^4.4.5
-        version: 4.5.9(@types/node@26.2.0)(sass@1.103.0)(terser@5.50.0)
+        version: 4.5.9(@types/node@22.20.5)(sass@1.103.0)(terser@5.50.0)
       vite-plugin-compression:
         specifier: ^0.5.1
-        version: 0.5.1(vite@4.5.9(@types/node@26.2.0)(sass@1.103.0)(terser@5.50.0))
+        version: 0.5.1(vite@4.5.9(@types/node@22.20.5)(sass@1.103.0)(terser@5.50.0))
       vite-plugin-svg-icons:
         specifier: ^2.0.1
-        version: 2.0.1(vite@4.5.9(@types/node@26.2.0)(sass@1.103.0)(terser@5.50.0))
+        version: 2.0.1(vite@4.5.9(@types/node@22.20.5)(sass@1.103.0)(terser@5.50.0))
       vue-tsc:
         specifier: ^2.2.0
         version: 2.2.0(typescript@5.7.3)
@@ -621,8 +624,8 @@ packages:
   '@types/mdurl@2.0.0':
     resolution: {integrity: sha512-RGdgjQUZba5p6QEFAVx2OGb8rQDL/cPRG7GiedRzMcJ1tYnUANBncjbSB1NRGwbvjcPeikRABz2nshyPk1bhWg==}
 
-  '@types/node@22.13.5':
-    resolution: {integrity: sha512-+lTU0PxZXn0Dr1NBtC7Y8cR21AJr87dLLU953CWA6pMxxv/UDc7jYAY90upcrie1nRcD6XNG5HOYEDtgW5TxAg==}
+  '@types/node@22.20.5':
+    resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
 
   '@types/node@26.2.0':
     resolution: {integrity: sha512-5IviulTZeRNp2vAJ514cc/HUlY5nZ9fCbq9DMyC52BrhFZACo3nI0R7qBxhQmo/d27NFe96ur/b7Wwxklda+kg==}
@@ -2623,8 +2626,8 @@ packages:
     resolution: {integrity: sha512-nWJ91DjeOkej/TA8pXQ3myruKpKEYgqvpw9lz4OPHj/NWFNluYrjbz9j01CJ8yKQd2g4jFoOkINCTW2I5LEEyw==}
     engines: {node: '>= 0.4'}
 
-  undici-types@6.20.0:
-    resolution: {integrity: sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg==}
+  undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
   undici-types@8.3.0:
     resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
@@ -3445,9 +3448,9 @@ snapshots:
 
   '@types/mdurl@2.0.0': {}
 
-  '@types/node@22.13.5':
+  '@types/node@22.20.5':
     dependencies:
-      undici-types: 6.20.0
+      undici-types: 6.21.0
 
   '@types/node@26.2.0':
     dependencies:
@@ -3455,7 +3458,7 @@ snapshots:
 
   '@types/svgo@2.6.4':
     dependencies:
-      '@types/node': 22.13.5
+      '@types/node': 26.2.0
 
   '@types/web-bluetooth@0.0.20': {}
 
@@ -3463,9 +3466,9 @@ snapshots:
 
   '@vavt/util@2.1.0': {}
 
-  '@vitejs/plugin-vue@4.6.2(vite@4.5.9(@types/node@26.2.0)(sass@1.103.0)(terser@5.50.0))(vue@3.5.41(typescript@5.7.3))':
+  '@vitejs/plugin-vue@4.6.2(vite@4.5.9(@types/node@22.20.5)(sass@1.103.0)(terser@5.50.0))(vue@3.5.41(typescript@5.7.3))':
     dependencies:
-      vite: 4.5.9(@types/node@26.2.0)(sass@1.103.0)(terser@5.50.0)
+      vite: 4.5.9(@types/node@22.20.5)(sass@1.103.0)(terser@5.50.0)
       vue: 3.5.41(typescript@5.7.3)
 
   '@volar/language-core@2.4.28':
@@ -5684,7 +5687,7 @@ snapshots:
       has-symbols: 1.1.0
       which-boxed-primitive: 1.1.1
 
-  undici-types@6.20.0: {}
+  undici-types@6.21.0: {}
 
   undici-types@8.3.0: {}
 
@@ -5774,16 +5777,16 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite-plugin-compression@0.5.1(vite@4.5.9(@types/node@26.2.0)(sass@1.103.0)(terser@5.50.0)):
+  vite-plugin-compression@0.5.1(vite@4.5.9(@types/node@22.20.5)(sass@1.103.0)(terser@5.50.0)):
     dependencies:
       chalk: 4.1.2
       debug: 4.4.0
       fs-extra: 10.1.0
-      vite: 4.5.9(@types/node@26.2.0)(sass@1.103.0)(terser@5.50.0)
+      vite: 4.5.9(@types/node@22.20.5)(sass@1.103.0)(terser@5.50.0)
     transitivePeerDependencies:
       - supports-color
 
-  vite-plugin-svg-icons@2.0.1(vite@4.5.9(@types/node@26.2.0)(sass@1.103.0)(terser@5.50.0)):
+  vite-plugin-svg-icons@2.0.1(vite@4.5.9(@types/node@22.20.5)(sass@1.103.0)(terser@5.50.0)):
     dependencies:
       '@types/svgo': 2.6.4
       cors: 2.8.5
@@ -5793,17 +5796,17 @@ snapshots:
       pathe: 0.2.0
       svg-baker: 1.7.0
       svgo: 2.8.0
-      vite: 4.5.9(@types/node@26.2.0)(sass@1.103.0)(terser@5.50.0)
+      vite: 4.5.9(@types/node@22.20.5)(sass@1.103.0)(terser@5.50.0)
     transitivePeerDependencies:
       - supports-color
 
-  vite@4.5.9(@types/node@26.2.0)(sass@1.103.0)(terser@5.50.0):
+  vite@4.5.9(@types/node@22.20.5)(sass@1.103.0)(terser@5.50.0):
     dependencies:
       esbuild: 0.18.20
       postcss: 8.5.26
       rollup: 3.29.5
     optionalDependencies:
-      '@types/node': 26.2.0
+      '@types/node': 22.20.5
       fsevents: 2.3.3
       sass: 1.103.0
       terser: 5.50.0

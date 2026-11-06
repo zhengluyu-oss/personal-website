@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import vueDanmaku from 'vue3-danmaku'
-import {addTreeHole, getTreeHoleList} from "@/apis/treeHole";
+import {addTreeHole, getTreeHoleList, type TreeHoleItem} from "@/apis/treeHole";
 import {ElMessage} from "element-plus";
 
-const treeHoleList = ref([])
+const treeHoleList = ref<TreeHoleItem[]>([])
 const isShowSubmit = ref(false)
 const content = ref('')
 

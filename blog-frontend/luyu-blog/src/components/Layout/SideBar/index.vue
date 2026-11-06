@@ -77,7 +77,7 @@ watch(() => useWebsite.webInfo?.startTime, () => {
 function getDifferenceInDays() {
   // 计算运行时长
   // 假设 startTime 是一个表示开始时间的 Date 对象
-  let startTime = new Date(useWebsite.webInfo?.startTime); // 替换为你实际的开始时间
+  let startTime = new Date(useWebsite.webInfo?.startTime || Date.now()); // 替换为你实际的开始时间
   // 获取当前时间
   let now = new Date();
   // 计算两个日期之间的差值（以毫秒为单位）

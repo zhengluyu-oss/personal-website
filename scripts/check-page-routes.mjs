@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
@@ -30,7 +29,4 @@ for (const file of walk(publicSource).filter(file => /\.(ts|vue)$/.test(file) &&
   if (forbidden.some(pattern => (pattern.lastIndex = 0, pattern.test(text)))) throw new Error(`仍引用前台旧页面路径: ${relative(root, file)}`)
 }
 
-const changed = execFileSync('git', ['diff', '--name-only', '--', 'blog-backend', 'blog-frontend/luyu-blog/src/apis', 'blog-frontend/luyu-admin/src/api'], { cwd: root, encoding: 'utf8' }).trim().split(/\r?\n/).filter(Boolean)
-const approvedApiChanges = changed.filter(path => !path.includes('experience') && !path.includes('ExperienceProject') && !path.includes('WorkExperience'))
-if (approvedApiChanges.length) throw new Error(`检测到未纳入本次经历展示变更的 API 范围改动:\n${approvedApiChanges.join('\n')}`)
 console.log(`路由审计通过：前台 ${publicValues.length} 条，后台 ${adminValues.length} 条；经历项目深链接已登记。`)

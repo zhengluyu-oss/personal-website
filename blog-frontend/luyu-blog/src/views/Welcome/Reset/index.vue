@@ -19,7 +19,7 @@ const form = reactive({
 })
 
 // 验证重复密码
-const validatePassword = (rule, value, callback) => {
+const validatePassword = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
   if (value === '') {
     callback(new Error('请再次输入密码'))
   } else if (value !== form.password) {
@@ -77,7 +77,7 @@ async function askCode() {
 const isEmailValid = computed(() => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(form.email))
 
 function confirmReset() {
-  formRef.value.validate((valid) => {
+  formRef.value.validate((valid: boolean) => {
     if (valid) {
       resetPasswordStepOne(form).then(res => {
         if (res.code === 200) {
@@ -92,7 +92,7 @@ function confirmReset() {
 }
 
 function doReset() {
-  formRef.value.validate((valid) => {
+  formRef.value.validate((valid: boolean) => {
     if (valid) {
       resetPasswordStepTwo(form).then(res => {
         if (res.code === 200) {

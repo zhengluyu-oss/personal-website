@@ -12,20 +12,40 @@ import {
 } from "@/components/Music/musicTool";
 
 import blogAvatar from "@/assets/images/blogAvatar.svg";
+import type { MusicDescription, MusicId, MusicTrack } from '@/apis/music';
+
+interface MusicInfo {
+    id: MusicId;
+    url: string;
+    lyricList: string[];
+    lyricTimeList: number[];
+}
+
+interface MusicState {
+    volume: number;
+    isPaused: boolean;
+    currentTime: number;
+    duration: number;
+    musicInfo: MusicInfo;
+    musicDescription: MusicDescription;
+    lyricType: string;
+    showLyricBoard: boolean;
+    currentLyticIndex: number;
+    isShow: boolean;
+    isToggleImg: boolean;
+    playType: string;
+    playModel: string;
+    musicList: MusicTrack[];
+    customerMusicList: MusicTrack[];
+    currentSchedule: number;
+    isUseProgress: boolean;
+    isClickLyric: boolean;
+}
 
 const audio = new Audio();
 
 export const music = defineStore("music", {
-    persist: {
-        enabled: true, //开启数据持久化
-        strategies: [
-            {
-                key: "musicState", //给一个要保存的名称
-                storage: localStorage, //sessionStorage / localStorage 存储方式
-            },
-        ],
-    },
-    state: () => {
+    state: (): MusicState => {
         return {
             volume: 0.5, // 音量
             isPaused: true, // 音乐播放器是否暂停
@@ -66,56 +86,56 @@ export const music = defineStore("music", {
         };
     },
     getters: {
-        getAudio() {
+        getAudio(): HTMLAudioElement {
             return audio;
         },
-        getCurrentTime() {
+        getCurrentTime(): number {
             return this.currentTime;
         },
-        getDuration() {
+        getDuration(): number {
             return this.duration;
         },
-        getVolume() {
+        getVolume(): number {
             return this.volume;
         },
-        getIsPaused() {
+        getIsPaused(): boolean {
             return this.isPaused;
         },
         // 获取当前播放进度
-        getCurrentSchedule() {
+        getCurrentSchedule(): number {
             return this.currentSchedule;
         },
-        getMusicDescription() {
+        getMusicDescription(): MusicDescription {
             return this.musicDescription;
         },
-        getLyricType() {
+        getLyricType(): string {
             return this.lyricType;
         },
-        getMusicInfo() {
+        getMusicInfo(): MusicInfo {
             return this.musicInfo;
         },
-        getMusicList() {
+        getMusicList(): MusicTrack[] {
             return this.musicList;
         },
-        getShowLyricBoard() {
+        getShowLyricBoard(): boolean {
             return this.showLyricBoard;
         },
-        getCurrentLyticIndex() {
+        getCurrentLyticIndex(): number {
             return this.currentLyticIndex;
         },
-        getIsShow() {
+        getIsShow(): boolean {
             return this.isShow;
         },
-        getIsToggleImg() {
+        getIsToggleImg(): boolean {
             return this.isToggleImg;
         },
-        getPlayType() {
+        getPlayType(): string {
             return this.playType;
         },
-        getPlayModel() {
+        getPlayModel(): string {
             return this.playModel;
         },
-        getCustomerMusicList() {
+        getCustomerMusicList(): MusicTrack[] {
             return this.customerMusicList;
         },
     },
@@ -125,7 +145,7 @@ export const music = defineStore("music", {
             audio.volume = this.volume;
             audio.loop = false;
             audio.autoplay = true;
-            audio.preload = true;
+            audio.preload = 'auto';
             audio.crossOrigin = "anonymous";
 
             // 随着音乐播放的变化，需要设置 当前时间的变化 歌词变化
@@ -239,6 +259,7 @@ export const music = defineStore("music", {
                     break;
             }
             let len = list.length;
+            if (!len) return;
             let index = list.findIndex((item) => item.id == this.musicInfo.id);
             if (index == -1) {
                 index = 0;
@@ -248,7 +269,7 @@ export const music = defineStore("music", {
             this.setMusicInfo(list[musicIndex].id);
         },
         // 设置当前播放音乐的信息 搜索列表的歌曲信息时没有的需要传过来
-        async setMusicInfo(id, isInit = false) {
+        async setMusicInfo(id: MusicId, isInit = false) {
             if (!id) return;
             const des = await getMusicDescription(id);
             // 通过音乐id 获取音乐简介 描述 歌词信息
@@ -259,6 +280,7 @@ export const music = defineStore("music", {
             // 主要是获取歌曲播放的url地址
             const musicDetail = await getMusicDetail(id);
             const lyric = await getLyric(id);
+            if (!musicDetail || !lyric) return;
             let musicInfo = {
                 id: id,
                 url: musicDetail.url, // 正在播放音乐的详情 音乐地址
@@ -270,14 +292,14 @@ export const music = defineStore("music", {
 
             await this.setPlay(isInit);
         },
-        setMusicDescription(val) {
+        setMusicDescription(val: MusicDescription) {
             this.musicDescription = val;
         },
-        setMusicList(list) {
+        setMusicList(list: MusicTrack[]) {
             this.musicList = list;
         },
         // 通过用户拉动进度条 切换音乐的播放时间
-        setCurrentTime(progress) {
+        setCurrentTime(progress: number) {
             let time = calcMusicCurrentTime(progress, audio.duration);
             this.currentTime = time;
             audio.currentTime = time;
@@ -293,7 +315,7 @@ export const music = defineStore("music", {
             }, 200);
         },
         // 通过用户点击歌词设置当前播放时间
-        setCurrentTimeByClickLyric(index) {
+        setCurrentTimeByClickLyric(index: number) {
             this.isClickLyric = true;
             let time = this.musicInfo.lyricTimeList[index];
             audio.currentTime = time / 1000;
@@ -306,18 +328,18 @@ export const music = defineStore("music", {
             }, 100);
         },
         // 设置音量
-        setVolume(progress) {
+        setVolume(progress: number) {
             let volume = Math.round((progress / 100) * 100) / 100;
             this.volume = volume;
             audio.volume = volume;
         },
-        setShowLyricBoard(val) {
+        setShowLyricBoard(val: boolean) {
             this.showLyricBoard = val;
         },
         setIsShow() {
             this.isShow = !this.isShow;
         },
-        setCustomerMusicList(type, music) {
+        setCustomerMusicList(type: 'add' | 'delete', music: MusicTrack) {
             if (type == "add") {
                 this.customerMusicList.push(music);
             } else if (type == "delete") {
@@ -330,19 +352,19 @@ export const music = defineStore("music", {
                 }
             }
         },
-        setIsToggleImg(isToggleImg) {
+        setIsToggleImg(isToggleImg: boolean) {
             this.isToggleImg = isToggleImg;
         },
-        setLyricType(val) {
+        setLyricType(val: keyof typeof LYRICTYPE) {
             this.lyricType = LYRICTYPE[val];
         },
-        setPlayType(type) {
+        setPlayType(type: string) {
             this.playType = type;
         },
-        setPlayModel(model) {
+        setPlayModel(model: string) {
             this.playModel = model;
         },
-        setIsUseProgress(val) {
+        setIsUseProgress(val: boolean) {
             this.isUseProgress = val;
         },
     },

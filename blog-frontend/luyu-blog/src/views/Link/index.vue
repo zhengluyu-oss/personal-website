@@ -2,7 +2,6 @@
 import {Watermelon} from '@element-plus/icons-vue'
 import {ElMessage, ElNotification, FormInstance, FormRules} from "element-plus";
 import {applyLink, linkList} from "@/apis/link";
-import {MdPreview} from "md-editor-v3";
 
 const dialogVisible = ref(false)
 
@@ -74,8 +73,6 @@ function applyLinkFunc() {
           ElMessage.error(res.msg)
         }
       })
-    } else {
-      return false
     }
   })
 }

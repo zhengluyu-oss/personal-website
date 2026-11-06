@@ -11,10 +11,10 @@ const isImage = ref(false)
 const previewImageSrc = ref('')
 const previewName = ref('')
 // 添加防抖变量
-const previewTimer = ref(null)
+const previewTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 
 // 简化 props，只保留 popoverWidth
-const props = defineProps({
+defineProps({
   popoverWidth: {
     type: Number,
     default: 510
@@ -45,19 +45,19 @@ function optionEmoji(index: number) {
   }
   // 给选中的div添加样式
   options.value.children[index].classList.add('active');
-  
+
   // 立即触发操作完成事件，而不是等到下一个事件循环
   emit('operation-complete');
 }
 
 // 添加创建点击效果的函数
-function createClickEffect(event) {
+function createClickEffect(event: MouseEvent) {
   // 获取点击的元素
-  const target = event.currentTarget;
-  
+  const target = event.currentTarget as HTMLElement;
+
   // 添加点击效果类
   target.classList.add('emoji-clicked');
-  
+
   // 移除类名以重置动画
   setTimeout(() => {
     target.classList.remove('emoji-clicked');
@@ -65,34 +65,34 @@ function createClickEffect(event) {
 }
 
 // 修改添加表情函数，加入点击效果
-function addEmoji(emoji: string, event) {
+function addEmoji(emoji: string, event: MouseEvent) {
   // 创建点击反馈效果
   createClickEffect(event);
-  
+
   // 原有逻辑不变
   emit('select-emoji', emoji);
   emit('operation-complete');
 }
 
 // 显示文字表情预览
-function showTextPreview(event, emoji, key) {
+function showTextPreview(event: MouseEvent, emoji: string, key: string | number) {
   // 清除之前的定时器
   if (previewTimer.value) clearTimeout(previewTimer.value)
-  
+
   previewContent.value = emoji
-  previewName.value = key
+  previewName.value = String(key)
   isImage.value = false
   updatePreviewPosition(event)
   showPreview.value = true
 }
 
 // 显示图片表情预览
-function showImagePreview(event, src, key) {
+function showImagePreview(event: MouseEvent, src: string, key: string | number) {
   // 清除之前的定时器
   if (previewTimer.value) clearTimeout(previewTimer.value)
-  
+
   previewImageSrc.value = src
-  previewName.value = key
+  previewName.value = String(key)
   isImage.value = true
   updatePreviewPosition(event)
   showPreview.value = true
@@ -107,10 +107,10 @@ function hidePreview() {
 }
 
 // 更新预览位置 - 简单但有效的解决方案
-function updatePreviewPosition(event) {
+function updatePreviewPosition(event: MouseEvent) {
   // 获取触发元素的位置
-  const rect = event.target.getBoundingClientRect();
-  
+  const rect = (event.target as HTMLElement).getBoundingClientRect();
+
   // 大幅增加垂直偏移，确保不遮挡原表情
   // 使用固定的大值，确保在所有情况下都不会遮挡
   previewPosition.value = {
@@ -135,15 +135,15 @@ function updatePreviewPosition(event) {
         </div>
       </slot>
     </template>
-    
+
     <div class="emojis_container" @mousedown.stop.prevent>
       <el-scrollbar>
         <div class="OvO_emojis" v-show="optionsIndex === 0">
           <!-- 文字表情 -->
-          <div 
-            v-for="(emoji,key) in emojis" 
-            :key="key" 
-            :title="key" 
+          <div
+            v-for="(emoji,key) in emojis"
+            :key="key"
+            :title="String(key)"
             @click.stop="addEmoji(emoji, $event)"
             @mousedown.stop.prevent
             class="emoji-item"
@@ -156,15 +156,15 @@ function updatePreviewPosition(event) {
         <div class="OvO_heo" v-show="optionsIndex === 1">
           <div>
             <!-- 图片表情 -->
-            <div 
-              v-for="(src,key) in heo" 
-              :key="key" 
+            <div
+              v-for="(src,key) in heo"
+              :key="key"
               class="emoji-img-wrapper"
             >
-              <img 
-                :title="key" 
-                :src="src" 
-                @click="addEmoji(key, $event)"
+              <img
+                :title="String(key)"
+                :src="src"
+                @click="addEmoji(String(key), $event)"
                 @mouseenter="showImagePreview($event, src, key)"
                 @mouseleave="hidePreview"
               />
@@ -173,8 +173,8 @@ function updatePreviewPosition(event) {
         </div>
       </el-scrollbar>
       <div class="OvO_options" ref="options" @mousedown.stop.prevent>
-        <div v-for="(emojiOption,index) in emojiOptions" 
-             class="item_emoji" 
+        <div v-for="(emojiOption,index) in emojiOptions"
+             class="item_emoji"
              @click.stop="optionEmoji(index)"
              @mousedown.stop.prevent>
           {{ emojiOption }}
@@ -185,8 +185,8 @@ function updatePreviewPosition(event) {
 
   <!-- 全局预览元素 - 添加pointer-events: none -->
   <Teleport to="body">
-    <div 
-      v-show="showPreview" 
+    <div
+      v-show="showPreview"
       class="global-emoji-preview"
       :style="{
         left: `${previewPosition.x}px`,
@@ -249,7 +249,7 @@ function updatePreviewPosition(event) {
   position: relative;
   border-radius: 6px;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background-color: #fff0f7;
     transform: scale(1.1);
@@ -262,13 +262,13 @@ function updatePreviewPosition(event) {
   border-radius: 6px;
   padding: 2px;
   transition: all 0.2s ease;
-  
+
   img {
     width: 28px;
     height: 28px;
     cursor: pointer;
   }
-  
+
   &:hover {
     background-color: #fff0f7;
     transform: scale(1.1);
@@ -283,7 +283,7 @@ function updatePreviewPosition(event) {
   width: 100%;
   background: #fff8fa;
   padding: 6px 0;
-  
+
   .item_emoji {
     position: relative;
     margin: 0 8px;
@@ -295,7 +295,7 @@ function updatePreviewPosition(event) {
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     background: transparent;
     overflow: hidden;
-    
+
     /* 选中状态 */
     &.active {
       color: white;
@@ -304,7 +304,7 @@ function updatePreviewPosition(event) {
       transform: translateY(-2px);
       font-weight: bold;
     }
-    
+
     /* 悬浮效果 */
     &:not(.active):hover {
       color: #ff85a2;
@@ -328,31 +328,31 @@ function updatePreviewPosition(event) {
   align-items: center;
   pointer-events: none;
   border: 1px solid #ffdbec;
-  
+
   .preview-content {
     font-size: 36px;
     display: flex;
     justify-content: center;
     align-items: center;
-    
+
     img {
       width: 48px;
       height: 48px;
     }
   }
-  
+
   .preview-name {
     font-size: 12px;
     margin-top: 6px;
     color: #ff85a2;
     font-weight: 500;
   }
-  
+
   /* 移除固定的三角形指示器 */
   &::after {
     content: none;
   }
-  
+
   /* 顶部三角形（当预览框在下方时显示） */
   &.position-bottom::before {
     content: '';
@@ -364,7 +364,7 @@ function updatePreviewPosition(event) {
     border-style: solid;
     border-color: transparent transparent #ffdbec transparent;
   }
-  
+
   /* 底部三角形（当预览框在上方时显示） */
   &.position-top::after {
     content: '';
@@ -393,7 +393,7 @@ function updatePreviewPosition(event) {
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 2px 6px rgba(255, 182, 193, 0.2);
-  
+
   /* 图标样式 */
   .emoji-icon {
     width: 1.5em;
@@ -401,23 +401,23 @@ function updatePreviewPosition(event) {
     color: #ff85a2;
     transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
   }
-  
+
   /* 悬浮效果 */
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(255, 182, 193, 0.3);
-    
+
     .emoji-icon {
       transform: rotate(15deg) scale(1.1);
     }
   }
-  
+
   /* 点击效果 */
   &:active {
     transform: translateY(0);
     box-shadow: 0 2px 4px rgba(255, 182, 193, 0.2);
   }
-  
+
   /* 水波纹动画 */
   .emoji-ripple {
     position: absolute;
@@ -430,7 +430,7 @@ function updatePreviewPosition(event) {
     pointer-events: none;
     animation: none;
   }
-  
+
   &:active .emoji-ripple {
     animation: ripple 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -471,7 +471,7 @@ function updatePreviewPosition(event) {
   /* 防止内部元素获取焦点 */
   pointer-events: auto !important; /* 确保点击事件仍然有效 */
   user-select: none; /* 防止文本选择 */
-  
+
   /* 这是关键 - 阻止任何元素获取焦点 */
   &:focus {
     outline: none !important;
@@ -482,7 +482,7 @@ function updatePreviewPosition(event) {
 .emojis_container, .OvO_options, .OvO_emojis, .OvO_heo, .emoji-item, .emoji-img-wrapper {
   outline: none !important;
   -webkit-tap-highlight-color: transparent;
-  
+
   /* 使所有内容无法获取焦点但仍可点击 */
   * {
     outline: none !important;
@@ -522,4 +522,4 @@ function updatePreviewPosition(event) {
     box-shadow: 0 0 0 0 rgba(255, 64, 129, 0);
   }
 }
-</style> 
+</style>

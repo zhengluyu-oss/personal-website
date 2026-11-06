@@ -19,7 +19,7 @@ let router = createRouter({
 
 installAsyncChunkRecovery(router)
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
     const module = moduleForPath(to.path)
     if (module) {
         try {
@@ -36,7 +36,7 @@ router.beforeEach(async (to, from, next) => {
     // 用户是否登录
     const isLogin = GET_TOKEN()
     // 用户登录了，跳转到登录页，直接跳转到首页
-    if (to.name?.startsWith(('welcome-')) && isLogin) {
+    if (typeof to.name === 'string' && to.name.startsWith('welcome-') && isLogin) {
         next('/')
     } else {
         next()

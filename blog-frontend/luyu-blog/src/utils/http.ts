@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosHeaders, AxiosInstance, InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosError, AxiosHeaders, AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
@@ -13,6 +13,21 @@ type TrackedRequestConfig = InternalAxiosRequestConfig & {
   __requestToken?: RequestToken
   __trustedApi?: boolean
   __sessionToken?: string
+}
+
+export interface ApiResponse<T = unknown> {
+  code: number
+  msg: string
+  data: T
+}
+
+interface ApiHttp {
+  <T = ApiResponse>(config: AxiosRequestConfig): Promise<T>
+  request<T = ApiResponse>(config: AxiosRequestConfig): Promise<T>
+  get<T = ApiResponse>(url: string, config?: AxiosRequestConfig): Promise<T>
+  post<T = ApiResponse>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
+  put<T = ApiResponse>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
+  delete<T = ApiResponse>(url: string, config?: AxiosRequestConfig): Promise<T>
 }
 const API_BASE = import.meta.env.VITE_APP_BASE_API || '/api'
 const SILENT_FALLBACK_PATHS = ['/websiteInfo/front', '/banners/list', '/article/list', '/article/recommend', '/experience']
@@ -91,4 +106,5 @@ http.interceptors.response.use(
   },
 )
 
-export default http
+// The response interceptor returns response.data rather than AxiosResponse.
+export default http as ApiHttp

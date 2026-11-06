@@ -1,0 +1,65 @@
+name: Quality checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  blog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11.3.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22.12.0'
+          cache: pnpm
+          cache-dependency-path: blog-frontend/luyu-blog/pnpm-lock.yaml
+      - name: Install public site dependencies
+        working-directory: blog-frontend/luyu-blog
+        run: pnpm install --frozen-lockfile
+      - name: Check routes
+        run: node scripts/check-page-routes.mjs
+      - name: Test, typecheck, build and check initial resources
+        working-directory: blog-frontend/luyu-blog
+        run: pnpm build
+
+  admin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 8.10.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22.12.0'
+          cache: pnpm
+          cache-dependency-path: blog-frontend/luyu-admin/pnpm-lock.yaml
+      - name: Install admin dependencies
+        working-directory: blog-frontend/luyu-admin
+        run: pnpm install --frozen-lockfile
+      - name: Check admin compatibility and pagination
+        working-directory: blog-frontend/luyu-admin
+        run: |
+          pnpm test:build
+          pnpm test:pagination
+      - name: Typecheck, build and check initial resources
+        working-directory: blog-frontend/luyu-admin
+        run: pnpm build
+
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: blog-backend/pom.xml
+      - name: Run backend tests
+        working-directory: blog-backend
+        run: mvn -B test

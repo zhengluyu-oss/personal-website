@@ -1,4 +1,7 @@
-import http from "@/utils/http.ts";
+import http, { type ApiResponse } from "@/utils/http.ts";
+import type { ArticleSearch } from './type.ts';
+import type { BlogFeedPayload } from '@/utils/blog-feed.ts';
+import type { WritingArticleItem } from '@/components/Writing/WritingArticleList.vue';
 
 // 获取文章详细
 export const getArticleDetail = (id: string | string[]) => {
@@ -10,7 +13,7 @@ export const getArticleDetail = (id: string | string[]) => {
 
 // 获取评论
 export const getComment = (type: number, typeId: number, pageNum: string, pageSize: string) => {
-    return http.request({
+    return http.request<ApiResponse<{ page: object[]; total: number }>>({
         url: '/comment/getComment',
         method: "get",
         params: {
@@ -33,7 +36,7 @@ export const addComment = (data: object) => {
 
 // 查询不同类型下的文章列表
 export function whereArticleList(type: Number, typeId: String) {
-    return http.get(`/article/where/list/${typeId}`, {
+    return http.get<ApiResponse<WritingArticleItem[]>>(`/article/where/list/${typeId}`, {
         method: "get",
         params: {
             type
@@ -43,7 +46,7 @@ export function whereArticleList(type: Number, typeId: String) {
 
 // 博客聚合页/分类页：显式主推荐 + 去重后的普通文章列表
 export function getBlogFeed(categoryId?: number, pageNum = 1, pageSize = 9, keyword?: string) {
-    return http.get('/article/blog-feed', {
+    return http.get<ApiResponse<BlogFeedPayload<WritingArticleItem>>>('/article/blog-feed', {
         params: {
             categoryId,
             pageNum,
@@ -62,7 +65,7 @@ export function addArticleVisit(id: String) {
 
 // 获取初始化时标题搜索数据
 export function getSearchTitleList() {
-    return http.get(`/article/search/init/title`, {
+    return http.get<ApiResponse<ArticleSearch[]>>(`/article/search/init/title`, {
         method: "get"
     });
 }

@@ -50,7 +50,7 @@ function invoke(){
   <div v-slide-in class="card" :style="isCatalog ? 'position: relative;z-index: 9' : ''">
     <div class="title" :style="isCatalog ? 'position: sticky;top: 0' : ''">
       <div class="title_text">
-        <SvgIcon :class="isDithering ? 'dithering' : '' || isScale ? 'scale' : ''" :name="prefixIcon" width="30"
+        <SvgIcon :class="isDithering ? 'dithering' : isScale ? 'scale' : ''" :name="prefixIcon" width="30"
                  height="30"/>
         <span style="margin-left: 10px">{{ title }}</span>
       </div>

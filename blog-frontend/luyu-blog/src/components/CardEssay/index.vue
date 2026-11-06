@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import {getArticleList} from "@/apis/home";
+import {getArticleList, type ArticleSummary} from "@/apis/home";
 import {ElMessage} from "element-plus";
 import usePaginationStore from "@/store/modules/pagination";
 import {useWindowSize} from "@vueuse/core";
 
-const articleList = ref([]);
+const articleList = ref<ArticleSummary[]>([]);
 
 const paginationStore = usePaginationStore();
 
@@ -23,8 +23,8 @@ function getArticleListFunc() {
     if (res.code === 200) {
       paginationStore.articlePagination.total = res.data.total;
       // 过滤内容
-      res.data.page = res.data.page.map((item: any) => {
-        item.articleContent = item.articleContent.replace(/[*#>`~\-\\[\]()\s]|(\n\n)/g, '')
+      res.data.page = res.data.page.map((item) => {
+        item.articleContent = (item.articleContent || '').replace(/[*#>`~\-\\[\]()\s]|(\n\n)/g, '')
         // 提取前 50 个字符
         item.articleContent = item.articleContent.substring(0, 60) + '...';
         return item;

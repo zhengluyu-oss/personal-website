@@ -126,7 +126,7 @@ function getHot() {
 
 function changeToggle() {
   getRandomArticle().then(res => {
-    hotList.value = res.data
+    hotList.value = res.data.map(item => ({ id: Number(item.id), articleTitle: item.articleTitle, visitCount: item.visitCount ?? 0 }))
   })
 }
 

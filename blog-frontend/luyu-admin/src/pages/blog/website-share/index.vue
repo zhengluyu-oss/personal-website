@@ -65,6 +65,9 @@ async function save() {
     const url = new URL(form.value.siteUrl)
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('invalid url')
   } catch { message.warning('请填写有效的 HTTP 或 HTTPS 网站地址'); return }
+  if (form.value.status === 1 && !form.value.coverImage?.trim()) {
+    message.warning('公开发布前请添加封面图片'); return
+  }
   saving.value = true
   try {
     const result: any = await (form.value.id ? updateWebsiteShare(form.value) : addWebsiteShare(form.value))
@@ -130,7 +133,7 @@ onMounted(load)
         <a-form-item label="网站名称 / 分享标题" required><a-input v-model:value="form.title" :maxlength="150" /></a-form-item>
         <a-form-item label="网站地址" required><a-input v-model:value="form.siteUrl" placeholder="https://example.com/" :maxlength="500" /></a-form-item>
         <a-form-item label="简介" required><a-textarea v-model:value="form.summary" :rows="3" :maxlength="500" show-count /></a-form-item>
-        <a-form-item label="封面（建议 16:10，JPG / PNG / WebP）"><a-input v-model:value="form.coverImage" placeholder="图片地址，也可以在下方上传" :maxlength="500" /><input type="file" accept="image/jpeg,image/png,image/webp" :disabled="uploading" style="margin-top:12px" @change="chooseCover" /><p v-if="uploading">图片上传中…</p><img v-if="form.coverImage" :src="form.coverImage" alt="封面预览" style="display:block;width:240px;max-width:100%;margin-top:12px" /></a-form-item>
+        <a-form-item :label="form.status === 1 ? '封面（公开必填，建议 16:10）' : '封面（建议 16:10，JPG / PNG / WebP）'" :required="form.status === 1"><a-input v-model:value="form.coverImage" placeholder="图片地址，也可以在下方上传" :maxlength="500" /><input type="file" accept="image/jpeg,image/png,image/webp" :disabled="uploading" style="margin-top:12px" @change="chooseCover" /><p v-if="uploading">图片上传中…</p><img v-if="form.coverImage" :src="form.coverImage" alt="封面预览" style="display:block;width:240px;max-width:100%;margin-top:12px" /></a-form-item>
         <a-form-item label="完整正文（Markdown）" required><MdEditor v-model="form.content" style="height:520px" @on-upload-img="uploadBodyImages" /></a-form-item>
         <a-row :gutter="20"><a-col :span="12"><a-form-item label="排序（越小越靠前）"><a-input-number v-model:value="form.orderNum" /></a-form-item></a-col><a-col :span="12"><a-form-item label="状态"><a-select v-model:value="form.status" :options="[{ label: '草稿', value: 0 }, { label: '公开', value: 1 }]" /></a-form-item></a-col></a-row>
         <a-collapse><a-collapse-panel key="seo" header="搜索引擎信息（可选）"><a-form-item label="SEO 标题"><a-input v-model:value="form.seoTitle" :maxlength="70" /></a-form-item><a-form-item label="SEO 描述"><a-textarea v-model:value="form.seoDescription" :maxlength="200" /></a-form-item><a-form-item label="SEO 关键词"><a-input v-model:value="form.seoKeywords" :maxlength="200" /></a-form-item></a-collapse-panel></a-collapse>

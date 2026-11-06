@@ -42,6 +42,33 @@ class WebsiteShareServiceTest {
         verify(service, never()).save(any());
     }
 
+    @Test void draftMayOmitCoverButPublicShareRequiresIt() {
+        WebsiteShareServiceImpl service = spy(new WebsiteShareServiceImpl());
+        doReturn(true).when(service).save(any(WebsiteShare.class));
+        WebsiteShareDTO draft = valid();
+        draft.setStatus(0);
+        assertEquals(200, service.saveShare(draft).getCode());
+        WebsiteShareDTO published = valid();
+        published.setStatus(1);
+        assertNotEquals(200, service.saveShare(published).getCode());
+        published.setCoverImage("   ");
+        assertNotEquals(200, service.saveShare(published).getCode());
+        published.setCoverImage("https://example.com/cover.webp");
+        assertEquals(200, service.saveShare(published).getCode());
+        verify(service, times(2)).save(any(WebsiteShare.class));
+    }
+
+    @Test void rejectedPublishedUpdateDoesNotWriteAnyFields() {
+        WebsiteShareServiceImpl service = spy(new WebsiteShareServiceImpl());
+        WebsiteShareDTO update = valid();
+        update.setId(42L);
+        update.setStatus(1);
+        update.setCoverImage(" ");
+        assertNotEquals(200, service.saveShare(update).getCode());
+        verify(service, never()).getOne(any());
+        verify(service, never()).update(any(com.baomidou.mybatisplus.core.conditions.Wrapper.class));
+    }
+
     @Test void emptyDeleteIsRejected() {
         assertNotEquals(200, new WebsiteShareServiceImpl().deleteShares(java.util.List.of()).getCode());
     }

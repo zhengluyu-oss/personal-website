@@ -9,7 +9,7 @@ import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
  * @param {*} duration 持续时间 s
  * @param {*} ease 动画过渡 详情见 https://gsap.com/docs/v3/Eases/
  */
-function gsapTransX(list, x, duration = 1, ease = "power1.inOut") {
+function gsapTransX(list: Array<string | Element>, x: number, duration = 1, ease = "power1.inOut") {
     gsap.registerPlugin(ScrollTrigger);
     list.map((v) => {
         gsap.fromTo(
@@ -35,7 +35,7 @@ function gsapTransX(list, x, duration = 1, ease = "power1.inOut") {
  * @param {*} duration 持续时间 s
  * @param {*} ease 动画过渡 详情见 https://gsap.com/docs/v3/Eases/
  */
-function gsapTransY(list, y, duration = 1, ease = "power1.inOut") {
+function gsapTransY(list: Array<string | Element>, y: number, duration = 1, ease = "power1.inOut") {
     gsap.registerPlugin(ScrollTrigger);
     list.map((v) => {
         gsap.fromTo(
@@ -61,7 +61,7 @@ function gsapTransY(list, y, duration = 1, ease = "power1.inOut") {
  * @param {*} duration 持续时间 s
  * @param {*} ease 动画过渡 详情见 https://gsap.com/docs/v3/Eases/
  */
-function gsapTransXScale(list, opacity = 0, duration = 0.6, ease = "power2.inOut") {
+function gsapTransXScale(list: Array<string | Element>, opacity = 0, duration = 0.6, ease = "power2.inOut") {
     gsap.registerPlugin(ScrollTrigger);
     list.map((v) => {
         gsap.fromTo(
@@ -86,14 +86,14 @@ function gsapTransXScale(list, opacity = 0, duration = 0.6, ease = "power2.inOut
 }
 
 // 字体动画
-function gsapTransFont(name) {
+function gsapTransFont(name: string | Element) {
     gsap.to(name, {
         y: -10,
         stagger: 0.3,
     });
 }
 
-function gsapTransLyric(name, duration, reverse = false) {
+function gsapTransLyric(name: string | Element, duration: number, reverse = false) {
     if (!reverse) {
         gsap.fromTo(
             name,

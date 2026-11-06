@@ -79,9 +79,12 @@ public class WebsiteShareServiceImpl extends ServiceImpl<WebsiteShareMapper, Web
     @Transactional
     @Override
     public ResponseResult<Long> saveShare(WebsiteShareDTO dto) {
-        if (!validUrl(dto.getSiteUrl())) return ResponseResult.failure("网站地址须为有效的 HTTP 或 HTTPS 链接");
+        if (dto == null || dto.getSiteUrl() == null || !validUrl(dto.getSiteUrl())) return ResponseResult.failure("网站地址须为有效的 HTTP 或 HTTPS 链接");
         int order = dto.getOrderNum() == null ? 1 : dto.getOrderNum();
         int status = dto.getStatus() == null ? 0 : dto.getStatus();
+        if (status == 1 && (dto.getCoverImage() == null || dto.getCoverImage().isBlank())) {
+            return ResponseResult.failure("公开发布前请添加封面图片");
+        }
         if (dto.getId() == null) {
             WebsiteShare item = dto.asViewObject(WebsiteShare.class);
             item.setSiteUrl(dto.getSiteUrl().trim());

@@ -4,7 +4,11 @@ import {getLeaveWordList} from "@/apis/leaveWord";
 import {cancelLike, isLike, userLike} from "@/apis/like";
 import {ElMessage} from "element-plus";
 import {cancelFavorite, isFavorite, userFavorite} from "@/apis/favorite";
-const leaveWord = ref([]);
+import type { LeaveWord } from '@/apis/leaveWord';
+const leaveWord = ref<LeaveWord>({
+  id: 0, userId: 0, content: '', createTime: '', nickname: '', avatar: '',
+  commentCount: 0, likeCount: 0, favoriteCount: 0,
+});
 const route = useRoute()
 const loadingComment = ref(false)
 const like = ref(false)
@@ -16,6 +20,7 @@ onMounted(() => {
 
 function getLeaveWord() {
   getLeaveWordList(route.params.id).then(res => {
+    if (!res.data[0]) return
     leaveWord.value = res.data[0]
     loadingComment.value = true
     isLikeFunc()

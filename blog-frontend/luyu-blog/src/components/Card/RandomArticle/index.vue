@@ -1,7 +1,6 @@
 <script setup lang="ts">
 
-import {getRandomArticle, getRelatedArticle} from "@/apis/home";
-import {onMounted} from "vue";
+import {getRandomArticle, getRelatedArticle, type ArticlePreview} from "@/apis/home";
 
 const props = defineProps({
   title: {
@@ -24,12 +23,7 @@ const props = defineProps({
   }
 });
 
-const randomArticles = ref([{
-  id: '',
-  articleTitle: '',
-  articleCover: '',
-  createTime: '',
-}])
+const randomArticles = ref<ArticlePreview[]>([])
 
 function randomArticleBtn() {
   imgRefresh.value = true
@@ -38,8 +32,7 @@ function randomArticleBtn() {
 
 function getRandomArticleList(){
   getRandomArticle().then(res => {
-    res.data = formatDate(res.data)
-    randomArticles.value = res.data
+    randomArticles.value = formatDate(res.data)
   })
 }
 
@@ -51,17 +44,13 @@ watch(() => props.articleId, () => {
 // 相关推荐
 function relatedRecommendBtn(categoryId: string, articleId: string) {
   getRelatedArticle(categoryId, articleId).then(res => {
-    res.data = formatDate(res.data)
-    randomArticles.value = res.data
+    randomArticles.value = formatDate(res.data)
   })
 }
 
 // 去掉时分秒
-function formatDate(date: []) {
-  date.forEach((item:any) => {
-    item.createTime = item.createTime.split(' ')[0]
-  })
-  return date
+function formatDate(articles: ArticlePreview[]): ArticlePreview[] {
+  return articles.map(item => ({ ...item, createTime: item.createTime?.split(' ')[0] || '' }))
 }
 
 const imgRefresh = ref(false)

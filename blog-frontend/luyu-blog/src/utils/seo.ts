@@ -1,4 +1,4 @@
-import { SITE_NAME, SITE_TITLE } from '@/config/site'
+import { SITE_NAME, SITE_TITLE } from '../config/site.ts'
 
 export interface SeoMeta { title: string; description: string; keywords: string }
 

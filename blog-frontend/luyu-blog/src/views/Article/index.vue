@@ -46,7 +46,7 @@ const articleDetail = ref({
   articleContent: undefined,
   categoryName: '',
   categoryId: '',
-  tags: [],
+  tags: [] as { id: number; tagName: string }[],
   visitCount: 0,
   commentCount: 0,
   likeCount: 0,
@@ -54,7 +54,11 @@ const articleDetail = ref({
   createTime: '',
   updateTime: '',
   userId: 0,
-  id: "0"
+  id: 0,
+  preArticleId: 0,
+  preArticleTitle: '',
+  nextArticleId: 0,
+  nextArticleTitle: ''
 })
 
 const route = useRoute();
@@ -164,11 +168,11 @@ const collection = ref(false)
 // 点赞标记
 const like = ref(false)
 
-const collectionBtn = (detail: object) => {
+const collectionBtn = (detail: typeof articleDetail.value) => {
 
   if (collection.value) {
     // 取消收藏
-    cancelFavorite(1, articleDetail.value.id).then(res => {
+    cancelFavorite(1, String(articleDetail.value.id)).then(res => {
       if (res.code === 200) {
         detail.favoriteCount -= 1
         collection.value = false
@@ -179,7 +183,7 @@ const collectionBtn = (detail: object) => {
     })
   } else {
     // 收藏
-    userFavorite(1, articleDetail.value.id).then(res => {
+    userFavorite(1, String(articleDetail.value.id)).then(res => {
       if (res.code === 200) {
         detail.favoriteCount += 1
         collection.value = true
@@ -191,9 +195,9 @@ const collectionBtn = (detail: object) => {
   }
 }
 
-function likeBtn(detail: object) {
+function likeBtn(detail: typeof articleDetail.value) {
   if (like.value) {
-    cancelLike(1, articleDetail.value.id).then(res => {
+    cancelLike(1, String(articleDetail.value.id)).then(res => {
       if (res.code === 200) {
         detail.likeCount -= 1
         like.value = false
@@ -203,7 +207,7 @@ function likeBtn(detail: object) {
       }
     })
   } else {
-    userLike(1, articleDetail.value.id).then(res => {
+    userLike(1, String(articleDetail.value.id)).then(res => {
       if (res.code === 200) {
         detail.likeCount += 1
         like.value = true

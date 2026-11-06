@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getRecommendArticleList } from "@/apis/home";
+import { getRecommendArticleList, type ArticleSummary } from "@/apis/home";
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 // Import Swiper styles
@@ -7,15 +7,15 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
-const recommendArticles = ref([])
+const recommendArticles = ref<ArticleSummary[]>([])
 
 const modules = ref([Navigation,Pagination,Autoplay]);
 
 function loadContent(){
   getRecommendArticleList().then(res => {
     // 过滤内容
-    res.data = res.data.map((item: any) => {
-      item.articleContent = item.articleContent.replace(/[*#>`~\-\\[\]()\s]|(\n\n)/g, '')
+    res.data = res.data.map((item) => {
+      item.articleContent = (item.articleContent || '').replace(/[*#>`~\-\\[\]()\s]|(\n\n)/g, '')
       // 提取前 50 个字符
       item.articleContent = item.articleContent.substring(0, 25) + '...';
       return item;

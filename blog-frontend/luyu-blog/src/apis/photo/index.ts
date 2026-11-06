@@ -1,4 +1,4 @@
-import http from "@/utils/http.ts";
+import http, { type ApiResponse } from "@/utils/http.ts";
 
 // 相册和照片的类型定义
 export interface PhotoAndAlbumVO {
@@ -15,11 +15,8 @@ export interface PhotoAndAlbumVO {
 }
 
 export interface PageVO<T> {
-    records: T;
+    page: T;
     total: number;
-    size: number;
-    current: number;
-    pages: number;
 }
 
 // 获取相册和照片列表
@@ -28,7 +25,7 @@ export function getPhotoList(params: {
     pageSize?: number;
     parentId?: number | null;
 }) {
-    return http<PageVO<PhotoAndAlbumVO[]>>({
+    return http<ApiResponse<PageVO<PhotoAndAlbumVO[]>>>({
         url: '/photo/list',
         method: 'get',
         params

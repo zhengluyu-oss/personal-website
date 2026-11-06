@@ -13,7 +13,7 @@ const read = path => readFile(resolve(root, path), 'utf8')
 test('direct Vite commands preserve the existing static deployment model', async () => {
   const pkg = JSON.parse(await read('package.json'))
   assert.equal(pkg.scripts.dev, 'vite')
-  assert.equal(pkg.scripts.build, 'vue-tsc --noEmit && vite build')
+  assert.equal(pkg.scripts.build, 'vue-tsc --noEmit && vite build && node scripts/check-entry-budget.mjs')
   assert.equal(pkg.scripts.preview, 'vite preview')
   assert.ok(!pkg.devDependencies['@mistjs/cli'])
   assert.ok(!pkg.devDependencies.nitropack)
@@ -26,6 +26,7 @@ test('direct Vite commands preserve the existing static deployment model', async
 
 test('production preview serves deep links and every HTML asset under its base', async () => {
   const html = await read('dist/index.html')
+  assert.match(html, /<html lang="zh-CN">/)
   const references = [...html.matchAll(/(?:src|href)="([^"#]+)"/g)].map(match => match[1]).filter(path => path.startsWith('/'))
   const entry = references.find(path => /\/assets\/index-[^/]+\.js$/.test(path))
   assert.ok(entry, 'compiled entry script exists')

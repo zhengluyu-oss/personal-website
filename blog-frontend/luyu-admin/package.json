@@ -10,17 +10,18 @@
   "repository": "antdv-pro/antdv-pro",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "build": "vue-tsc --noEmit && vite build && node scripts/check-entry-budget.mjs",
     "preview": "vite preview",
     "test:build": "node --test scripts/build-compatibility.test.mjs",
     "lint": "eslint src --fix",
     "typecheck": "vue-tsc --noEmit",
+    "check:performance": "node scripts/check-entry-budget.mjs",
     "test:pagination": "node --experimental-strip-types --test src/pages/blog/essay/list/pagination.test.ts",
     "check:routes": "node ../../scripts/check-page-routes.mjs",
     "bump:patch": "changelogen --bump --output CHANGELOG.md --release --prerelease",
     "bump:minor": "changelogen --bump --output CHANGELOG.md --release --minor",
     "bump:major": "changelogen --bump --output CHANGELOG.md --release --major",
-    "prepare": "husky install",
+    "prepare": "node scripts/prepare.mjs",
     "dir-tree": "esno ./scripts/dir-tree",
     "gen:uno": "esno ./scripts/gen-unocss",
     "toJS": "esno scripts/to-js"
@@ -86,7 +87,6 @@
     "unplugin-config": "^0.1.3",
     "unplugin-vue-components": "^0.25.2",
     "vite": "7.3.6",
-    "vite-plugin-preload": "0.7.0",
     "vitest": "5.0.3",
     "vue-tsc": "^1.8.22"
   },

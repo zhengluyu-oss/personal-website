@@ -12,7 +12,7 @@ export interface WritingArticleItem {
   tags?: Array<{ id: number; tagName: string }>
 }
 
-const props = defineProps<{
+defineProps<{
   articles: WritingArticleItem[]
   emptyText?: string
 }>()

@@ -6,8 +6,9 @@
   "packageManager": "pnpm@11.3.0",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/compress-dist.mjs && node scripts/check-performance-budget.mjs",
+    "build": "pnpm test && pnpm typecheck && vite build && node scripts/compress-dist.mjs && node scripts/check-performance-budget.mjs",
     "build:app": "vite build",
+    "typecheck": "vue-tsc --noEmit",
     "test": "node --experimental-strip-types --test src/utils/request-tracker.test.ts src/utils/category-slug.test.ts src/utils/chunk-recovery.test.ts src/utils/blog-feed.test.ts src/utils/category-hero.test.ts src/utils/blog-pagination.test.ts src/utils/safe-content.test.ts src/utils/home-content.test.ts src/utils/public-profile.test.ts src/router/scroll-position.test.ts src/utils/seo.test.ts src/utils/latest-request.test.ts",
     "test:diary": "node --experimental-strip-types --test ../../scripts/diary/diary-save.test.ts",
     "check:performance": "node scripts/check-performance-budget.mjs",
@@ -37,6 +38,7 @@
     "vue3-danmaku": "^1.6.0"
   },
   "devDependencies": {
+    "@types/node": "^22.20.5",
     "@vitejs/plugin-vue": "^4.2.3",
     "autoprefixer": "^10.4.18",
     "css-loader": "^6.8.1",

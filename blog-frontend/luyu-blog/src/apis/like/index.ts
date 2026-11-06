@@ -1,7 +1,8 @@
 import http from "@/utils/http.ts";
+import type { ApiResponse } from '@/utils/http.ts';
 // 点赞
-export const userLike = (type: number, typeId: string) => {
-    return http.request({
+export const userLike = (type: number, typeId: string | number) => {
+    return http.request<ApiResponse<void>>({
         url: '/like/auth/like',
         method: "post",
         params: {
@@ -12,8 +13,8 @@ export const userLike = (type: number, typeId: string) => {
 }
 
 // 取消点赞文章
-export const cancelLike = (type: number, typeId: string) => {
-    return http.request({
+export const cancelLike = (type: number, typeId: string | number) => {
+    return http.request<ApiResponse<void>>({
         url: '/like/auth/like',
         method: "delete",
         params: {
@@ -24,8 +25,8 @@ export const cancelLike = (type: number, typeId: string) => {
 }
 
 // 是否点赞
-export const isLike = (type: number, typeId?: string) => {
-    return http.request({
+export const isLike = (type: number, typeId?: string | number) => {
+    return http.request<ApiResponse<unknown[]>>({
         url: '/like/whether/like',
         method: "get",
         params: {

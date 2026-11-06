@@ -5,11 +5,11 @@ import "md-editor-v3/lib/style.css";
 import {ArrowRightBold} from "@element-plus/icons-vue";
 import {Ref, UnwrapRef} from "vue";
 import {ElMessage} from "element-plus";
-import {getLeaveWordList, userLeaveWord} from "@/apis/leaveWord";
+import {getLeaveWordList, userLeaveWord, type LeaveWord} from "@/apis/leaveWord";
 const mode = 'light'
 const isShow = ref(false);
 const text = ref('');
-const LeaveWordList = ref([]);
+const LeaveWordList = ref<LeaveWord[]>([]);
 onMounted(() => {
   getLeaveWordListFunc()
 })
@@ -17,7 +17,7 @@ onMounted(() => {
 function getLeaveWordListFunc() {
   getLeaveWordList().then(res => {
     // 过滤内容
-    LeaveWordList.value = res.data.map((item: any) => {
+    LeaveWordList.value = res.data.map((item) => {
       item.content = item.content.replace(/[*#>`~\-\\[\]()\s]|(\n\n)/g, '')
       if (item.content.length > 35) {
         item.content = item.content.substring(0, 35) + '...';

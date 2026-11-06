@@ -16,13 +16,10 @@ export interface AlbumData {
   description: string
   photos: Photo[]
   subAlbums?: AlbumData[]
-  coverUrl?: string | undefined
+  coverUrl?: string | null
 }
 
-export interface GalleryItem {
-  type: 'album' | 'photo'
-  data: AlbumData | Photo
-}
+export type GalleryItem = { type: 'album'; data: AlbumData } | { type: 'photo'; data: Photo }
 
 const props = defineProps<{
   currentPath: number[]
@@ -86,7 +83,7 @@ const initializeVisibility = (startIndex: number = 0) => {
             ...new Array(gallery.length - itemsVisible.value.length).fill(false)
         ]
     }
-    
+
     // 使用 requestAnimationFrame 确保动画流畅
     requestAnimationFrame(() => {
         for (let i = startIndex; i < gallery.length; i++) {
@@ -127,9 +124,9 @@ onUnmounted(() => {
 })
 
 // 修改 watch 函数
-watch(() => [props.currentPath, props.galleries], (newValue, oldValue) => {
+watch(() => [props.currentPath, props.galleries] as const, (_newValue, oldValue) => {
     const gallery = getCurrentGallery()
-    
+
     // 检查是否是路径变化（包括返回主页的情况）
     const isPathChange = oldValue && oldValue[0] ? (
         // 当前路径长度变化
@@ -139,14 +136,14 @@ watch(() => [props.currentPath, props.galleries], (newValue, oldValue) => {
         // 从其他路径返回主页
         (props.currentPath.length === 0 && oldValue[0].length > 0)
     ) : false
-    
+
     if (isPathChange) {
         // 路径变化时，滚动到顶部
         window.scrollTo({
             top: 0,
             behavior: 'smooth'
         })
-        
+
         // 重置可见性状态并触发新的动画
         itemsVisible.value = new Array(gallery.length).fill(false)
         initializeVisibility(0)
@@ -154,7 +151,7 @@ watch(() => [props.currentPath, props.galleries], (newValue, oldValue) => {
         // 加载更多时，只为新项目添加动画
         initializeVisibility(prevGalleryLength.value)
     }
-    
+
     // 更新 prevGalleryLength
     prevGalleryLength.value = gallery.length
 }, { deep: true, immediate: true })
@@ -221,7 +218,7 @@ const breadcrumbs = computed(() => {
 
     return {
       id,
-      name: albumInfo ? albumInfo.data.name : '未命名相册'
+      name: albumInfo && isAlbum(albumInfo) ? albumInfo.data.name : '未命名相册'
     }
   })
 })
@@ -670,4 +667,4 @@ const isAlbum = (item: GalleryItem): item is { type: 'album', data: AlbumData } 
     transform: rotate(360deg);
   }
 }
-</style> 
+</style>

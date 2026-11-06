@@ -6,6 +6,8 @@ export interface ArticleSearch {
     articleTitle: string;
     highlightedTitle: string;
     articleContent: string;
+    titleSegments?: { text: string; matched: boolean }[];
+    contentSegments?: { text: string; matched: boolean }[];
 }
 // 文章热门推荐
 export interface ArticleHotRecommend {

@@ -18,7 +18,6 @@ const emit = defineEmits<{
 const scale = ref(1)
 const minScale = 0.1
 const maxScale = 10
-const scaleStep = 0.1
 const scaleMultiplier = 0.002
 const rotation = ref(0)
 const flipX = ref(false)
@@ -37,11 +36,11 @@ const transitionDirection = ref<'prev' | 'next' | ''>('')
 
 // 判断是否为初始状态
 const isInitialState = computed(() => {
-  return scale.value === 1 && 
-         rotation.value === 0 && 
-         !flipX.value && 
-         !flipY.value && 
-         translateX.value === 0 && 
+  return scale.value === 1 &&
+         rotation.value === 0 &&
+         !flipX.value &&
+         !flipY.value &&
+         translateX.value === 0 &&
          translateY.value === 0
 })
 
@@ -58,10 +57,10 @@ const resetTransform = () => {
 // 关闭预览
 const closePreview = () => {
   resetTransform()
-  
+
   // 获取之前保存的滚动位置
   const scrollY = parseInt(document.body.style.top || '0') * -1
-  
+
   // 恢复页面滚动状态
   document.body.style.position = ''
   document.body.style.width = ''
@@ -69,10 +68,10 @@ const closePreview = () => {
   document.body.style.left = ''
   document.body.style.marginTop = ''
   document.body.style.overflow = ''
-  
+
   // 恢复到之前的滚动位置
   window.scrollTo(0, scrollY)
-  
+
   emit('update:show', false)
 }
 
@@ -81,11 +80,11 @@ const prevPhoto = () => {
   if (isTransitioning.value) return
   isTransitioning.value = true
   transitionDirection.value = 'prev'
-  
+
   resetTransform()
-  
-  const newIndex = props.currentIndex > 0 
-    ? props.currentIndex - 1 
+
+  const newIndex = props.currentIndex > 0
+    ? props.currentIndex - 1
     : props.photos.length - 1
   emit('update:currentIndex', newIndex)
 
@@ -99,11 +98,11 @@ const nextPhoto = () => {
   if (isTransitioning.value) return
   isTransitioning.value = true
   transitionDirection.value = 'next'
-  
+
   resetTransform()
-  
-  const newIndex = props.currentIndex < props.photos.length - 1 
-    ? props.currentIndex + 1 
+
+  const newIndex = props.currentIndex < props.photos.length - 1
+    ? props.currentIndex + 1
     : 0
   emit('update:currentIndex', newIndex)
 
@@ -141,7 +140,7 @@ const toggleFlipY = () => {
 // 处理键盘事件
 const handleKeydown = (e: KeyboardEvent) => {
   if (!props.show) return
-  
+
   if (e.key === 'Escape') {
     closePreview()
   } else if (e.key === 'ArrowLeft') {
@@ -172,10 +171,10 @@ const handleMouseDown = (e: MouseEvent) => {
 
 const handleMouseMove = (e: MouseEvent) => {
   if (!isDragging.value) return
-  
+
   const deltaX = e.clientX - startX.value
   const deltaY = e.clientY - startY.value
-  
+
   if (isInitialState.value && scale.value === 1) {
     if (Math.abs(deltaX) > 50) {
       if (deltaX > 0) {
@@ -216,7 +215,7 @@ const handleTouchMove = (e: TouchEvent) => {
   if (e.touches.length === 1 && isDragging.value) {
     const deltaX = e.touches[0].clientX - startX.value
     const deltaY = e.touches[0].clientY - startY.value
-    
+
     if (isInitialState.value && scale.value === 1) {
       if (Math.abs(deltaX) > 50) {
         if (deltaX > 0) {
@@ -279,7 +278,7 @@ onUnmounted(() => {
             :key="currentIndex"
             :src="photos[currentIndex]"
             :style="{
-              transform: `scale(${scale}) rotate(${rotation}deg) 
+              transform: `scale(${scale}) rotate(${rotation}deg)
                          scaleX(${flipX ? -1 : 1}) scaleY(${flipY ? -1 : 1})`,
               transformOrigin: 'center',
               transition: 'transform 0.3s ease'
@@ -608,4 +607,4 @@ onUnmounted(() => {
   display: inline-block;
   will-change: transform;
 }
-</style> 
+</style>

@@ -299,26 +299,6 @@ const handleClick = (event: MouseEvent) => {
   }
 };
 
-// 手动激活子菜单（解决触摸设备的问题）
-const handleSubmenuActivation = (event: Event) => {
-  const target = event.currentTarget as HTMLElement;
-  const parentLi = target.closest('.has-submenu') as HTMLElement;
-  const hasSubmenuElements = document.querySelectorAll('.has-submenu');
-  
-  // 先清除所有激活状态
-  hasSubmenuElements.forEach(el => {
-    if (el !== parentLi) {
-      el.classList.remove('active');
-    }
-  });
-  
-  // 切换当前元素的激活状态
-  parentLi.classList.toggle('active');
-  
-  // 阻止事件冒泡，避免触发hideMenu
-  event.stopPropagation();
-};
-
 onMounted(() => {
   document.addEventListener('contextmenu', showMenu);
   document.addEventListener('click', handleClick);

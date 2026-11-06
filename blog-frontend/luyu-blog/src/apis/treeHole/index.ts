@@ -1,4 +1,6 @@
-import http from "@/utils/http.ts";
+import http, { type ApiResponse } from "@/utils/http.ts";
+
+export interface TreeHoleItem { avatar: string; nickname: string; content: string }
 
 // 添加树洞
 export const addTreeHole = (content: String) => {
@@ -9,7 +11,7 @@ export const addTreeHole = (content: String) => {
 
 // 获取树洞列表
 export const getTreeHoleList = () => {
-    return http.get("/treeHole/getTreeHoleList", {
+    return http.get<ApiResponse<TreeHoleItem[]>>("/treeHole/getTreeHoleList", {
         method: 'get'
     });
 };

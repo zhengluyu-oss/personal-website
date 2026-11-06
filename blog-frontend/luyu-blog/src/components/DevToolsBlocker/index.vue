@@ -42,7 +42,7 @@ const props = defineProps({
 });
 
 const isWarningVisible = ref(false);
-let devToolsCheckInterval: number | undefined;
+let devToolsCheckInterval: ReturnType<typeof setInterval> | undefined;
 let dismissTimeout: number | undefined;
 let debuggerCounter = 0;
 const MAX_DEBUGGER_CALLS = 3;
@@ -58,7 +58,7 @@ function debuggerLoop() {
     try {
       // 添加debugger语句
       debugger;
-      
+
       // 在随机时间后再次执行，避免可预测性
       const randomDelay = Math.floor(Math.random() * 500) + 200;
       setTimeout(debuggerLoop, randomDelay);
@@ -89,23 +89,23 @@ watch(isWarningVisible, (newVal) => {
 // 添加多重debugger语句，通过连续调用形成拦截
 const runDebuggerSequence = () => {
   if (!isEnabled.value) return;
-  
+
   // 避免过于频繁地触发debugger
   debuggerCounter++;
   if (debuggerResetTimeout) clearTimeout(debuggerResetTimeout);
-  
+
   // 在一段时间后重置计数器
   debuggerResetTimeout = window.setTimeout(() => {
     debuggerCounter = 0;
   }, DEBUGGER_RESET_TIME);
-  
+
   // 只有在计数器较低时才执行，防止无限循环
   if (debuggerCounter < MAX_DEBUGGER_CALLS) {
     setTimeout(() => { debugger; }, 100);
     setTimeout(() => { debugger; }, 500);
     setTimeout(() => { debugger; }, 1000);
   }
-  
+
   // 启用连续debugger循环
   if (!continuousDebuggerEnabled) {
     continuousDebuggerEnabled = true;
@@ -116,7 +116,7 @@ const runDebuggerSequence = () => {
 // 使用Function构造函数创建一个难以通过开发工具跳过的函数
 const createObfuscatedDebugger = () => {
   if (!isEnabled.value) return;
-  
+
   try {
     // 使用Function构造函数创建动态函数，更难被跳过
     const dynamicFn = new Function(
@@ -130,7 +130,7 @@ const createObfuscatedDebugger = () => {
       return true;
       `
     );
-    
+
     // 执行该函数
     dynamicFn();
   } catch (e) {
@@ -179,34 +179,34 @@ const handleKeyDown = (e: KeyboardEvent) => {
 // 检查是否已经打开了开发者工具
 const checkDevToolsPreOpened = () => {
   if (!isEnabled.value) return false;
-  
+
   // 方法1: 检查窗口尺寸差异
   const widthThreshold = 160;
   const heightThreshold = 160;
-  
-  if (window.outerWidth - window.innerWidth > widthThreshold || 
+
+  if (window.outerWidth - window.innerWidth > widthThreshold ||
       window.outerHeight - window.innerHeight > heightThreshold) {
     showWarning();
     return true;
   }
-  
+
   // 移除主动显示警告的测试方法，改为仅返回检测结果
   try {
     const consoleTest = /./;
     consoleTest.toString = function() {
       return "Console open detected";
     };
-    
+
     // 仅进行检测，不触发警告
     const hasFirebug = /firebug/i.test(navigator.userAgent);
-    const hasChrome = typeof (window as any).chrome !== 'undefined' && 
-                      typeof (navigator as any).vendor !== 'undefined' && 
+    const hasChrome = typeof (window as any).chrome !== 'undefined' &&
+                      typeof (navigator as any).vendor !== 'undefined' &&
                       /google/i.test((navigator as any).vendor);
-    const hasDevTools = typeof (console as any).firebug !== 'undefined' && 
+    const hasDevTools = typeof (console as any).firebug !== 'undefined' &&
                        (/DevTools/i.test((console as any).firebug) || /Dev Tools/i.test((console as any).firebug));
-    
+
     const isOpen = hasFirebug || (hasChrome && hasDevTools);
-    
+
     if (isOpen) {
       showWarning();
       return true;
@@ -214,14 +214,14 @@ const checkDevToolsPreOpened = () => {
   } catch (e) {
     // 忽略错误
   }
-  
+
   // 方法3: 测量调试函数的执行时间，但提高阈值减少误报
   try {
     let executionTime = 0;
     const start = performance.now();
     debugger;
     executionTime = performance.now() - start;
-    
+
     // 增加阈值以减少误报
     if (executionTime > 200) {
       showWarning();
@@ -230,7 +230,7 @@ const checkDevToolsPreOpened = () => {
   } catch (e) {
     // 忽略错误
   }
-  
+
   return false;
 };
 
@@ -238,7 +238,7 @@ const performDevToolsCheck = () => {
   if (!isEnabled.value) return;
 
   const threshold = 160; // 开发者工具打开时内外高度/宽度的典型差异
-  if (window.outerWidth - window.innerWidth > threshold || 
+  if (window.outerWidth - window.innerWidth > threshold ||
       window.outerHeight - window.innerHeight > threshold) {
     if (!isWarningVisible.value) {
       showWarning();
@@ -253,8 +253,8 @@ const performDevToolsCheck = () => {
 // 在页面内容加载时执行的一次性检查
 const injectAntiDevTools = () => {
   if (!isEnabled.value) return;
-  
-  // 注入内联脚本处理预先打开的开发工具 
+
+  // 注入内联脚本处理预先打开的开发工具
   try {
     // 注入样式使得DevTools预览时内容模糊
     const style = document.createElement('style');
@@ -269,13 +269,13 @@ const injectAntiDevTools = () => {
       }
     `;
     document.head.appendChild(style);
-    
+
     // 启动连续性的debugger检测 - 仅在确认检测到DevTools时启用
     continuousDebuggerEnabled = false;
-    
+
     // 立即执行检测，但不显示警告除非真的检测到开发者工具
     const devToolsDetected = checkDevToolsPreOpened();
-    
+
     // 只有在实际检测到开发者工具时才启用更积极的防御
     if (devToolsDetected) {
       continuousDebuggerEnabled = true;
@@ -292,12 +292,12 @@ onMounted(() => {
     // 基本事件监听
     document.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', performDevToolsCheck);
-    
+
     // 延迟执行第一次检查，避免页面加载时的误报
     setTimeout(() => {
       performDevToolsCheck();
     }, 2000);
-    
+
     // 设置定期检查，但降低频率
     if (devToolsCheckInterval) clearInterval(devToolsCheckInterval);
     devToolsCheckInterval = setInterval(() => {
@@ -307,10 +307,10 @@ onMounted(() => {
         createObfuscatedDebugger();
       }
     }, 2000); // 增加检查间隔
-    
+
     // 注入反调试代码
     injectAntiDevTools();
-    
+
     // 在DOMContentLoaded后进行一次全面检查
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', injectAntiDevTools);
@@ -326,7 +326,7 @@ onUnmounted(() => {
     document.removeEventListener('keydown', handleKeyDown);
     window.removeEventListener('resize', performDevToolsCheck);
     document.removeEventListener('DOMContentLoaded', injectAntiDevTools);
-    
+
     if (devToolsCheckInterval) {
       clearInterval(devToolsCheckInterval);
     }
@@ -336,7 +336,7 @@ onUnmounted(() => {
     if (debuggerResetTimeout) {
       clearTimeout(debuggerResetTimeout);
     }
-    
+
     // 停止连续debugger循环
     continuousDebuggerEnabled = false;
   }
@@ -501,18 +501,18 @@ html[class='dark'] .close-button:hover {
     border-radius: 0;
     padding: 12px 16px;
   }
-  
+
   .warning-icon {
     width: 28px;
     height: 28px;
   }
-  
+
   .warning-text h3 {
     font-size: 1rem;
   }
-  
+
   .warning-text p {
     font-size: 0.8rem;
   }
 }
-</style> 
+</style>

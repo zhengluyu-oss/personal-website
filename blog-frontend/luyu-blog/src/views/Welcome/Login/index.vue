@@ -45,6 +45,12 @@ function setChallenge(data: any) {
   timer = setInterval(() => { if (resendAfter.value > 0) resendAfter.value-- }, 1000)
 }
 
+function resetChallenge() {
+  challenge.value = undefined
+  verificationCode.value = ''
+  clearInterval(timer)
+}
+
 async function confirmDelivery(taskId?: string) {
   deliveryMessage.value = '验证码正在发送，请稍候'
   try {
@@ -149,7 +155,7 @@ async function resendCode() {
         <p>{{ deliveryMessage }}</p>
         <el-input v-model="verificationCode" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="请输入6位邮箱验证码" @keyup.enter="userLogin()" />
         <el-button :disabled="submitting || resendAfter > 0" @click="resendCode">{{ resendAfter > 0 ? `${resendAfter}秒后重发` : '重新发送' }}</el-button>
-        <el-button :disabled="submitting" @click="challenge = undefined; verificationCode = ''; clearInterval(timer)">重新登录</el-button>
+        <el-button :disabled="submitting" @click="resetChallenge">重新登录</el-button>
       </div>
     </div>
     <div class="auth-actions">

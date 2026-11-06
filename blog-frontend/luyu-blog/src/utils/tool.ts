@@ -1,23 +1,22 @@
 import { config } from "@/config/config";
 // 转码
 export const Base64 = {
-    encode: function (v) {
+    encode: function (v: string) {
         return window.btoa(window.encodeURIComponent(v));
     },
-    decode: function (v) {
+    decode: function (v: string) {
         return window.decodeURIComponent(window.atob(v));
     },
 };
 
-export const _setLocalItem = function (key, value) {
+export const _setLocalItem = function (key: string, value: unknown) {
     try {
         if (key === "" || key === undefined) {
             return;
         }
         if (key) {
             if (value == 0) {
-                value = JSON.stringify(value);
-                localStorage.setItem(config.ENCRYPTION ? Base64.encode(key) : key, value);
+                localStorage.setItem(config.ENCRYPTION ? Base64.encode(key) : key, JSON.stringify(value));
                 return;
             }
             if (value === null || value === undefined || value === "") {
@@ -35,7 +34,7 @@ export const _setLocalItem = function (key, value) {
         console.error(err);
     }
 };
-export const _getLocalItem = function (key) {
+export const _getLocalItem = function (key: string | null | undefined) {
     try {
         if (key === null || key === "" || key === undefined) {
             return "";
@@ -54,15 +53,14 @@ export const _getLocalItem = function (key) {
     }
 };
 
-export const _setSessionItem = function (key, value) {
+export const _setSessionItem = function (key: string, value: unknown) {
     try {
         if (key === "" || key === undefined) {
             return;
         }
         if (key) {
             if (value == 0) {
-                value = JSON.stringify(value);
-                sessionStorage.setItem(config.ENCRYPTION ? Base64.encode(key) : key, value);
+                sessionStorage.setItem(config.ENCRYPTION ? Base64.encode(key) : key, JSON.stringify(value));
             }
             if (value === null || value === undefined || value === "") {
                 return "";
@@ -77,10 +75,10 @@ export const _setSessionItem = function (key, value) {
         }
     } catch (e) {
         console.log(e);
-        return sessionStorage.setItem(config.ENCRYPTION ? Base64.encode(key) : key, value);
+        return sessionStorage.setItem(config.ENCRYPTION ? Base64.encode(key) : key, String(value));
     }
 };
-export const _getSessionItem = function (key) {
+export const _getSessionItem = function (key: string | null | undefined) {
     if (key === null || key === "" || key === undefined) {
         return null;
     }
@@ -101,7 +99,7 @@ export const _getSessionItem = function (key) {
         return sessionStorage.getItem(config.ENCRYPTION ? Base64.encode(key) : key);
     }
 };
-export const _removeLocalItem = function (key) {
+export const _removeLocalItem = function (key: string | null | undefined) {
     if (key === null || key === "" || key === undefined) {
         return;
     }
@@ -111,7 +109,7 @@ export const _removeLocalItem = function (key) {
     }
 };
 // 清空session数据
-export const _removeSessionItem = function (key) {
+export const _removeSessionItem = function (key: string | null | undefined) {
     if (key === null || key === "" || key === undefined) {
         return;
     }
@@ -124,19 +122,20 @@ export const _removeSessionItem = function (key) {
 /*
  * 递归深拷贝
  */
-export function deepClone(source) {
-    if (!source && typeof source !== "object") {
-        throw new Error("error arguments", "deepClone");
+export function deepClone<T>(source: T): T {
+    if (source === null || typeof source !== "object") {
+        throw new Error("error arguments: deepClone");
     }
-    const targetObj = source.constructor === Array ? [] : {};
+    const targetObj: Record<string, unknown> | unknown[] = Array.isArray(source) ? [] : {};
     Object.keys(source).forEach((keys) => {
-        if (source[keys] && typeof source[keys] === "object") {
-            targetObj[keys] = deepClone(source[keys]);
+        const value = (source as Record<string, unknown>)[keys];
+        if (value && typeof value === "object") {
+            (targetObj as Record<string, unknown>)[keys] = deepClone(value);
         } else {
-            targetObj[keys] = source[keys];
+            (targetObj as Record<string, unknown>)[keys] = value;
         }
     });
-    return targetObj;
+    return targetObj as T;
 }
 
 export function isMobile() {
@@ -153,7 +152,7 @@ export function randomFontColor() {
 }
 
 // 给一些数字转成k w
-export function numberFormate(number) {
+export function numberFormate(number: number | string) {
     if (!number) return 0;
     number = typeof number == "number" ? number : parseFloat(number);
     let res;
@@ -172,7 +171,7 @@ export function numberFormate(number) {
  * @param {*} nickName 昵称
  * @returns 欢迎语句
  */
-export function getWelcomeSay(nickName) {
+export function getWelcomeSay(nickName: string) {
     let res;
     if (!nickName) {
         res = "欢迎来到陆屿";
@@ -206,31 +205,31 @@ export function getWelcomeSay(nickName) {
  * @params: func 防抖的函数
  * @description: 防抖
  */
-export function debounce(fn, delay) {
-    let timer = null;
-    return function () {
+export function debounce(fn: (...args: unknown[]) => void, delay: number) {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    return function (this: unknown, ...args: unknown[]) {
         if (timer) {
             clearTimeout(timer);
         }
         timer = setTimeout(() => {
-            fn.apply(this, arguments);
+            fn.apply(this, args);
         }, delay);
     };
 }
 
-export function containHTML(text) {
+export function containHTML(text: string) {
     const reg = /<[^>]+>/g;
 
     const badJs = /script|alert|window|prompt|location|href|iframe|onload|onerror/g;
     return reg.test(text) && !badJs.test(text);
 }
 
-export function filterMessage(text) {
+export function filterMessage(text: string) {
     return text.replace(/&gt;/g, ">").replace(/&lt;/g, "<");
 }
 
 // 返回时间 几天前。。。
-export const returnTime = (time) => {
+export const returnTime = (time: string) => {
     if (!time) return;
     // eslint-disable-next-line
     time = time.replace(/\-/g, "/"); // 解决ios系统上格式化时间出现NAN的bug
@@ -253,14 +252,16 @@ export const returnTime = (time) => {
  * @param {*} file 图片
  * @param {*} size 文件压缩至大小 实际上可能压缩不到 有可能会更小
  */
-export const imageConversion = (file, size = 800, quality = 1, maxTime = 3) => {
-    return new Promise((resolve) => {
+export const imageConversion = (file: File, size = 800, quality = 1, maxTime = 3) => {
+    return new Promise<Blob>((resolve) => {
         try {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = (e) => {
                 const image = new Image();
-                image.src = e.target.result;
+                const source = e.target?.result;
+                if (typeof source !== 'string') return;
+                image.src = source;
                 image.onload = () => {
                     const canvas = document.createElement("canvas");
                     const ctx = canvas.getContext("2d");
@@ -270,6 +271,7 @@ export const imageConversion = (file, size = 800, quality = 1, maxTime = 3) => {
                     height = image.height;
                     canvas.width = width;
                     canvas.height = height;
+                    if (!ctx) return;
                     ctx.drawImage(image, 0, 0, width, height);
                     let dataURL = canvas.toDataURL(file.type, quality);
                     // 在有限的时间内压缩
@@ -284,7 +286,7 @@ export const imageConversion = (file, size = 800, quality = 1, maxTime = 3) => {
                     }
 
                     const arr = dataURL.split(",");
-                    let mime = arr[0].match(/:(.*?);/)[1];
+                    const mime = file.type;
                     const bstr = atob(arr[1]);
                     let n = bstr.length;
                     const u8arr = new Uint8Array(n);
@@ -292,7 +294,6 @@ export const imageConversion = (file, size = 800, quality = 1, maxTime = 3) => {
                         u8arr[n] = bstr.charCodeAt(n);
                     }
 
-                    mime = file.type;
                     resolve(
                         new Blob([u8arr], {
                             type: mime,
