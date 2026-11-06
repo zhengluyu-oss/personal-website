@@ -229,7 +229,7 @@ const domain = import.meta.env.VITE_APP_DOMAIN_NAME_FRONT
     </template>
     <template #table-content>
       <a-table class="article-list-table" :columns="columns" :data-source="tabData" :loading="loading"
-        :row-selection="{ selectedRowKeys: state.selectedRowKeys, onChange: onSelectChange }" :row-key="record => record.id"
+        :row-selection="{ selectedRowKeys: state.selectedRowKeys, onChange: onSelectChange }" row-key="id"
         :scroll="{ x: 1000 }" :pagination="{current:pagination.current,pageSize:pagination.pageSize,total:pagination.total,showSizeChanger:true,pageSizeOptions:ARTICLE_PAGE_SIZE_OPTIONS,showTotal:(total:number) => `共 ${total} 篇文章`,showQuickJumper:true}" @change="handleTableChange">
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'articleTitle'">
@@ -254,8 +254,8 @@ const domain = import.meta.env.VITE_APP_DOMAIN_NAME_FRONT
                     <span class="article-meta">编号 {{ record.id }} · {{ record.userName || '未署名' }}</span>
                     <div class="article-tags"><a-tag v-for="tag in record.tagsName || []" :key="tag">{{ tag }}</a-tag><span v-if="!record.tagsName?.length">暂无标签</span></div>
                     <label :for="`status-${record.id}`">文章状态</label>
-                    <a-select :id="`status-${record.id}`" :value="record.status" :loading="record.statusLoading" :disabled="record.statusLoading" :options="[{value:1,label:'公开'},{value:2,label:'私密'},{value:3,label:'草稿'}]" @change="value => updateArticleStatusFunc(record.id, Number(value), record)" />
-                    <div class="article-top-control"><span>置顶文章</span><a-switch :checked="record.isTop" :loading="record.isToploading" aria-label="置顶文章" @change="value => updateIsTopFunc(record.id, Boolean(value), record)" /></div>
+                    <a-select :id="`status-${record.id}`" :value="record.status" :loading="record.statusLoading" :disabled="record.statusLoading" :options="[{value:1,label:'公开'},{value:2,label:'私密'},{value:3,label:'草稿'}]" @change="updateArticleStatusFunc(record.id, Number($event), record)" />
+                    <div class="article-top-control"><span>置顶文章</span><a-switch :checked="record.isTop" :loading="record.isToploading" aria-label="置顶文章" @change="updateIsTopFunc(record.id, Boolean($event), record)" /></div>
                     <a :href="`${domain}article/${record.id}`" target="_blank" rel="noopener noreferrer">查看前台 ↗</a>
                     <a-popconfirm title="确定删除这篇文章吗？" ok-text="确认删除" cancel-text="取消" @confirm="onDelete([record.id])"><a-button danger>删除文章</a-button></a-popconfirm>
                   </div>

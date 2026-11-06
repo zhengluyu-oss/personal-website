@@ -290,7 +290,7 @@ async function updateOrInsertRole(id?: string) {
         :data-source="tabData"
         :loading="loading"
         :row-selection="{ selectedRowKeys: state.selectedRowKeys, onChange: onSelectChange }"
-        :row-key="record => record.id"
+        row-key="id"
         size="small"
       >
         <template #bodyCell="{ column, record }">

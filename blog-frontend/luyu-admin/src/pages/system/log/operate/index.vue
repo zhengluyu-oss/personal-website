@@ -310,7 +310,7 @@ const state = reactive<{
         :data-source="tabData"
         :loading="loading"
         :row-selection="{ selectedRowKeys: state.selectedRowKeys, onChange: onSelectChange }"
-        :row-key="record => record.id"
+        row-key="id"
         size="small"
         :pagination="{ total: page.total }"
         @change="pageChange"
