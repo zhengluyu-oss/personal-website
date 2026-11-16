@@ -7,7 +7,7 @@ import static xyz.luyu.diary.ai.DiaryAiModels.*;
 
 /** 引用完整性检查不等于模型解释正确；前台仍展示不确定性。 */
 public final class DiaryAiEvidence {
-    public static final String PROMPT_VERSION="grounded-private-diary-v5-open-reflection";
+    public static final String PROMPT_VERSION="grounded-private-diary-v6-question-focus";
     private DiaryAiEvidence() {}
     public static String system(Kind kind) {
         return system(kind,kind==Kind.REVIEW);
@@ -29,7 +29,7 @@ public final class DiaryAiEvidence {
             +"建议按相关性和优先级选择，最多20项，不要求填满；这是建议数量边界，与输出额度和分析篇幅独立。action写清适用情境与可执行做法，reason解释为什么可能有帮助及其取舍，effort说明投入、条件和完成标准，reviewAfter说明复查时点、观察指标与不适合时如何调整；可提供不同投入的选项，是否采用由本人决定，不保证效果或替本人创建行动。"
             +(fullReview?"本轮sources包含已预览范围内的完整篇目，可围绕该完整范围综合分析；完整记录仍不代表现实生活的全部，不得声称本轮只见检索片段。"
                 :"本轮sources来自相关日记的检索片段，不能声称已经读完范围内所有日记；涉及全周期结论时说明覆盖限制，需要完整材料时引导预览完整范围复盘。")
-            +(kind==Kind.QUESTION?"本次是问日记或继续追问：answer必填、summary=null，先直接回应本轮问题，允许按需要展开观察、解释和建议，observations/hypotheses/suggestions有相关内容就填写。追问可以深入比较、调整或质疑前面的建议，不需要退回简短概括。"
+            +(kind==Kind.QUESTION?"本次是问日记或继续追问：answer必填、summary=null，先直接回应本轮问题，允许按需要展开观察、解释和建议，observations/hypotheses/suggestions有相关内容就填写。追问可以深入比较、调整或质疑前面的建议，不需要退回简短概括。先识别本轮所问的对象、时间和诉求，answer开头直接给出针对本轮问题的回答，不先重复历史结论或泛谈。问原因时结合具体记录比较合理解释、指出证据缺口和可核实的区别；问建议时优先给少量符合本人目标与约束的可选做法，说明取舍；只问事实或原文时直接回答，不强加分析。"
                 :"本次是完整篇目复盘：answer=null；除非核心经历完全无依据且insufficientEvidence=true，summary必须是包含text、evidenceIds、quotes三个字段的JSON对象，不能是字符串、数组或null。summary.evidenceIds和summary.quotes至少填写一项真实来源与引文标识，再按用户问题组织观察、待核实解释和建议，避免与概览重复。"
                 +"复盘结构示例（仅示字段类型，占位内容须换为本轮真实资料）：{\"answer\":null,\"summary\":{\"text\":\"根据本次资料撰写的概览\",\"evidenceIds\":[\"本轮来源ID\"],\"quotes\":[{\"quoteId\":\"本轮引文ID\"}]},\"observations\":[],\"hypotheses\":[],\"suggestions\":[],\"limitations\":[\"本次资料的具体局限\"],\"insufficientEvidence\":false}。")
             +"有部分证据就回答可确认部分，并可提供明确标识的一般性建议，在limitations说明具体未知；只有核心个人问题完全无依据才设insufficientEvidence=true，不编造细节。"

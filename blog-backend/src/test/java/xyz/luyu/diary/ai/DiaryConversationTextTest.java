@@ -46,4 +46,13 @@ class DiaryConversationTextTest {
         assertTrue(summary.contains("上轮可选建议：先确认一个明确的完成标准"));
         assertTrue(points(summary)<=2400);
     }
+
+    @Test void independentQuestionDoesNotSearchThroughPreviousAnswer() {
+        var turns=List.of(new DiaryConversationStore.History("工作压力从哪里来？","可能与加班有关。"));
+        assertEquals("最近运动后精力有什么变化？",DiaryConversationText.retrievalQuestion("最近运动后精力有什么变化？",turns));
+        assertEquals("这个月我有哪些变化？",DiaryConversationText.retrievalQuestion("这个月我有哪些变化？",turns));
+        String followup=DiaryConversationText.retrievalQuestion("那第二条建议呢？",turns);
+        assertTrue(followup.contains("工作压力从哪里来？"));
+        assertTrue(followup.endsWith("那第二条建议呢？"));
+    }
 }

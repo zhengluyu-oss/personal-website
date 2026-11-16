@@ -6,10 +6,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import static xyz.luyu.diary.ai.DiaryAiModels.*;
 
 /** Prior answers are conversational context only, never citation material. */
 final class DiaryConversationText {
+    private static final Pattern FOLLOWUP_REFERENCE=Pattern.compile("^(?:那么|那(?:我|该|为什么|怎么|第)|它|其中|继续|刚才|之前|前面|上次|第[一二三四五六七八九十0-9]+[条项个]|[这那](?:个(?!月|周|年|星期)|种|样|些|条|件|方面))|这样|那样|上一条|上述");
     private DiaryConversationText() {}
 
     static String summary(String raw) {
@@ -53,6 +55,8 @@ final class DiaryConversationText {
 
     static String retrievalQuestion(String current,List<DiaryConversationStore.History> history) {
         if(history==null || history.isEmpty()) return current;
+        // A complete new question should not inherit the previous model's interpretation as search terms.
+        if(!FOLLOWUP_REFERENCE.matcher(current.strip()).find()) return current;
         var last=history.get(history.size()-1);
         int contextBudget=Math.max(0,1000-points(current)-2);
         if(contextBudget==0) return current;
