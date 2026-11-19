@@ -28,6 +28,13 @@ class KnowledgeAssistantTest {
     @AfterEach void clear(){SecurityContextHolder.clearContext();}
     private void login(){var user=User.builder().id(9L).isDeleted(0).isDisable(0).build();SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(new LoginUser(user),null,List.of()));}
     private void authorize(){login();when(access.active(9)).thenReturn(true);when(access.canRead()).thenReturn(true);when(access.requireRead()).thenReturn(7L);when(store.ready(7)).thenReturn(true);}
+    @Test void reasoningBudgetKeepsAssistantAvailable(){
+        authorize();when(access.owner()).thenReturn(7L);
+        config.setMaxOutputTokens(3072);
+        assertTrue(service.capabilities().available());
+        config.setMaxOutputTokens(4097);
+        assertFalse(service.capabilities().available());
+    }
     @Test void anonymousAndDeniedVisitorsNeverRetrieveOrCallModel(){
         when(access.canRead()).thenReturn(true); // Even a publicly readable knowledge module does not make paid AI anonymous.
         assertFalse(service.capabilities().available());
