@@ -23,6 +23,10 @@ class KnowledgeAssistantQueryTest {
         assertFalse(KnowledgeAssistantQuery.supports("AOF 记录写命令","虚构原文","AOF 记录写命令，恢复时重放。"));
         assertFalse(KnowledgeAssistantQuery.supports("AOF 记录写命令，但保证永不丢数据","AOF 记录写命令","AOF 记录写命令，恢复时重放。"));
         assertTrue(KnowledgeAssistantQuery.supports("记录写命令","AOF 记录写命令","AOF 记录写命令，恢复时重放。"));
+        assertTrue(KnowledgeAssistantQuery.supports("AOF 记录写命令以便恢复","AOF 记录写命令，恢复时重放","AOF 记录写命令，恢复时重放。"));
+    }
+    @Test void introductionQuestionSearchesForTopicInsteadOfInstruction(){
+        assertEquals(List.of("java"),KnowledgeAssistantQuery.terms("给我详细介绍一下java",null));
     }
     @Test void longAsciiIdentifierDoesNotExceedSearchLimit(){
         assertTrue(KnowledgeAssistantQuery.terms("x".repeat(101)+" Redis",null).stream().allMatch(term->term.length()<=100));

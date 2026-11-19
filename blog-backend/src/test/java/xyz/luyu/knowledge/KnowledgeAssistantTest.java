@@ -101,6 +101,46 @@ class KnowledgeAssistantTest {
         assertEquals("ANSWERED",result.state());assertEquals("/knowledge?entry="+id,result.sources().get(0).url());
         assertEquals(2,result.sources().get(0).revision());assertEquals("持久化使用 AOF",result.claims().get(0).quote());verify(store).finish(eq(7L),any(),eq(true));
     }
+    @Test void broadJavaQuestionPrefersOverviewEvidenceOverRecentMqMentions(){
+        authorize();config.setVectorEnabled(true);
+        var vector=mock(KnowledgeAssistantVector.class);
+        var improved=new KnowledgeAssistantService(access,store,config,cloud,vector);
+        var mq=new KnowledgeAssistantStore.Evidence(UUID.randomUUID(),1,null,false,
+            "MQ 与 Redis 系统学习｜Java RabbitMQ","Java 开发者可使用 RabbitMQ。",null,null,null);
+        var intro=new KnowledgeAssistantStore.Evidence(UUID.randomUUID(),1,null,false,
+            "Java 系统学习 00｜导读与目录","Java 是一种跨平台编程语言。",null,null,null);
+        when(store.find(eq(7L),anyList(),anyInt(),anyInt())).thenReturn(List.of(mq,intro));
+        when(vector.find(eq(7L),anyString(),anyInt())).thenReturn(List.of(new KnowledgeAssistantVector.Hit(intro,0.8)));
+        when(store.current(eq(7L),any())).thenReturn(true);
+        when(store.reserve(eq(7L),eq(9L),any(),any())).thenReturn(true);
+        when(cloud.generate(anyString())).thenReturn(JSON.parseObject("{\"claims\":[{\"text\":\"Java 是跨平台的编程语言\",\"source\":\"S1\",\"quote\":\"Java 是一种跨平台编程语言\"}]}"));
+        var result=improved.ask(new KnowledgeAssistantService.Question("给我详细介绍一下java"));
+        assertEquals("ANSWERED",result.state());
+        assertEquals(intro.entryId(),result.sources().get(0).entryId());
+    }
+    @Test void embeddingOutageFallsBackToCurrentLexicalEvidence(){
+        authorize();var vector=mock(KnowledgeAssistantVector.class);
+        var improved=new KnowledgeAssistantService(access,store,config,cloud,vector);
+        var evidence=new KnowledgeAssistantStore.Evidence(UUID.randomUUID(),1,null,false,"Redis 持久化","AOF 记录写命令。",null,null,null);
+        when(store.find(eq(7L),anyList(),anyInt(),anyInt())).thenReturn(List.of(evidence));
+        when(vector.find(eq(7L),anyString(),anyInt())).thenThrow(new IllegalStateException("synthetic outage"));
+        when(store.current(eq(7L),any())).thenReturn(true);
+        when(store.reserve(eq(7L),eq(9L),any(),any())).thenReturn(true);
+        when(cloud.generate(anyString())).thenReturn(JSON.parseObject("{\"claims\":[{\"text\":\"AOF 记录写命令\",\"source\":\"S1\",\"quote\":\"AOF 记录写命令\"}]}"));
+        assertEquals("ANSWERED",improved.ask(new KnowledgeAssistantService.Question("Redis 持久化方式" )).state());
+    }
+    @Test void vectorOnlyQuestionUsesDailyQuotaEvenWithoutAnswer(){
+        authorize();var vector=mock(KnowledgeAssistantVector.class);
+        var improved=new KnowledgeAssistantService(access,store,config,cloud,vector);
+        when(vector.ready(7L)).thenReturn(true);
+        when(store.find(eq(7L),anyList(),anyInt(),anyInt())).thenReturn(List.of());
+        when(vector.find(eq(7L),anyString(),anyInt())).thenReturn(List.of());
+        when(store.reserve(eq(7L),eq(9L),any(),any())).thenReturn(true);
+        assertEquals("NO_EVIDENCE",improved.ask(new KnowledgeAssistantService.Question("未知主题" )).state());
+        verify(store).reserve(eq(7L),eq(9L),any(),any());
+        verify(store).finish(eq(7L),any(),eq(true));
+        verifyNoInteractions(cloud);
+    }
     @Test void numericCitationFromProviderMustMatchExistingSource(){
         authorize();var evidence=new KnowledgeAssistantStore.Evidence(UUID.randomUUID(),1,null,false,"HTTP 200","请求成功",null,null,null);
         when(store.find(eq(7L),anyList(),anyInt(),anyInt())).thenReturn(List.of(evidence));when(store.current(7,evidence)).thenReturn(true);
