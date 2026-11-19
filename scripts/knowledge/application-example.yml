@@ -36,5 +36,5 @@ knowledge:
     max-question-chars: 500
     max-evidence: 4
     max-evidence-chars: 4800
-    max-output-tokens: 800
+    max-output-tokens: 3072
     timeout-seconds: 20

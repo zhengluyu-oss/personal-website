@@ -18,12 +18,12 @@ public final class KnowledgeAssistantProperties {
     private String endpoint="",apiKey="",model="",dataPolicy="";
     private Set<String> allowedHosts=Set.of();
     private int dailyPerAccount=10,dailySite=100,maxConcurrent=2,maxQuestionChars=500;
-    private int maxEvidence=4,maxEvidenceChars=4800,maxOutputTokens=800,timeoutSeconds=20;
+    private int maxEvidence=4,maxEvidenceChars=4800,maxOutputTokens=3072,timeoutSeconds=20;
     public boolean configured(){
         if(!enabled||apiKey.isBlank()||model.isBlank()||dataPolicy.isBlank()||dailyPerAccount<1||dailyPerAccount>100
             ||dailySite<1||dailySite>1000||maxConcurrent<1||maxConcurrent>4||maxQuestionChars<1||maxQuestionChars>500
             ||maxEvidence<1||maxEvidence>4||maxEvidenceChars<1||maxEvidenceChars>4800
-            ||maxOutputTokens<1||maxOutputTokens>800||timeoutSeconds<1||timeoutSeconds>20
+            ||maxOutputTokens<1||maxOutputTokens>4096||timeoutSeconds<1||timeoutSeconds>20
             ||!Double.isFinite(minimumSimilarity)||minimumSimilarity<0||minimumSimilarity>1)return false;
         try {URI uri=URI.create(endpoint);return "https".equals(uri.getScheme())&&uri.getHost()!=null
             &&uri.getUserInfo()==null&&uri.getQuery()==null&&uri.getFragment()==null
