@@ -12,6 +12,9 @@ import java.util.Set;
 @Getter @Setter @Component @ConfigurationProperties("knowledge.assistant")
 public final class KnowledgeAssistantProperties {
     private boolean enabled;
+    /** Enabled only after the v5 vector migration and embedding calibration. */
+    private boolean vectorEnabled;
+    private double minimumSimilarity=0.45;
     private String endpoint="",apiKey="",model="",dataPolicy="";
     private Set<String> allowedHosts=Set.of();
     private int dailyPerAccount=10,dailySite=100,maxConcurrent=2,maxQuestionChars=500;
@@ -20,7 +23,8 @@ public final class KnowledgeAssistantProperties {
         if(!enabled||apiKey.isBlank()||model.isBlank()||dataPolicy.isBlank()||dailyPerAccount<1||dailyPerAccount>100
             ||dailySite<1||dailySite>1000||maxConcurrent<1||maxConcurrent>4||maxQuestionChars<1||maxQuestionChars>500
             ||maxEvidence<1||maxEvidence>4||maxEvidenceChars<1||maxEvidenceChars>4800
-            ||maxOutputTokens<1||maxOutputTokens>800||timeoutSeconds<1||timeoutSeconds>20)return false;
+            ||maxOutputTokens<1||maxOutputTokens>800||timeoutSeconds<1||timeoutSeconds>20
+            ||!Double.isFinite(minimumSimilarity)||minimumSimilarity<0||minimumSimilarity>1)return false;
         try {URI uri=URI.create(endpoint);return "https".equals(uri.getScheme())&&uri.getHost()!=null
             &&uri.getUserInfo()==null&&uri.getQuery()==null&&uri.getFragment()==null
             &&(uri.getPort()==-1||uri.getPort()==443)&&allowedHosts.contains(uri.getHost().toLowerCase(Locale.ROOT));}

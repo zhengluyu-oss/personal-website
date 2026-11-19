@@ -8,8 +8,8 @@ final class KnowledgeAssistantQuery {
     private static final Pattern RUN=Pattern.compile("[A-Za-z0-9_.+-]{2,}|[\\p{IsHan}]+",Pattern.UNICODE_CASE);
     private static final Pattern IDENTIFIER=Pattern.compile("[A-Za-z][A-Za-z0-9_.+-]{1,99}");
     private static final Pattern HEADING=Pattern.compile("(?m)^[ \\t]{0,3}(?:#{1,6}[ \\t]+([^\\r\\n]+)|((?:[一二三四五六七八九十百零〇]+|[0-9]+)[、.．][ \\t]*[^\\r\\n]+))[ \\t]*$");
-    private static final Set<String> NOISE=Set.of("请问","如何","怎么","什么","为什么","可以","是否","哪些","哪种","这种","那个","这个","方式","区别","分别","一下","有没有","是什么","有什么","关于","限制","第二","第一","第三");
-    private static final List<String> BREAKS=List.of("有哪些","有什么","是什么","为什么","怎么样","如何","怎么","请问","分别","可以","是否","哪些","哪种","方式","限制","的","和","与","有","是","吗","呢","？","?");
+    private static final Set<String> NOISE=Set.of("请问","如何","怎么","什么","为什么","可以","是否","哪些","哪种","这种","那个","这个","方式","区别","分别","一下","有没有","是什么","有什么","关于","限制","第二","第一","第三","给我","介绍","详细","讲讲","说说");
+    private static final List<String> BREAKS=List.of("详细介绍","介绍一下","给我","讲讲","说说","有哪些","有什么","是什么","为什么","怎么样","如何","怎么","请问","分别","可以","是否","哪些","哪种","方式","限制","的","和","与","有","是","吗","呢","？","?");
     private KnowledgeAssistantQuery() {}
 
     static List<String> terms(String question,String previousQuestion){
@@ -65,6 +65,7 @@ final class KnowledgeAssistantQuery {
     static boolean supports(String claim,String quote,String excerpt){
         if(claim==null||claim.isBlank()||claim.length()>240||quote==null||quote.length()<4||quote.length()>240||!excerpt.contains(quote))return false;
         String text=claim.strip();
-        return text.length()>=4&&quote.contains(text);
+        List<String> concepts=terms(text,null);
+        return text.length()>=4 && !concepts.isEmpty() && overlap(excerpt,concepts)*2>=concepts.size();
     }
 }

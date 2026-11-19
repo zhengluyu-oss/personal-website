@@ -22,9 +22,9 @@ public final class KnowledgeAssistantStore {
         if(terms.isEmpty())return List.of();
         var entries=new LinkedHashMap<UUID,Entry>();
         for(String term:terms){
-            Filter filter=new Filter(null,null,null,null,null,term,1,8,false);
+            Filter filter=new Filter(null,null,null,null,null,term,1,32,false);
             for(SearchHit hit:access.store().search(owner,filter).records()){
-                if(entries.size()>=32)break;
+                if(entries.size()>=80)break;
                 entries.computeIfAbsent(hit.entry().id(),id->access.store().read(owner,id,false));
             }
         }
